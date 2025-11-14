@@ -1035,6 +1035,11 @@ async function executeSearch(query: string) {
       signal: abortController.signal, // Pass abort signal to fetch
     })
     searchResults.value = results
+
+    // Load counts for search results in background
+    if (results.length > 0) {
+      loadItemCountsBatch(results)
+    }
   } catch (error: unknown) {
     // Ignore abort errors (expected when user types fast)
     if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {

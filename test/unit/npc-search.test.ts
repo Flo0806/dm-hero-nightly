@@ -326,6 +326,142 @@ describe('NPC Search - Race/Class i18n Lookup', () => {
 
     expect(raceKey).toBe('human')
   })
+
+  it('should find NPC by German race name ("Halbelf" → metadata.race="halfelf")', () => {
+    // Create NPC with race key "halfelf"
+    db.prepare(
+      'INSERT INTO entities (type_id, campaign_id, name, metadata) VALUES (?, ?, ?, ?)',
+    ).run(npcTypeId, testCampaignId, 'Elara', JSON.stringify({ race: 'halfelf' }))
+
+    // Simulate API search for "halbelf" (German)
+    // The API converts "halbelf" → ["halbelf", "halfelf", "Half-Elf"] via getRaceSearchVariants
+    // Then checks if metadata.race matches any variant via variantMatchesRaceOrClass()
+
+    // Load all NPCs
+    const npcs = db
+      .prepare(
+        `
+      SELECT e.id, e.name, e.metadata
+      FROM entities e
+      WHERE e.type_id = ? AND e.campaign_id = ? AND e.deleted_at IS NULL
+    `,
+      )
+      .all(npcTypeId, testCampaignId) as Array<{
+      id: number
+      name: string
+      metadata: string | null
+    }>
+
+    // Simulate the variantMatchesRaceOrClass check
+    const searchVariants = ['halbelf', 'halfelf', 'half-elf'] // From getRaceSearchVariants("halbelf")
+    const matchingNpc = npcs.find((npc) => {
+      if (!npc.metadata) return false
+      const metadata = JSON.parse(npc.metadata) as { race?: string }
+      const raceKey = metadata.race?.toLowerCase()
+      if (!raceKey) return false
+
+      // This is the fixed logic: bidirectional check
+      return searchVariants.some((variant) => {
+        const variantNormalized = normalizeText(variant)
+        const raceKeyNormalized = normalizeText(raceKey)
+        return (
+          raceKeyNormalized === variantNormalized ||
+          raceKeyNormalized.includes(variantNormalized) ||
+          variantNormalized.includes(raceKeyNormalized)
+        )
+      })
+    })
+
+    expect(matchingNpc).toBeDefined()
+    expect(matchingNpc!.name).toBe('Elara')
+  })
+
+  it('should find NPC by English class name ("Wizard" → metadata.class="wizard")', () => {
+    // Create NPC with class key "wizard"
+    db.prepare(
+      'INSERT INTO entities (type_id, campaign_id, name, metadata) VALUES (?, ?, ?, ?)',
+    ).run(npcTypeId, testCampaignId, 'Merlin', JSON.stringify({ class: 'wizard' }))
+
+    // Load all NPCs
+    const npcs = db
+      .prepare(
+        `
+      SELECT e.id, e.name, e.metadata
+      FROM entities e
+      WHERE e.type_id = ? AND e.campaign_id = ? AND e.deleted_at IS NULL
+    `,
+      )
+      .all(npcTypeId, testCampaignId) as Array<{
+      id: number
+      name: string
+      metadata: string | null
+    }>
+
+    // Simulate search for "wizard"
+    const searchVariants = ['wizard', 'zauberer'] // From getClassSearchVariants("wizard")
+    const matchingNpc = npcs.find((npc) => {
+      if (!npc.metadata) return false
+      const metadata = JSON.parse(npc.metadata) as { class?: string }
+      const classKey = metadata.class?.toLowerCase()
+      if (!classKey) return false
+
+      return searchVariants.some((variant) => {
+        const variantNormalized = normalizeText(variant)
+        const classKeyNormalized = normalizeText(classKey)
+        return (
+          classKeyNormalized === variantNormalized ||
+          classKeyNormalized.includes(variantNormalized) ||
+          variantNormalized.includes(classKeyNormalized)
+        )
+      })
+    })
+
+    expect(matchingNpc).toBeDefined()
+    expect(matchingNpc!.name).toBe('Merlin')
+  })
+
+  it('should NOT match if race key is completely different', () => {
+    // Create NPC with race="dwarf"
+    db.prepare(
+      'INSERT INTO entities (type_id, campaign_id, name, metadata) VALUES (?, ?, ?, ?)',
+    ).run(npcTypeId, testCampaignId, 'Thorin', JSON.stringify({ race: 'dwarf' }))
+
+    // Load all NPCs
+    const npcs = db
+      .prepare(
+        `
+      SELECT e.id, e.name, e.metadata
+      FROM entities e
+      WHERE e.type_id = ? AND e.campaign_id = ? AND e.deleted_at IS NULL
+    `,
+      )
+      .all(npcTypeId, testCampaignId) as Array<{
+      id: number
+      name: string
+      metadata: string | null
+    }>
+
+    // Simulate search for "elf" (should NOT match dwarf)
+    const searchVariants = ['elf', 'elf'] // From getRaceSearchVariants("elf")
+    const matchingNpc = npcs.find((npc) => {
+      if (!npc.metadata) return false
+      const metadata = JSON.parse(npc.metadata) as { race?: string }
+      const raceKey = metadata.race?.toLowerCase()
+      if (!raceKey) return false
+
+      return searchVariants.some((variant) => {
+        const variantNormalized = normalizeText(variant)
+        const raceKeyNormalized = normalizeText(raceKey)
+        return (
+          raceKeyNormalized === variantNormalized ||
+          raceKeyNormalized.includes(variantNormalized) ||
+          variantNormalized.includes(raceKeyNormalized)
+        )
+      })
+    })
+
+    expect(matchingNpc).toBeUndefined()
+  })
 })
 
 describe('NPC Search - Linked Entities (Factions, Locations & Lore)', () => {

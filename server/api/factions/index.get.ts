@@ -19,7 +19,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  // Get Faction entity type ID
+  // Get entity type IDs
   const entityType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Faction') as
     | { id: number }
     | undefined
@@ -27,6 +27,17 @@ export default defineEventHandler((event) => {
   if (!entityType) {
     return []
   }
+
+  // Get NPC and Lore type IDs for cross-entity search (used in JOINs)
+  const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
+    | { id: number }
+    | undefined
+  const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
+    | { id: number }
+    | undefined
+
+  const npcTypeId = npcType?.id
+  const loreTypeId = loreType?.id
 
   interface FactionRow {
     id: number
@@ -113,9 +124,9 @@ export default defineEventHandler((event) => {
         LEFT JOIN entity_relations leader_rel ON leader_rel.to_entity_id = e.id AND leader_rel.relation_type = 'Anführer'
         LEFT JOIN entities leader_npc ON leader_npc.id = leader_rel.from_entity_id AND leader_npc.deleted_at IS NULL
         LEFT JOIN entity_relations member_rel ON member_rel.to_entity_id = e.id
-        LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+        LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = ?
         LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
         WHERE entities_fts MATCH ?
           AND e.type_id = ?
           AND e.campaign_id = ?
@@ -125,7 +136,7 @@ export default defineEventHandler((event) => {
         LIMIT 300
       `,
         )
-        .all(ftsQuery, entityType.id, campaignId) as FactionRow[]
+        .all(ftsQuery, npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
 
       // FALLBACK 1: Try prefix wildcard if exact match found nothing (only for simple queries)
       if (factions.length === 0 && useExactMatch && !parsedQuery.hasOperators) {
@@ -152,9 +163,9 @@ export default defineEventHandler((event) => {
           LEFT JOIN entity_relations leader_rel ON leader_rel.to_entity_id = e.id AND leader_rel.relation_type = 'Anführer'
           LEFT JOIN entities leader_npc ON leader_npc.id = leader_rel.from_entity_id AND leader_npc.deleted_at IS NULL
           LEFT JOIN entity_relations member_rel ON member_rel.to_entity_id = e.id
-          LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+          LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = ?
           LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
           WHERE entities_fts MATCH ?
             AND e.type_id = ?
             AND e.campaign_id = ?
@@ -164,7 +175,7 @@ export default defineEventHandler((event) => {
           LIMIT 300
         `,
           )
-          .all(ftsQuery, entityType.id, campaignId) as FactionRow[]
+          .all(ftsQuery, npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
       }
 
       // FALLBACK 2: For operator queries or when FTS5 returns nothing, use full table scan with Levenshtein
@@ -191,9 +202,9 @@ export default defineEventHandler((event) => {
           LEFT JOIN entity_relations leader_rel ON leader_rel.to_entity_id = e.id AND leader_rel.relation_type = 'Anführer'
           LEFT JOIN entities leader_npc ON leader_npc.id = leader_rel.from_entity_id AND leader_npc.deleted_at IS NULL
           LEFT JOIN entity_relations member_rel ON member_rel.to_entity_id = e.id
-          LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+          LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = ?
           LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
           WHERE e.type_id = ?
             AND e.campaign_id = ?
             AND e.deleted_at IS NULL
@@ -201,7 +212,7 @@ export default defineEventHandler((event) => {
           ORDER BY e.name ASC
         `,
           )
-          .all(entityType.id, campaignId) as FactionRow[]
+          .all(npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
       }
 
       // Step 2: Apply Levenshtein distance for better ranking
@@ -590,9 +601,9 @@ export default defineEventHandler((event) => {
       LEFT JOIN entity_relations leader_rel ON leader_rel.to_entity_id = e.id AND leader_rel.relation_type = 'Anführer'
       LEFT JOIN entities leader_npc ON leader_npc.id = leader_rel.from_entity_id AND leader_npc.deleted_at IS NULL
       LEFT JOIN entity_relations member_rel ON member_rel.to_entity_id = e.id
-      LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+      LEFT JOIN entities member_npc ON member_npc.id = member_rel.from_entity_id AND member_npc.deleted_at IS NULL AND member_npc.type_id = ?
       LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-      LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+      LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
       WHERE e.type_id = ?
         AND e.campaign_id = ?
         AND e.deleted_at IS NULL
@@ -600,7 +611,7 @@ export default defineEventHandler((event) => {
       ORDER BY e.name ASC
     `,
       )
-      .all(entityType.id, campaignId) as FactionRow[]
+      .all(npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
   }
 
   // Parse metadata JSON

@@ -19,7 +19,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  // Get Location entity type ID
+  // Get entity type IDs
   const entityType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Location') as
     | { id: number }
     | undefined
@@ -27,6 +27,21 @@ export default defineEventHandler((event) => {
   if (!entityType) {
     return []
   }
+
+  // Get NPC, Item, and Lore type IDs for cross-entity search (used in JOINs)
+  const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
+    | { id: number }
+    | undefined
+  const itemType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Item') as
+    | { id: number }
+    | undefined
+  const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
+    | { id: number }
+    | undefined
+
+  const npcTypeId = npcType?.id
+  const itemTypeId = itemType?.id
+  const loreTypeId = loreType?.id
 
   interface LocationRow {
     id: number
@@ -122,11 +137,11 @@ export default defineEventHandler((event) => {
         INNER JOIN entities e ON fts.rowid = e.id
         LEFT JOIN entity_images ei ON e.id = ei.entity_id AND ei.is_primary = 1
         LEFT JOIN entity_relations npc_rel ON npc_rel.to_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+        LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = ?
         LEFT JOIN entity_relations item_rel ON item_rel.to_entity_id = e.id
-        LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+        LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = ?
         LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
         WHERE entities_fts MATCH ?
           AND e.type_id = ?
           AND e.campaign_id = ?
@@ -136,7 +151,7 @@ export default defineEventHandler((event) => {
         LIMIT 300
       `,
         )
-        .all(ftsQuery, entityType.id, campaignId) as LocationRow[]
+        .all(ftsQuery, npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
 
       // FALLBACK 1: Try prefix wildcard if exact match found nothing (only for simple queries)
       if (locations.length === 0 && useExactMatch && !parsedQuery.hasOperators) {
@@ -163,11 +178,11 @@ export default defineEventHandler((event) => {
           INNER JOIN entities e ON fts.rowid = e.id
           LEFT JOIN entity_images ei ON e.id = ei.entity_id AND ei.is_primary = 1
           LEFT JOIN entity_relations npc_rel ON npc_rel.to_entity_id = e.id
-          LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+          LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = ?
           LEFT JOIN entity_relations item_rel ON item_rel.to_entity_id = e.id
-          LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+          LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = ?
           LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+          LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
           WHERE entities_fts MATCH ?
             AND e.type_id = ?
             AND e.campaign_id = ?
@@ -177,7 +192,7 @@ export default defineEventHandler((event) => {
           LIMIT 300
         `,
           )
-          .all(ftsQuery, entityType.id, campaignId) as LocationRow[]
+          .all(ftsQuery, npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
       }
 
       // Step 1.5: Always load all locations with linked entities for cross-entity search
@@ -207,11 +222,11 @@ export default defineEventHandler((event) => {
         FROM entities e
         LEFT JOIN entity_images ei ON e.id = ei.entity_id AND ei.is_primary = 1
         LEFT JOIN entity_relations npc_rel ON npc_rel.to_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+        LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = ?
         LEFT JOIN entity_relations item_rel ON item_rel.to_entity_id = e.id
-        LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+        LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = ?
         LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
@@ -219,7 +234,7 @@ export default defineEventHandler((event) => {
         ORDER BY e.name ASC
       `,
         )
-        .all(entityType.id, campaignId) as LocationRow[]
+        .all(npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
 
       // Step 2: Apply Levenshtein distance for better ranking
       let scoredLocations = locations.map((location: LocationRow): ScoredLocation => {
@@ -734,13 +749,16 @@ export default defineEventHandler((event) => {
         e.updated_at,
         ei.image_url as primary_image_url,
         GROUP_CONCAT(DISTINCT npc.name) as linked_npc_names,
-        GROUP_CONCAT(DISTINCT item.name) as linked_item_names
+        GROUP_CONCAT(DISTINCT item.name) as linked_item_names,
+        GROUP_CONCAT(DISTINCT lore.name) as linked_lore_names
       FROM entities e
       LEFT JOIN entity_images ei ON e.id = ei.entity_id AND ei.is_primary = 1
       LEFT JOIN entity_relations npc_rel ON npc_rel.to_entity_id = e.id
-      LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+      LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id AND npc.deleted_at IS NULL AND npc.type_id = ?
       LEFT JOIN entity_relations item_rel ON item_rel.to_entity_id = e.id
-      LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+      LEFT JOIN entities item ON item.id = item_rel.from_entity_id AND item.deleted_at IS NULL AND item.type_id = ?
+      LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
+      LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
       WHERE e.type_id = ?
         AND e.campaign_id = ?
         AND e.deleted_at IS NULL
@@ -748,7 +766,7 @@ export default defineEventHandler((event) => {
       ORDER BY e.name ASC
     `,
       )
-      .all(entityType.id, campaignId) as LocationRow[]
+      .all(npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
   }
 
   // Parse metadata JSON

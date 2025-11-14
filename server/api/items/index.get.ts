@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get Item entity type ID
+  // Get entity type IDs
   const entityType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Item') as
     | { id: number }
     | undefined
@@ -52,6 +52,17 @@ export default defineEventHandler(async (event) => {
   if (!entityType) {
     return []
   }
+
+  // Get Lore and NPC type IDs for cross-entity search (used in JOINs)
+  const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
+    | { id: number }
+    | undefined
+  const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
+    | { id: number }
+    | undefined
+
+  const loreTypeId = loreType?.id
+  const npcTypeId = npcType?.id
 
   interface ItemRow {
     id: number
@@ -201,16 +212,16 @@ export default defineEventHandler(async (event) => {
           LEFT JOIN entity_relations owner_rel ON owner_rel.to_entity_id = e.id
           LEFT JOIN entities owner_npc ON owner_npc.id = owner_rel.from_entity_id
             AND owner_npc.deleted_at IS NULL
-            AND owner_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+            AND owner_npc.type_id = ?
           LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
           LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
             AND lore.deleted_at IS NULL
-            AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+            AND lore.type_id = ?
           WHERE e.id IN (${placeholders})
           GROUP BY e.id
         `,
           )
-          .all(...itemIds) as Array<{
+          .all(npcTypeId, loreTypeId, ...itemIds) as Array<{
           id: number
           owner_names: string | null
           linked_lore_names: string | null
@@ -270,16 +281,16 @@ export default defineEventHandler(async (event) => {
             LEFT JOIN entity_relations owner_rel ON owner_rel.to_entity_id = e.id
             LEFT JOIN entities owner_npc ON owner_npc.id = owner_rel.from_entity_id
               AND owner_npc.deleted_at IS NULL
-              AND owner_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              AND owner_npc.type_id = ?
             LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
             LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
               AND lore.deleted_at IS NULL
-              AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              AND lore.type_id = ?
             WHERE e.id IN (${placeholders})
             GROUP BY e.id
           `,
             )
-            .all(...itemIds) as Array<{
+            .all(npcTypeId, loreTypeId, ...itemIds) as Array<{
             id: number
             owner_names: string | null
             linked_lore_names: string | null
@@ -316,9 +327,9 @@ export default defineEventHandler(async (event) => {
             GROUP_CONCAT(DISTINCT lore.name) as linked_lore_names
           FROM entities e
           LEFT JOIN entity_relations owner_rel ON owner_rel.to_entity_id = e.id
-          LEFT JOIN entities owner_npc ON owner_npc.id = owner_rel.from_entity_id AND owner_npc.deleted_at IS NULL AND owner_npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+          LEFT JOIN entities owner_npc ON owner_npc.id = owner_rel.from_entity_id AND owner_npc.deleted_at IS NULL AND owner_npc.type_id = ?
           LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
-          LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id AND lore.deleted_at IS NULL AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+          LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id AND lore.deleted_at IS NULL AND lore.type_id = ?
           WHERE e.type_id = ?
             AND e.campaign_id = ?
             AND e.deleted_at IS NULL
@@ -326,7 +337,7 @@ export default defineEventHandler(async (event) => {
           ORDER BY e.name ASC
         `,
           )
-          .all(entityType.id, campaignId) as ItemRow[]
+          .all(npcTypeId, loreTypeId, entityType.id, campaignId) as ItemRow[]
       }
 
       // Step 2: Apply Levenshtein distance for better ranking

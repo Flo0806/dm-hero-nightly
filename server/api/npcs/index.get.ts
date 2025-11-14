@@ -376,12 +376,26 @@ export default defineEventHandler(async (event) => {
         const raceKey = metadataObj.race
         const classKey = metadataObj.class
 
-        // Check if the variant matches the race/class key directly
-        if (raceKey && normalizeText(raceKey).includes(variant)) {
-          return true
+        // Check if the variant matches the race/class key directly (exact or fuzzy)
+        if (raceKey) {
+          const raceKeyNormalized = normalizeText(raceKey)
+          if (
+            raceKeyNormalized === variant ||
+            raceKeyNormalized.includes(variant) ||
+            variant.includes(raceKeyNormalized)
+          ) {
+            return true
+          }
         }
-        if (classKey && normalizeText(classKey).includes(variant)) {
-          return true
+        if (classKey) {
+          const classKeyNormalized = normalizeText(classKey)
+          if (
+            classKeyNormalized === variant ||
+            classKeyNormalized.includes(variant) ||
+            variant.includes(classKeyNormalized)
+          ) {
+            return true
+          }
         }
 
         // Also check if this variant is a localized name for the same race/class
