@@ -186,7 +186,7 @@ Output ONLY the optimized prompt.`
     enhancedPrompt =
       gptData.choices?.[0]?.message?.content?.trim() ||
       `${objectDescription}, ${styleMap[style]}, centered composition, simple background`
-    }
+  }
 
   // Call OpenAI DALL-E 3 API
   try {

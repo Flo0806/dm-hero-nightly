@@ -1,4 +1,5 @@
-import type { Item, ItemCounts } from '~/types/item'
+import type { ItemCounts, Item } from '../../types/item.js'
+
 
 /**
  * Composable to load Item counts asynchronously
@@ -7,7 +8,7 @@ import type { Item, ItemCounts } from '~/types/item'
 export function useItemCounts() {
   const loadingCounts = ref<Set<number>>(new Set())
   // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, ItemCounts>>({})
+  const countsMap = reactive<Record<number, ItemCounts | undefined>>({})
 
   async function loadItemCounts(item: Item): Promise<void> {
     // Skip if already loading
@@ -59,7 +60,7 @@ export function useItemCounts() {
    */
   async function reloadItemCounts(item: Item): Promise<void> {
     // Remove from cache to force reload
-    delete countsMap[item.id]
+    countsMap[item.id] = undefined  
     loadingCounts.value.delete(item.id)
     // Now load fresh
     await loadItemCounts(item)
@@ -71,7 +72,9 @@ export function useItemCounts() {
    */
   function clearCountsCache(): void {
     // Clear all properties from reactive object
-    Object.keys(countsMap).forEach((key) => delete countsMap[Number(key)])
+    Object.keys(countsMap).forEach((key) => {
+      countsMap[Number(key)] = undefined  
+    })
     loadingCounts.value.clear()
   }
 

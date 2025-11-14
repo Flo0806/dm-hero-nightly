@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   // Extract entityId and entityType from form data
   const entityIdField = formData.find((f) => f.name === 'entityId')
-  const entityTypeField = formData.find((f) => f.name === 'entityType')
+  const _entityTypeField = formData.find((f) => f.name === 'entityType')
 
   if (!entityIdField || !entityIdField.data) {
     throw createError({

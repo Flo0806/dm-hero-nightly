@@ -1,5 +1,16 @@
 import { getDb } from '../../utils/db'
 
+interface RelationRow {
+  id: number
+  from_entity_id: number
+  to_entity_id: number
+  relation_type: string
+  notes: string | null
+  created_at: string
+  to_entity_name: string
+  to_entity_type: string
+}
+
 export default defineEventHandler(async (event) => {
   const db = getDb()
   const id = getRouterParam(event, 'id')
@@ -37,7 +48,7 @@ export default defineEventHandler(async (event) => {
     WHERE er.id = ?
   `,
     )
-    .get(id) as any
+    .get(id) as RelationRow | undefined
 
   if (!relation) {
     throw createError({

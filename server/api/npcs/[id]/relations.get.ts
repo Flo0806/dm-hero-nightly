@@ -61,8 +61,6 @@ export default defineEventHandler(async (event) => {
     )
     .all(npcId, npcTypeId.id)
 
-  )
-
   return relations.map((rel) => {
     // Parse notes safely - handle both JSON and plain text
     let parsedNotes = null

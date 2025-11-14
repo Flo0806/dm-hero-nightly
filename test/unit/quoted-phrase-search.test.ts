@@ -25,7 +25,7 @@ let npcTypeId: number
 let itemTypeId: number
 let locationTypeId: number
 let factionTypeId: number
-let loreTypeId: number
+let _loreTypeId: number
 
 beforeAll(() => {
   db = getDb()
@@ -43,7 +43,7 @@ beforeAll(() => {
   factionTypeId = (
     db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Faction') as { id: number }
   ).id
-  loreTypeId = (
+  _loreTypeId = (
     db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as { id: number }
   ).id
 
@@ -358,7 +358,7 @@ describe('Quoted Phrase Search - Locations', () => {
       .prepare('INSERT INTO entities (type_id, campaign_id, name) VALUES (?, ?, ?)').run(
         npcTypeId,
         testCampaignId,
-        'Günther Müller'
+        'Günther Müller',
       )
     const npcId = Number(npc.lastInsertRowid)
 
@@ -367,13 +367,13 @@ describe('Quoted Phrase Search - Locations', () => {
       .prepare('INSERT INTO entities (type_id, campaign_id, name) VALUES (?, ?, ?)').run(
         locationTypeId,
         testCampaignId,
-        'Taverne zum Goldenen Drachen'
+        'Taverne zum Goldenen Drachen',
       )
     const _location2 = db
       .prepare('INSERT INTO entities (type_id, campaign_id, name) VALUES (?, ?, ?)').run(
         locationTypeId,
         testCampaignId,
-        'Marktplatz'
+        'Marktplatz',
       )
 
     // Link NPC to Location

@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
   const db = getDb()
   const body = await readBody(event)
 
-  const { name, name_de, name_en, description } = body
+  const { name, name_de, name_en, description: _description } = body
 
   if (!name) {
     throw createError({

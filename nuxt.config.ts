@@ -49,7 +49,7 @@ export default defineNuxtConfig({
 })
 
 function extendViteConfig(config: import('vite').UserConfig) {
-  const plugin = config.plugins?.find((plugin) => isPlugin(plugin, 'nuxt:environments'))
+  const plugin = config.plugins?.find((p: unknown) => isPlugin(p, 'nuxt:environments'))
   if (plugin) plugin.enforce = 'pre'
 }
 

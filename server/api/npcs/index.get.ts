@@ -918,7 +918,7 @@ export default defineEventHandler(async (event) => {
       scoredNpcs = scoredNpcs.slice(0, 50)
 
       // Clean up scoring metadata
-      npcs = scoredNpcs.map(({ fts_score, _lev_distance, _final_score, ...npc }) => npc)
+      npcs = scoredNpcs.map(({ fts_score: _fts_score, _lev_distance, _final_score, ...npc }) => npc)
     } catch (error) {
       // Fallback: If FTS5 fails, return empty (better than crashing)
       console.error('[NPC Search] FTS5 search failed:', error)

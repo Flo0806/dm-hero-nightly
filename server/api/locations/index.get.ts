@@ -557,8 +557,6 @@ export default defineEventHandler((event) => {
 
             // Check if this is a quoted phrase (contains spaces = multi-word term)
             const isPhraseTerm = term.includes(' ')
-            against "${location.name}"`,
-            )
 
             if (isPhraseTerm) {
               // Exact phrase match - no Levenshtein
@@ -571,8 +569,7 @@ export default defineEventHandler((event) => {
                 linkedLoreNamesNormalized.includes(term)
               ) {
                 termMatches = true
-                } else {
-                }
+              } 
             } else {
               // Single word term - check with substring match first
               if (
@@ -645,8 +642,6 @@ export default defineEventHandler((event) => {
                   if (word.length === 0) continue
                   const npcLevDist = levenshtein(term, word)
                   if (npcLevDist <= maxDist) {
-                    `,
-                    )
                     termMatches = true
                     break
                   }
@@ -701,8 +696,7 @@ export default defineEventHandler((event) => {
             // If this term doesn't match, reject the location
             if (!termMatches) {
               return false
-            } else {
-              }
+            } 
           }
 
           // All terms matched!
@@ -717,7 +711,7 @@ export default defineEventHandler((event) => {
 
       // Clean up scoring metadata
       locations = scoredLocations.map(
-        ({ fts_score, _lev_distance, _final_score, ...location }) => location,
+        ({ fts_score: _fts_score, _lev_distance, _final_score, ...location }) => location,
       )
     } catch (error) {
       // Fallback: If FTS5 fails, return empty (better than crashing)

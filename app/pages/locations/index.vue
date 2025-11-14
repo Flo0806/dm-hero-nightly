@@ -343,7 +343,7 @@
           <v-text-field
             v-model="locationForm.name"
             :label="$t('locations.name')"
-            :rules="[(v) => !!v || $t('locations.nameRequired')]"
+            :rules="[(v: string) => !!v || $t('locations.nameRequired')]"
             variant="outlined"
             class="mb-4"
           />
@@ -702,8 +702,6 @@
 <script setup lang="ts">
 import LocationNpcsTab from '~/components/locations/LocationNpcsTab.vue'
 import LocationLoreTab from '~/components/locations/LocationLoreTab.vue'
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
-import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 
 interface Location {

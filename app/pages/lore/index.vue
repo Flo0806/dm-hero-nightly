@@ -608,12 +608,6 @@ const loreTypeItems = computed(() => {
   }))
 })
 
-// Truncate text to specified length
-function truncateText(text: string, maxLength: number): string {
-  if (!text || text.length <= maxLength) return text
-  return text.substring(0, maxLength) + '...'
-}
-
 // Get color for lore type
 function getTypeColor(type: string): string {
   const colorMap: Record<string, string> = {

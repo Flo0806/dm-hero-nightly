@@ -29,6 +29,7 @@ export interface NpcMetadata {
   status?: NpcStatus
   age?: number
   gender?: string
+  [key: string]: unknown // Index signature for convertMetadataToKeys compatibility
 }
 
 export interface NpcCounts {

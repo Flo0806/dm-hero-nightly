@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import type { RaceRow, EntityTypeRow, CountRow } from '../../types/database'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if race exists
   const race = db
-    .prepare(
+    .prepare<unknown[], RaceRow>(
       `
     SELECT * FROM races WHERE id = ? AND deleted_at IS NULL
   `,
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if race is in use by any NPCs
   const npcTypeId = db
-    .prepare(
+    .prepare<unknown[], EntityTypeRow>(
       `
     SELECT id FROM entity_types WHERE name = 'NPC'
   `,
@@ -37,7 +38,7 @@ export default defineEventHandler(async (event) => {
     .get()
 
   const inUse = db
-    .prepare(
+    .prepare<unknown[], CountRow>(
       `
     SELECT COUNT(*) as count FROM entities
     WHERE type_id = ? AND deleted_at IS NULL

@@ -872,13 +872,13 @@ export const migrations: Migration[] = [
 
         // Update race if it's a German name
         if (metadata.race && raceMapping[metadata.race]) {
-          metadata.race = raceMapping[metadata.race].key
+          metadata.race = raceMapping[metadata.race]?.key
           changed = true
         }
 
         // Update class if it's a German name
         if (metadata.class && classMapping[metadata.class]) {
-          metadata.class = classMapping[metadata.class].key
+          metadata.class = classMapping[metadata.class]?.key
           changed = true
         }
 

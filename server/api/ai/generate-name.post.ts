@@ -55,30 +55,30 @@ export default defineEventHandler(async (event): Promise<GenerateNameResponse> =
 
   let userPrompt = ''
   switch (body.entityType) {
-    case 'NPC':
-      userPrompt =
+  case 'NPC':
+    userPrompt =
         language === 'de'
           ? `Generiere einen passenden Fantasy-NPC-Namen${body.context ? ` für: ${body.context}` : ''}. Antworte NUR mit dem Namen, ohne Erklärung.`
           : `Generate a fitting fantasy NPC name${body.context ? ` for: ${body.context}` : ''}. Reply ONLY with the name, no explanation.`
-      break
-    case 'Location':
-      userPrompt =
+    break
+  case 'Location':
+    userPrompt =
         language === 'de'
           ? `Generiere einen passenden Fantasy-Ortsnamen${body.context ? ` für: ${body.context}` : ''}. Antworte NUR mit dem Namen, ohne Erklärung.`
           : `Generate a fitting fantasy location name${body.context ? ` for: ${body.context}` : ''}. Reply ONLY with the name, no explanation.`
-      break
-    case 'Item':
-      userPrompt =
+    break
+  case 'Item':
+    userPrompt =
         language === 'de'
           ? `Generiere einen passenden Fantasy-Item-Namen${body.context ? ` für: ${body.context}` : ''}. Antworte NUR mit dem Namen, ohne Erklärung.`
           : `Generate a fitting fantasy item name${body.context ? ` for: ${body.context}` : ''}. Reply ONLY with the name, no explanation.`
-      break
-    case 'Faction':
-      userPrompt =
+    break
+  case 'Faction':
+    userPrompt =
         language === 'de'
           ? `Generiere einen passenden Fantasy-Fraktionsnamen${body.context ? ` für: ${body.context}` : ''}. Antworte NUR mit dem Namen, ohne Erklärung.`
           : `Generate a fitting fantasy faction name${body.context ? ` for: ${body.context}` : ''}. Reply ONLY with the name, no explanation.`
-      break
+    break
   }
 
   // Call OpenAI API

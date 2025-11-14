@@ -227,5 +227,5 @@ export default defineEventHandler((event) => {
     .sort((a, b) => a._score - b._score)
     .slice(0, 20)
 
-  return scoredResults.map(({ _score, linked_entities, ...result }) => result)
+  return scoredResults.map(({ _score, linked_entities: _linked_entities, ...result }) => result)
 })

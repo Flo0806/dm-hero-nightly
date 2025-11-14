@@ -674,7 +674,7 @@ export default defineEventHandler(async (event) => {
       scoredItems = scoredItems.slice(0, 50)
 
       // Clean up scoring metadata
-      items = scoredItems.map(({ fts_score, _lev_distance, _final_score, ...item }) => item)
+      items = scoredItems.map(({ fts_score: _fts_score, _lev_distance, _final_score, ...item }) => item)
     } catch (error) {
       // Fallback: If FTS5 fails, return empty (better than crashing)
       console.error('[Item Search] FTS5 search failed:', error)

@@ -42,18 +42,18 @@ export function createLevenshtein() {
     }
 
     let x = 0
-    let y
-    let d0
-    let d1
-    let d2
-    let d3
-    let dd
-    let dy
-    let ay
-    let bx0
-    let bx1
-    let bx2
-    let bx3
+    let y: number
+    let d0: number
+    let d1: number
+    let d2: number
+    let d3: number
+    let dd = 0
+    let dy: number
+    let ay: number
+    let bx0: number
+    let bx1: number
+    let bx2: number
+    let bx3: number
 
     const vector: number[] = []
 
@@ -95,6 +95,6 @@ export function createLevenshtein() {
       }
     }
 
-    return dd!
+    return dd
   }
 }

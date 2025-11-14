@@ -109,14 +109,14 @@ export default defineEventHandler(async (event) => {
 
   // Always update entity's image_url with the newly uploaded image
   db.prepare('UPDATE entities SET image_url = ?, updated_at = ? WHERE id = ?').run(
-    uploadedImages[0].imageUrl,
+    uploadedImages[0]?.imageUrl,
     new Date().toISOString(),
     entityId,
   )
 
   return {
     success: true,
-    imageUrl: uploadedImages[0].imageUrl, // Backwards compatibility for single file upload
+    imageUrl: uploadedImages[0]?.imageUrl, // Backwards compatibility for single file upload
     images: uploadedImages,
   }
 })

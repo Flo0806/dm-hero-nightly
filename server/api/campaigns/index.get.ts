@@ -1,11 +1,12 @@
 import { getDb } from '../../utils/db'
+import type { CampaignRow } from '../../types/database'
 
 export default defineEventHandler(() => {
   const db = getDb()
 
   // Get all non-deleted campaigns
   const campaigns = db
-    .prepare(
+    .prepare<unknown[], CampaignRow>(
       `
     SELECT
       id,

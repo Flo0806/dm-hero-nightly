@@ -7,7 +7,7 @@ import type { NPC, NpcCounts } from '~/types/npc'
 export function useNpcCounts() {
   const loadingCounts = ref<Set<number>>(new Set())
   // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, NpcCounts>>({})
+  const countsMap = reactive<Record<number, NpcCounts | undefined>>({})
 
   async function loadNpcCounts(npc: NPC): Promise<void> {
     // Skip if already loading
@@ -59,7 +59,7 @@ export function useNpcCounts() {
    */
   async function reloadNpcCounts(npc: NPC): Promise<void> {
     // Remove from cache to force reload
-    delete countsMap[npc.id]
+    countsMap[npc.id] = undefined  
     loadingCounts.value.delete(npc.id)
     // Now load fresh
     await loadNpcCounts(npc)
@@ -71,7 +71,9 @@ export function useNpcCounts() {
    */
   function clearCountsCache(): void {
     // Clear all properties from reactive object
-    Object.keys(countsMap).forEach((key) => delete countsMap[Number(key)])
+    Object.keys(countsMap).forEach((key) => {
+      countsMap[Number(key)] = undefined  
+    })
     loadingCounts.value.clear()
   }
 

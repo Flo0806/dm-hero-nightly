@@ -15,7 +15,7 @@ export interface ParsedQuery {
 }
 
 export function parseSearchQuery(query: string): ParsedQuery {
-  let trimmed = query.trim()
+  const trimmed = query.trim()
 
   // Check for operators BEFORE normalization
   const hasAnd = /\s+AND\s+/i.test(trimmed) || /\s+\+\s+/.test(trimmed)
@@ -63,7 +63,7 @@ export function parseSearchQuery(query: string): ParsedQuery {
   const tokens = trimmed.match(/(?:[^\s"]+|"[^"]*")+/g) || []
 
   for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i].trim()
+    const token = tokens[i]?.trim()
 
     if (!token) continue
 

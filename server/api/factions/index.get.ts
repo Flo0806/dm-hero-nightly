@@ -562,7 +562,7 @@ export default defineEventHandler((event) => {
 
       // Clean up scoring metadata
       factions = scoredFactions.map(
-        ({ fts_score, _lev_distance, _final_score, ...faction }) => faction,
+        ({ fts_score: _fts_score, _lev_distance, _final_score, ...faction }) => faction,
       )
     } catch (error) {
       // Fallback: If FTS5 fails, return empty (better than crashing)

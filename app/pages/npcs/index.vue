@@ -1453,19 +1453,6 @@ async function loadReferenceData() {
   classes.value = classesData
 }
 
-// Helper functions to get race/class display name from string key
-function getRaceDisplayName(raceName: string | undefined): string {
-  if (!raceName) return ''
-  const race = races.value.find((r) => r.name === raceName)
-  return race ? useRaceName(race) : raceName
-}
-
-function getClassDisplayName(className: string | undefined): string {
-  if (!className) return ''
-  const classData = classes.value.find((c) => c.name === className)
-  return classData ? useClassName(classData) : className
-}
-
 // Translated race/class items for dropdowns (uses DB translations or i18n fallback)
 // IMPORTANT: We read locale.value to make this computed reactive to language changes
 const raceItems = computed(() => {
@@ -1936,17 +1923,6 @@ const factionMemberships = computed(() =>
   allRelations.value.filter((rel) => rel.to_entity_type === 'Faction'),
 )
 
-// Computed: Filter NPC relations
-const npcRelationsList = computed(() =>
-  allRelations.value.filter((rel) => rel.to_entity_type === 'NPC'),
-)
-
-// Computed: Other NPCs (excluding current one)
-const otherNpcs = computed(() => {
-  if (!npcs.value || !editingNpc.value) return []
-  return npcs.value.filter((npc: NPC) => npc.id !== editingNpc.value?.id)
-})
-
 // New membership state
 const newMembership = ref({
   factionId: null as number | null,
@@ -2268,22 +2244,6 @@ async function removeMembership(relationId: number) {
     await loadAllRelations()
   } catch (error) {
     console.error('Failed to remove membership:', error)
-  }
-}
-
-async function removeNpcRelation(relationId: number) {
-  if (!editingNpc.value) return
-
-  try {
-    await $fetch<{ success: boolean }>(`/api/relations/${relationId}`, {
-      method: 'DELETE' as const,
-    })
-    await loadAllRelations()
-
-    // Reload counts for this NPC (relation count changed)
-    await reloadNpcCounts(editingNpc.value)
-  } catch (error) {
-    console.error('Failed to remove NPC relation:', error)
   }
 }
 

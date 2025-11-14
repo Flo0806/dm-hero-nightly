@@ -18,7 +18,7 @@ interface LoreCounts {
 export function useLoreCounts() {
   const loadingCounts = ref<Set<number>>(new Set())
   // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, LoreCounts>>({})
+  const countsMap = reactive<Record<number, LoreCounts | undefined>>({})
 
   async function loadLoreCounts(lore: Lore): Promise<void> {
     // Skip if already loading
@@ -70,7 +70,7 @@ export function useLoreCounts() {
    */
   async function reloadLoreCounts(lore: Lore): Promise<void> {
     // Remove from cache to force reload
-    delete countsMap[lore.id]
+    countsMap[lore.id] = undefined  
     loadingCounts.value.delete(lore.id)
     // Now load fresh
     await loadLoreCounts(lore)
@@ -82,7 +82,9 @@ export function useLoreCounts() {
    */
   function clearCountsCache(): void {
     // Clear all properties from reactive object
-    Object.keys(countsMap).forEach((key) => delete countsMap[Number(key)])
+    Object.keys(countsMap).forEach((key) => {
+      countsMap[Number(key)] = undefined  
+    })
     loadingCounts.value.clear()
   }
 

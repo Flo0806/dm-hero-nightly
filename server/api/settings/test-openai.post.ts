@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
     if (setting) {
       try {
         apiKey = decrypt(setting.value)
-      } catch (error) {
+      } catch {
         throw createError({
           statusCode: 500,
           message: 'Failed to decrypt API key',
