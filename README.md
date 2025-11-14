@@ -76,8 +76,7 @@ dm-hero/
 │   ├── utils/            # Database & migrations
 │   └── plugins/          # Server plugins
 ├── i18n/locales/         # German/English translations
-├── data/                 # SQLite database (gitignored)
-└── CLAUDE.md             # Comprehensive project documentation
+└── data/                 # SQLite database (gitignored)
 ```
 
 ## Database
@@ -86,8 +85,6 @@ dm-hero/
 - **FTS5** for full-text search with Unicode normalization
 - **Soft-delete** everywhere (deleted_at timestamps)
 - **Auto-backup** before each migration
-
-See [CLAUDE.md](./CLAUDE.md) for detailed schema documentation.
 
 ## Contributing
 
