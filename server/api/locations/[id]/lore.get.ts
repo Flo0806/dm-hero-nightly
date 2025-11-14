@@ -12,26 +12,43 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Get Lore linked to this Location via entity_relations
-    // Relations: from_entity_id (Lore) -> to_entity_id (Location)
+    // Get Lore linked to this Location (bidirectional)
+    // UNION: Lore where Location is 'to' (outgoing) OR Location is 'from' (incoming)
     const linkedLore = db
       .prepare(
         `
       SELECT
-        lore.id,
-        lore.name,
-        lore.description,
-        lore.image_url
+        lore.id as id,
+        lore.name as name,
+        lore.description as description,
+        lore.image_url as image_url,
+        'outgoing' as direction
       FROM entity_relations er
       INNER JOIN entities lore ON lore.id = er.from_entity_id
       INNER JOIN entity_types lt ON lt.id = lore.type_id
       WHERE er.to_entity_id = ?
         AND lt.name = 'Lore'
         AND lore.deleted_at IS NULL
-      ORDER BY lore.name ASC
+
+      UNION ALL
+
+      SELECT
+        lore.id as id,
+        lore.name as name,
+        lore.description as description,
+        lore.image_url as image_url,
+        'incoming' as direction
+      FROM entity_relations er
+      INNER JOIN entities lore ON lore.id = er.to_entity_id
+      INNER JOIN entity_types lt ON lt.id = lore.type_id
+      WHERE er.from_entity_id = ?
+        AND lt.name = 'Lore'
+        AND lore.deleted_at IS NULL
+
+      ORDER BY name ASC
     `,
       )
-      .all(locationId)
+      .all(locationId, locationId)
 
     return linkedLore
   } catch (error) {

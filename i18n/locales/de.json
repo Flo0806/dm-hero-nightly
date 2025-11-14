@@ -219,6 +219,7 @@
       "colleague": "Kollege",
       "Kollege": "Kollege"
     },
+    "incomingRelationTooltip": "Verknüpfung wurde vom anderen NPC erstellt",
     "items": "Items",
     "itemsList": "Besitz & Ausrüstung",
     "addItem": "Item hinzufügen",

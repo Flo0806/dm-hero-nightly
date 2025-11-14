@@ -58,7 +58,7 @@
             :classes="classes"
             @view="viewNpc"
             @edit="editNpc"
-            @download="(npc) => downloadImage(`/uploads/${npc.image_url}`, npc.name)"
+            @download="(npc: NPC) => downloadImage(`/uploads/${npc.image_url}`, npc.name)"
             @delete="deleteNpc"
           />
         </v-col>
@@ -120,12 +120,21 @@
           <v-tab value="npcRelations">
             <v-icon start> mdi-account-multiple </v-icon>
             {{ $t('npcs.npcRelations') }}
-            ({{ npcRelations.filter((r) => r.to_entity_type === 'NPC').length }})
+            ({{
+              npcRelations.filter(
+                (r: (typeof npcRelations)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
+              ).length
+            }})
           </v-tab>
           <v-tab value="locations">
             <v-icon start> mdi-map-marker </v-icon>
             {{ $t('npcs.linkedLocations') }}
-            ({{ npcRelations.filter((r) => r.to_entity_type === 'Location').length }})
+            ({{
+              npcRelations.filter(
+                (r: (typeof npcRelations)[0]) =>
+                  (r.related_npc_type || r.to_entity_type) === 'Location',
+              ).length
+            }})
           </v-tab>
           <v-tab value="memberships">
             <v-icon start> mdi-shield-account </v-icon>
@@ -418,14 +427,16 @@
               <v-list
                 v-if="
                   editingNpc &&
-                  npcRelations.filter((r: (typeof npcRelations)[0]) => r.to_entity_type === 'NPC').length >
-                    0
+                  npcRelations.filter(
+                    (r: (typeof npcRelations)[0]) =>
+                      (r.related_npc_type || r.to_entity_type) === 'NPC',
+                  ).length > 0
                 "
                 class="mb-3"
               >
                 <v-list-item
                   v-for="relation in npcRelations.filter(
-                    (r: (typeof npcRelations)[0]) => r.to_entity_type === 'NPC',
+                    (r: (typeof npcRelations)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
                   )"
                   :key="relation.id"
                   class="mb-2"
@@ -435,7 +446,15 @@
                     <v-icon icon="mdi-account" color="primary" />
                   </template>
                   <v-list-item-title>
-                    {{ relation.to_entity_name }}
+                    {{ relation.related_npc_name || relation.to_entity_name }}
+                    <v-chip
+                      v-if="relation.direction === 'incoming'"
+                      size="x-small"
+                      color="info"
+                      class="ml-2"
+                    >
+                      ←
+                    </v-chip>
                   </v-list-item-title>
                   <v-list-item-subtitle>
                     <v-chip size="small" class="mr-1" color="primary" variant="tonal">
@@ -446,19 +465,29 @@
                     </span>
                   </v-list-item-subtitle>
                   <template #append>
-                    <v-btn
-                      icon="mdi-pencil"
-                      variant="text"
-                      size="small"
-                      @click="editRelation(relation)"
-                    />
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeRelation(relation.id)"
-                    />
+                    <template v-if="relation.direction === 'outgoing'">
+                      <v-btn
+                        icon="mdi-pencil"
+                        variant="text"
+                        size="small"
+                        @click="editRelation(relation)"
+                      />
+                      <v-btn
+                        icon="mdi-delete"
+                        variant="text"
+                        size="small"
+                        color="error"
+                        @click="removeRelation(relation.id)"
+                      />
+                    </template>
+                    <v-tooltip v-else location="left">
+                      <template #activator="{ props }">
+                        <v-icon v-bind="props" color="info" size="small">
+                          mdi-information
+                        </v-icon>
+                      </template>
+                      {{ $t('npcs.incomingRelationTooltip') }}
+                    </v-tooltip>
                   </template>
                 </v-list-item>
               </v-list>
@@ -1841,11 +1870,17 @@ const npcStatuses = computed(() =>
 const npcRelations = ref<
   Array<{
     id: number
-    to_entity_id: number
-    to_entity_name: string
-    to_entity_type: string
+    related_npc_id: number
+    related_npc_name: string
+    related_npc_type: string
     relation_type: string
     notes: string | null
+    image_url: string | null
+    direction: 'outgoing' | 'incoming'
+    // Legacy fields for backwards compat with locations
+    to_entity_id?: number
+    to_entity_name?: string
+    to_entity_type?: string
   }>
 >([])
 
@@ -2362,14 +2397,20 @@ async function editNpc(npc: NPC) {
       }>
     >(`/api/npcs/${npc.id}/locations`)
 
-    // Map locations to the same structure as npcRelations
+    // Map locations to the same structure as npcRelations (legacy format)
     const mappedLocationRelations = locationRelations.map((loc) => ({
-      id: loc.relation_id, // Use relation_id for deleting
-      to_entity_id: loc.id, // The actual location ID
-      to_entity_name: loc.name,
-      to_entity_type: 'Location',
+      id: loc.relation_id,
+      related_npc_id: loc.id,
+      related_npc_name: loc.name,
+      related_npc_type: 'Location',
       relation_type: loc.relation_type || '',
       notes: loc.notes || null,
+      image_url: loc.image_url || null,
+      direction: 'outgoing' as const,
+      // Legacy fields for backwards compat
+      to_entity_id: loc.id,
+      to_entity_name: loc.name,
+      to_entity_type: 'Location',
     }))
 
     // Append location relations to npcRelations
@@ -2587,11 +2628,17 @@ async function addNpcRelation() {
 
     npcRelations.value.push({
       id: relation.id,
+      related_npc_id: relation.to_entity_id,
+      related_npc_name: relation.to_entity_name,
+      related_npc_type: relation.to_entity_type,
+      relation_type: relation.relation_type,
+      notes: typeof relation.notes === 'string' ? relation.notes : null,
+      image_url: null,
+      direction: 'outgoing',
+      // Legacy fields
       to_entity_id: relation.to_entity_id,
       to_entity_name: relation.to_entity_name,
       to_entity_type: relation.to_entity_type,
-      relation_type: relation.relation_type,
-      notes: typeof relation.notes === 'string' ? relation.notes : null,
     })
 
     // Reload counts to update NPC relations count badge
@@ -2628,11 +2675,17 @@ async function addLocationRelation() {
 
     npcRelations.value.push({
       id: relation.id,
+      related_npc_id: relation.to_entity_id,
+      related_npc_name: relation.to_entity_name,
+      related_npc_type: relation.to_entity_type,
+      relation_type: relation.relation_type,
+      notes: typeof relation.notes === 'string' ? relation.notes : null,
+      image_url: null,
+      direction: 'outgoing',
+      // Legacy fields
       to_entity_id: relation.to_entity_id,
       to_entity_name: relation.to_entity_name,
       to_entity_type: relation.to_entity_type,
-      relation_type: relation.relation_type,
-      notes: typeof relation.notes === 'string' ? relation.notes : null,
     })
 
     // Reload counts to update location count badge
@@ -2675,10 +2728,11 @@ async function saveRelation() {
       },
     })
 
-    // Update in local array
+    // Update in local array - only update relation_type and notes
     const index = npcRelations.value.findIndex((r) => r.id === editingRelation.value!.id)
-    if (index !== -1) {
-      npcRelations.value[index] = updated as (typeof npcRelations.value)[0]
+    if (index !== -1 && npcRelations.value[index]) {
+      npcRelations.value[index].relation_type = updated.relation_type
+      npcRelations.value[index].notes = typeof updated.notes === 'string' ? updated.notes : null
     }
 
     closeEditRelationDialog()
@@ -2731,6 +2785,7 @@ function closeDialog() {
   newNpcRelation.value = {
     npcId: null,
     relationType: '',
+    notes: '',
   }
   npcForm.value = {
     name: '',

@@ -19,9 +19,11 @@ export default defineEventHandler(async (event) => {
     notes: string | null
     created_at: string
     location_name: string
+    direction: 'outgoing' | 'incoming'
   }
 
-  // Get all locations that have a relation FROM this faction
+  // Get Locations linked to this Faction (bidirectional)
+  // UNION: Locations where Faction is 'from' (outgoing) OR Faction is 'to' (incoming)
   const locations = db
     .prepare<unknown[], DbLocation>(
       `
@@ -32,15 +34,37 @@ export default defineEventHandler(async (event) => {
       er.relation_type,
       er.notes,
       er.created_at,
-      e.name as location_name
+      e.name as location_name,
+      'outgoing' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.to_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
     WHERE er.from_entity_id = ?
+      AND et.name = 'Location'
       AND e.deleted_at IS NULL
-    ORDER BY e.name ASC
+
+    UNION ALL
+
+    SELECT
+      er.id,
+      er.from_entity_id,
+      er.to_entity_id,
+      er.relation_type,
+      er.notes,
+      er.created_at,
+      e.name as location_name,
+      'incoming' as direction
+    FROM entity_relations er
+    INNER JOIN entities e ON er.from_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
+    WHERE er.to_entity_id = ?
+      AND et.name = 'Location'
+      AND e.deleted_at IS NULL
+
+    ORDER BY location_name ASC
   `,
     )
-    .all(factionId)
+    .all(factionId, factionId)
 
   return locations.map((location) => ({
     ...location,

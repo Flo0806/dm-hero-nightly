@@ -12,22 +12,41 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    // Get Lore linked to this Faction (bidirectional)
+    // UNION: Lore where Faction is 'to' (outgoing) OR Faction is 'from' (incoming)
     const linkedLore = db
       .prepare(`
         SELECT
-          lore.id,
-          lore.name,
-          lore.description,
-          lore.image_url
+          lore.id as id,
+          lore.name as name,
+          lore.description as description,
+          lore.image_url as image_url,
+          'outgoing' as direction
         FROM entity_relations er
         INNER JOIN entities lore ON lore.id = er.from_entity_id
         INNER JOIN entity_types lt ON lt.id = lore.type_id
         WHERE er.to_entity_id = ?
           AND lt.name = 'Lore'
           AND lore.deleted_at IS NULL
-        ORDER BY lore.name ASC
+
+        UNION ALL
+
+        SELECT
+          lore.id as id,
+          lore.name as name,
+          lore.description as description,
+          lore.image_url as image_url,
+          'incoming' as direction
+        FROM entity_relations er
+        INNER JOIN entities lore ON lore.id = er.to_entity_id
+        INNER JOIN entity_types lt ON lt.id = lore.type_id
+        WHERE er.from_entity_id = ?
+          AND lt.name = 'Lore'
+          AND lore.deleted_at IS NULL
+
+        ORDER BY name ASC
       `)
-      .all(factionId)
+      .all(factionId, factionId)
 
     return linkedLore
   } catch (error) {

@@ -19,9 +19,11 @@ export default defineEventHandler(async (event) => {
     notes: string | null
     created_at: string
     npc_name: string
+    direction: 'outgoing' | 'incoming'
   }
 
-  // Get all NPCs that have a relation TO this faction
+  // Get NPCs linked to this Faction (bidirectional)
+  // UNION: NPCs where Faction is 'to' (outgoing) OR Faction is 'from' (incoming)
   const members = db
     .prepare<unknown[], DbMember>(
       `
@@ -32,15 +34,37 @@ export default defineEventHandler(async (event) => {
       er.relation_type,
       er.notes,
       er.created_at,
-      e.name as npc_name
+      e.name as npc_name,
+      'outgoing' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.from_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
     WHERE er.to_entity_id = ?
+      AND et.name = 'NPC'
       AND e.deleted_at IS NULL
-    ORDER BY e.name ASC
+
+    UNION ALL
+
+    SELECT
+      er.id,
+      er.from_entity_id,
+      er.to_entity_id,
+      er.relation_type,
+      er.notes,
+      er.created_at,
+      e.name as npc_name,
+      'incoming' as direction
+    FROM entity_relations er
+    INNER JOIN entities e ON er.to_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
+    WHERE er.from_entity_id = ?
+      AND et.name = 'NPC'
+      AND e.deleted_at IS NULL
+
+    ORDER BY npc_name ASC
   `,
     )
-    .all(factionId)
+    .all(factionId, factionId)
 
   return members.map((member) => ({
     ...member,

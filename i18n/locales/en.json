@@ -215,6 +215,7 @@
       "colleague": "Colleague",
       "Kollege": "Colleague"
     },
+    "incomingRelationTooltip": "Relation created by the other NPC",
     "items": "Items",
     "itemsList": "Possessions & Equipment",
     "addItem": "Add Item",

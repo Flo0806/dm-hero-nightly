@@ -11,24 +11,45 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Get all NPCs related to this location via entity_relations
+  // Get NPCs linked to this location (bidirectional)
+  // UNION: NPCs where Location is 'to' (outgoing) OR Location is 'from' (incoming)
   const npcs = db
     .prepare(
       `
     SELECT
       e.*,
       er.relation_type,
-      er.notes as relation_notes
+      er.notes as relation_notes,
+      'outgoing' as direction
     FROM entities e
     INNER JOIN entity_relations er ON e.id = er.from_entity_id
     INNER JOIN entity_types et ON e.type_id = et.id
     WHERE er.to_entity_id = ?
       AND et.name = 'NPC'
       AND e.deleted_at IS NULL
-    ORDER BY e.name ASC
+
+    UNION ALL
+
+    SELECT
+      e.*,
+      er.relation_type,
+      er.notes as relation_notes,
+      'incoming' as direction
+    FROM entities e
+    INNER JOIN entity_relations er ON e.id = er.to_entity_id
+    INNER JOIN entity_types et ON e.type_id = et.id
+    WHERE er.from_entity_id = ?
+      AND et.name = 'NPC'
+      AND e.deleted_at IS NULL
+
+    ORDER BY name ASC
   `,
     )
-    .all(locationId) as Array<{ metadata?: string | null; [key: string]: unknown }>
+    .all(locationId, locationId) as Array<{
+    metadata?: string | null
+    direction: 'outgoing' | 'incoming'
+    [key: string]: unknown
+  }>
 
   return npcs.map((npc) => ({
     ...npc,

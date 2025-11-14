@@ -18,9 +18,11 @@ export default defineEventHandler(async (event) => {
     relation_type: string
     notes: string | null
     created_at: string
-    to_entity_name: string
-    to_entity_type: string
-    to_entity_image_url: string | null
+    related_npc_id: number
+    related_npc_name: string
+    related_npc_type: string
+    related_npc_image_url: string | null
+    direction: 'outgoing' | 'incoming'
   }
 
   // Get the NPC entity type ID
@@ -35,8 +37,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // DEBUG: Log query parameters
-  // Get all NPC-to-NPC relations where this NPC is the 'from' entity
+  // Get bidirectional NPC-to-NPC relations
+  // UNION: Relations where this NPC is 'from' (outgoing) OR 'to' (incoming)
   const relations = db
     .prepare<unknown[], DbRelation>(
       `
@@ -47,19 +49,43 @@ export default defineEventHandler(async (event) => {
       er.relation_type,
       er.notes,
       er.created_at,
-      e.name as to_entity_name,
-      et.name as to_entity_type,
-      e.image_url as to_entity_image_url
+      e.id as related_npc_id,
+      e.name as related_npc_name,
+      et.name as related_npc_type,
+      e.image_url as related_npc_image_url,
+      'outgoing' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.to_entity_id = e.id
     INNER JOIN entity_types et ON e.type_id = et.id
     WHERE er.from_entity_id = ?
       AND e.type_id = ?
       AND e.deleted_at IS NULL
-    ORDER BY e.name
+
+    UNION ALL
+
+    SELECT
+      er.id,
+      er.from_entity_id,
+      er.to_entity_id,
+      er.relation_type,
+      er.notes,
+      er.created_at,
+      e.id as related_npc_id,
+      e.name as related_npc_name,
+      et.name as related_npc_type,
+      e.image_url as related_npc_image_url,
+      'incoming' as direction
+    FROM entity_relations er
+    INNER JOIN entities e ON er.from_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
+    WHERE er.to_entity_id = ?
+      AND e.type_id = ?
+      AND e.deleted_at IS NULL
+
+    ORDER BY related_npc_name
   `,
     )
-    .all(npcId, npcTypeId.id)
+    .all(npcId, npcTypeId.id, npcId, npcTypeId.id)
 
   return relations.map((rel) => {
     // Parse notes safely - handle both JSON and plain text
@@ -75,12 +101,13 @@ export default defineEventHandler(async (event) => {
 
     return {
       id: rel.id, // Relation ID for editing/deleting
-      to_entity_id: rel.to_entity_id, // The related NPC's ID
-      to_entity_name: rel.to_entity_name,
-      to_entity_type: rel.to_entity_type, // 'NPC'
+      related_npc_id: rel.related_npc_id,
+      related_npc_name: rel.related_npc_name,
+      related_npc_type: rel.related_npc_type,
       relation_type: rel.relation_type,
       notes: parsedNotes,
-      image_url: rel.to_entity_image_url,
+      image_url: rel.related_npc_image_url,
+      direction: rel.direction,
     }
   })
 })

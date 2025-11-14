@@ -25,17 +25,39 @@ export default defineEventHandler((event) => {
     name: string
     description: string | null
     image_url: string | null
+    direction: 'outgoing' | 'incoming'
   }
 
-  // Get all Items linked to this Lore entry (bidirectional)
+  // Get Items linked to this Lore entry (bidirectional)
+  // UNION: Items where Lore is 'from' (outgoing) OR Lore is 'to' (incoming)
   const items = db
     .prepare<unknown[], ItemRow>(
       `
     SELECT DISTINCT
-      e.id,
-      e.name,
-      e.description,
-      ei.image_url
+      e.id as id,
+      e.name as name,
+      e.description as description,
+      ei.image_url as image_url,
+      'outgoing' as direction
+    FROM entity_relations er
+    INNER JOIN entities e ON e.id = er.to_entity_id
+    LEFT JOIN (
+      SELECT entity_id, image_url
+      FROM entity_images
+      WHERE is_primary = 1
+    ) ei ON ei.entity_id = e.id
+    WHERE er.from_entity_id = ?
+      AND e.type_id = ?
+      AND e.deleted_at IS NULL
+
+    UNION ALL
+
+    SELECT DISTINCT
+      e.id as id,
+      e.name as name,
+      e.description as description,
+      ei.image_url as image_url,
+      'incoming' as direction
     FROM entity_relations er
     INNER JOIN entities e ON e.id = er.from_entity_id
     LEFT JOIN (
@@ -46,10 +68,11 @@ export default defineEventHandler((event) => {
     WHERE er.to_entity_id = ?
       AND e.type_id = ?
       AND e.deleted_at IS NULL
-    ORDER BY e.name ASC
+
+    ORDER BY name ASC
   `,
     )
-    .all(loreId, itemType.id)
+    .all(loreId, itemType.id, loreId, itemType.id)
 
   return items
 })

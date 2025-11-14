@@ -2,25 +2,25 @@ import { getDb } from '../../../utils/db'
 
 export default defineEventHandler((event) => {
   const db = getDb()
-  const itemId = getRouterParam(event, 'id')
+  const loreId = getRouterParam(event, 'id')
 
-  if (!itemId) {
+  if (!loreId) {
     throw createError({
       statusCode: 400,
-      message: 'Item ID is required',
+      message: 'Lore ID is required',
     })
   }
 
-  // Get Lore entity type ID
-  const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
+  // Get NPC entity type ID
+  const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
     | { id: number }
     | undefined
 
-  if (!loreType) {
+  if (!npcType) {
     return []
   }
 
-  interface LoreRow {
+  interface NpcRow {
     id: number
     name: string
     description: string | null
@@ -28,10 +28,10 @@ export default defineEventHandler((event) => {
     direction: 'outgoing' | 'incoming'
   }
 
-  // Get Lore entries linked to this Item (bidirectional)
-  // UNION: Lore where Item is 'from' (outgoing) OR Item is 'to' (incoming)
-  const loreEntries = db
-    .prepare<unknown[], LoreRow>(
+  // Get NPCs linked to this Lore entry (bidirectional)
+  // UNION: NPCs where Lore is 'from' (outgoing) OR Lore is 'to' (incoming)
+  const npcs = db
+    .prepare<unknown[], NpcRow>(
       `
     SELECT DISTINCT
       e.id as id,
@@ -72,7 +72,7 @@ export default defineEventHandler((event) => {
     ORDER BY name ASC
   `,
     )
-    .all(itemId, loreType.id, itemId, loreType.id)
+    .all(loreId, npcType.id, loreId, npcType.id)
 
-  return loreEntries
+  return npcs
 })

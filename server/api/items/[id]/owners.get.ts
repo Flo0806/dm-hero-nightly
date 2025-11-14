@@ -19,9 +19,11 @@ export default defineEventHandler(async (event) => {
     notes: string | null
     created_at: string
     npc_name: string
+    direction: 'outgoing' | 'incoming'
   }
 
-  // Get all NPCs that have a relation TO this item
+  // Get NPCs linked to this Item (bidirectional)
+  // UNION: NPCs where Item is 'to' (outgoing) OR Item is 'from' (incoming)
   const owners = db
     .prepare<unknown[], DbOwner>(
       `
@@ -32,15 +34,37 @@ export default defineEventHandler(async (event) => {
       er.relation_type,
       er.notes,
       er.created_at,
-      e.name as npc_name
+      e.name as npc_name,
+      'outgoing' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.from_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
     WHERE er.to_entity_id = ?
+      AND et.name = 'NPC'
       AND e.deleted_at IS NULL
-    ORDER BY e.name ASC
+
+    UNION ALL
+
+    SELECT
+      er.id,
+      er.from_entity_id,
+      er.to_entity_id,
+      er.relation_type,
+      er.notes,
+      er.created_at,
+      e.name as npc_name,
+      'incoming' as direction
+    FROM entity_relations er
+    INNER JOIN entities e ON er.to_entity_id = e.id
+    INNER JOIN entity_types et ON e.type_id = et.id
+    WHERE er.from_entity_id = ?
+      AND et.name = 'NPC'
+      AND e.deleted_at IS NULL
+
+    ORDER BY npc_name ASC
   `,
     )
-    .all(itemId)
+    .all(itemId, itemId)
 
   return owners.map((owner) => ({
     ...owner,
