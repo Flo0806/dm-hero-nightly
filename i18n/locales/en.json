@@ -370,7 +370,16 @@
       "chaotic_neutral": "Chaotic Neutral",
       "lawful_evil": "Lawful Evil",
       "neutral_evil": "Neutral Evil",
-      "chaotic_evil": "Chaotic Evil"
+      "chaotic_evil": "Chaotic Evil",
+      "Rechtschaffen Gut": "Lawful Good",
+      "Neutral Gut": "Neutral Good",
+      "Chaotisch Gut": "Chaotic Good",
+      "Rechtschaffen Neutral": "Lawful Neutral",
+      "Neutral": "True Neutral",
+      "Chaotisch Neutral": "Chaotic Neutral",
+      "Rechtschaffen Böse": "Lawful Evil",
+      "Neutral Böse": "Neutral Evil",
+      "Chaotisch Böse": "Chaotic Evil"
     },
     "oldBadgeTooltips": {
       "relations": "Linked NPCs",

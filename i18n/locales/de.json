@@ -374,7 +374,16 @@
       "chaotic_neutral": "Chaotisch Neutral",
       "lawful_evil": "Rechtschaffen Böse",
       "neutral_evil": "Neutral Böse",
-      "chaotic_evil": "Chaotisch Böse"
+      "chaotic_evil": "Chaotisch Böse",
+      "Rechtschaffen Gut": "Rechtschaffen Gut",
+      "Neutral Gut": "Neutral Gut",
+      "Chaotisch Gut": "Chaotisch Gut",
+      "Rechtschaffen Neutral": "Rechtschaffen Neutral",
+      "Neutral": "Neutral",
+      "Chaotisch Neutral": "Chaotisch Neutral",
+      "Rechtschaffen Böse": "Rechtschaffen Böse",
+      "Neutral Böse": "Neutral Böse",
+      "Chaotisch Böse": "Chaotisch Böse"
     },
     "linkedLore": "Verknüpftes Wissen",
     "noLinkedLore": "Kein verknüpftes Wissen",
