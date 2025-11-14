@@ -31,3 +31,6 @@ data/
 
 # Uplaods
 uploads/
+
+# Private project documentation (keep local only)
+CLAUDE.md
