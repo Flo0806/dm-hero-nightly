@@ -51,62 +51,14 @@
       <!-- Lore Cards -->
       <v-row>
         <v-col v-for="loreEntry in filteredLore" :key="loreEntry.id" cols="12" md="6" lg="4">
-          <v-card
-            :id="`lore-${loreEntry.id}`"
-            hover
-            :class="[
-              'h-100 d-flex flex-column',
-              { 'highlighted-card': highlightedId === loreEntry.id },
-            ]"
-          >
-            <v-card-title class="d-flex align-center">
-              <v-icon icon="mdi-book-open-variant" class="mr-2" color="primary" />
-              {{ loreEntry.name }}
-              <v-spacer />
-              <v-chip
-                v-if="loreEntry.metadata?.type"
-                :color="getTypeColor(loreEntry.metadata.type)"
-                size="small"
-              >
-                {{ $t(`lore.types.${loreEntry.metadata.type}`) }}
-              </v-chip>
-            </v-card-title>
-            <v-card-text class="flex-grow-1">
-              <div
-                v-if="loreEntry.image_url"
-                class="float-right ml-3 mb-2 position-relative image-container"
-                style="width: 80px; height: 80px"
-              >
-                <v-avatar size="80" rounded="lg">
-                  <v-img :src="`/uploads/${loreEntry.image_url}`" cover />
-                </v-avatar>
-                <v-btn
-                  icon="mdi-download"
-                  size="x-small"
-                  variant="tonal"
-                  class="image-download-btn"
-                  @click.stop="downloadImage(`/uploads/${loreEntry.image_url}`, loreEntry.name)"
-                />
-              </div>
-              <div v-if="loreEntry.metadata?.date" class="text-caption mb-2">
-                <v-icon icon="mdi-calendar" size="small" class="mr-1" />
-                {{ loreEntry.metadata.date }}
-              </div>
-              <div v-if="loreEntry.description" class="text-body-2 mb-3">
-                {{ truncateText(loreEntry.description, 100) }}
-              </div>
-            </v-card-text>
-            <v-card-actions>
-              <v-btn icon="mdi-pencil" variant="text" @click="editLore(loreEntry)" />
-              <v-spacer />
-              <v-btn
-                icon="mdi-delete"
-                variant="text"
-                color="error"
-                @click="confirmDelete(loreEntry)"
-              />
-            </v-card-actions>
-          </v-card>
+          <LoreCard
+            :lore="loreEntry"
+            :is-highlighted="highlightedId === loreEntry.id"
+            @view="viewLore"
+            @edit="editLore"
+            @download="(lore) => downloadImage(`/uploads/${lore.image_url}`, lore.name)"
+            @delete="confirmDelete"
+          />
         </v-col>
       </v-row>
     </div>
@@ -141,11 +93,11 @@
           </v-tab>
           <v-tab value="images">
             <v-icon start> mdi-image-multiple </v-icon>
-            {{ $t('common.images') }}
+            {{ $t('common.images') }} ({{ editingLore._counts?.images ?? 0 }})
           </v-tab>
           <v-tab value="documents">
             <v-icon start> mdi-file-document </v-icon>
-            {{ $t('documents.title') }}
+            {{ $t('documents.title') }} ({{ editingLore._counts?.documents ?? 0 }})
           </v-tab>
           <v-tab value="factions">
             <v-icon start> mdi-shield-account </v-icon>
@@ -208,12 +160,18 @@
                 :entity-description="editingLore.description || undefined"
                 @preview-image="openImagePreview"
                 @generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
+                @images-updated="handleImagesUpdated"
               />
             </v-tabs-window-item>
 
             <!-- Documents Tab -->
             <v-tabs-window-item value="documents">
-              <EntityDocuments v-if="editingLore" :entity-id="editingLore.id" entity-type="Lore" />
+              <EntityDocuments
+                v-if="editingLore"
+                :entity-id="editingLore.id"
+                entity-type="Lore"
+                @changed="handleDocumentsChanged"
+              />
             </v-tabs-window-item>
 
             <!-- Factions Tab -->
@@ -492,7 +450,9 @@
 <script setup lang="ts">
 import type { Lore } from '../../../types/lore'
 import { LORE_TYPES } from '../../../types/lore'
+import LoreCard from '~/components/lore/LoreCard.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
+import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 
 // Composables
@@ -502,6 +462,7 @@ const router = useRouter()
 const campaignStore = useCampaignStore()
 const entitiesStore = useEntitiesStore()
 const { downloadImage } = useImageDownload()
+const { loadLoreCountsBatch, reloadLoreCounts } = useLoreCounts()
 
 // Refs for search
 const searchQuery = ref('')
@@ -510,6 +471,9 @@ const searching = ref(false)
 
 // Get active campaign from store
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
+
+// Get lore from store
+const lore = computed(() => entitiesStore.lore)
 
 // Refs for dialogs and forms
 const showCreateDialog = ref(false)
@@ -562,11 +526,17 @@ onMounted(async () => {
     return
   }
 
-  // Load Factions and Items for linking
+  // Load Lore, Factions and Items
   await Promise.all([
+    entitiesStore.fetchLore(activeCampaignId.value),
     entitiesStore.fetchFactions(activeCampaignId.value),
     entitiesStore.fetchItems(activeCampaignId.value),
   ])
+
+  // Load counts for all lore entries in background
+  if (lore.value && lore.value.length > 0) {
+    loadLoreCountsBatch(lore.value)
+  }
 
   // Handle highlight query parameter
   const highlightParam = route.query.highlight
@@ -587,17 +557,8 @@ onMounted(async () => {
   }
 })
 
-// Fetch lore entries
-const {
-  data: lore,
-  pending,
-  refresh,
-} = await useFetch<Lore[]>('/api/lore', {
-  query: {
-    campaignId: activeCampaignId,
-  },
-  watch: [activeCampaignId],
-})
+// Loading state from store
+const pending = computed(() => entitiesStore.loreLoading)
 
 // Debounced search
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -675,6 +636,11 @@ function openImagePreview(url: string, name: string) {
   showImagePreview.value = true
 }
 
+// View lore entry
+function viewLore(loreEntry: Lore) {
+  editLore(loreEntry)
+}
+
 // Edit lore entry
 function editLore(loreEntry: Lore) {
   editingLore.value = loreEntry
@@ -712,6 +678,7 @@ async function saveLore() {
     if (formData.value.type) metadata.type = formData.value.type
     if (formData.value.date) metadata.date = formData.value.date
 
+    let loreId: number
     if (editingLore.value) {
       // Update existing lore
       await $fetch(`/api/lore/${editingLore.value.id}`, {
@@ -722,9 +689,10 @@ async function saveLore() {
           metadata: Object.keys(metadata).length > 0 ? metadata : null,
         },
       })
+      loreId = editingLore.value.id
     } else {
       // Create new lore
-      await $fetch('/api/lore', {
+      const newLore = await $fetch<Lore>('/api/lore', {
         method: 'POST',
         body: {
           name: formData.value.name,
@@ -733,9 +701,30 @@ async function saveLore() {
           campaignId: activeCampaignId.value,
         },
       })
+      loreId = newLore.id
     }
 
-    await refresh()
+    if (activeCampaignId.value) {
+      await entitiesStore.fetchLore(activeCampaignId.value, true)
+    }
+
+    // If user is searching, re-execute search to update FTS5 results
+    if (searchQuery.value && searchQuery.value.trim().length > 0) {
+      const results = await $fetch<Lore[]>('/api/lore', {
+        query: {
+          campaignId: activeCampaignId.value,
+          search: searchQuery.value.trim(),
+        },
+      })
+      searchResults.value = results
+    }
+
+    // Reload counts for the saved Lore (get from lore.value, not API response)
+    const loreFromList = lore.value?.find((l) => l.id === loreId)
+    if (loreFromList) {
+      await reloadLoreCounts(loreFromList)
+    }
+
     closeCreateDialog()
   } catch (error) {
     console.error('Failed to save lore:', error)
@@ -760,7 +749,9 @@ async function deleteLore() {
       method: 'DELETE',
     })
 
-    await refresh()
+    if (activeCampaignId.value) {
+      await entitiesStore.fetchLore(activeCampaignId.value, true)
+    }
     showDeleteDialog.value = false
     loreToDelete.value = null
   } catch (error) {
@@ -882,15 +873,40 @@ async function removeItemRelation(itemId: number) {
   }
 }
 
+// Handle images updated event (from EntityImageGallery)
+async function handleImagesUpdated() {
+  if (editingLore.value) {
+    await reloadLoreCounts(editingLore.value)
+  }
+}
+
+// Handle documents changed event (from EntityDocuments)
+async function handleDocumentsChanged() {
+  if (editingLore.value) {
+    await reloadLoreCounts(editingLore.value)
+  }
+}
+
 // Watch for editing lore to load linked factions and items (MUST be after editingLore declaration!)
 watch(
   () => editingLore.value?.id,
   async (loreId) => {
-    if (loreId) {
-      await Promise.all([loadLinkedFactions(), loadLinkedItems()])
+    if (loreId && editingLore.value) {
+      await Promise.all([
+        loadLinkedFactions(),
+        loadLinkedItems(),
+        reloadLoreCounts(editingLore.value),
+      ])
     }
   },
 )
+
+// Watch for tab changes to reload counts (user might have added/deleted images/documents)
+watch(loreDialogTab, async () => {
+  if (editingLore.value) {
+    await reloadLoreCounts(editingLore.value)
+  }
+})
 </script>
 
 <style scoped>
