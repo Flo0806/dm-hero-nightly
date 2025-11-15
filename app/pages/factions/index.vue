@@ -392,20 +392,15 @@ function initializeFromQuery() {
 
 const { loadFactionCountsBatch, reloadFactionCounts } = useFactionCounts()
 
-// Check if campaign is selected
+// Load entities on mount
 onMounted(async () => {
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   // Load entities for this campaign
   await Promise.all([
-    entitiesStore.fetchFactions(activeCampaignId.value),
-    entitiesStore.fetchLocations(activeCampaignId.value),
-    entitiesStore.fetchNPCs(activeCampaignId.value),
-    entitiesStore.fetchItems(activeCampaignId.value),
-    entitiesStore.fetchLore(activeCampaignId.value),
+    entitiesStore.fetchFactions(activeCampaignId.value!),
+    entitiesStore.fetchLocations(activeCampaignId.value!),
+    entitiesStore.fetchNPCs(activeCampaignId.value!),
+    entitiesStore.fetchItems(activeCampaignId.value!),
+    entitiesStore.fetchLore(activeCampaignId.value!),
   ])
 
   // Load counts for all factions in background (non-blocking)
@@ -462,7 +457,7 @@ let abortController: AbortController | null = null
 
 // Search execution function
 async function executeSearch(query: string) {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   // Abort previous search if still running
   if (abortController) {
@@ -646,7 +641,7 @@ function deleteFaction(faction: Faction) {
 }
 
 async function saveFaction() {
-  if (!factionForm.value.name || !activeCampaignId.value) return
+  if (!factionForm.value.name || !activeCampaignId.value!) return
 
   saving.value = true
 
@@ -1054,8 +1049,8 @@ async function generateImage() {
       editingFaction.value.image_url = filename
 
       // Reload factions from server to get updated data
-      if (activeCampaignId.value) {
-        await entitiesStore.fetchFactions(activeCampaignId.value)
+      if (activeCampaignId.value!) {
+        await entitiesStore.fetchFactions(activeCampaignId.value!)
       }
     }
   } catch (error: unknown) {

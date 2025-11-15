@@ -899,17 +899,12 @@ function initializeFromQuery() {
 const { loadItemCountsBatch, reloadItemCounts } = useItemCounts()
 
 onMounted(async () => {
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   await Promise.all([
-    entitiesStore.fetchItems(activeCampaignId.value),
-    entitiesStore.fetchNPCs(activeCampaignId.value),
-    entitiesStore.fetchLocations(activeCampaignId.value),
-    entitiesStore.fetchFactions(activeCampaignId.value),
-    entitiesStore.fetchLore(activeCampaignId.value),
+    entitiesStore.fetchItems(activeCampaignId.value!),
+    entitiesStore.fetchNPCs(activeCampaignId.value!),
+    entitiesStore.fetchLocations(activeCampaignId.value!),
+    entitiesStore.fetchFactions(activeCampaignId.value!),
+    entitiesStore.fetchLore(activeCampaignId.value!),
   ])
 
   // Load counts for all items in background (non-blocking)
@@ -967,7 +962,7 @@ let abortController: AbortController | null = null
 
 // Search execution function
 async function executeSearch(query: string) {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   // Abort previous search if still running
   if (abortController) {
@@ -1227,7 +1222,7 @@ function deleteItem(item: Item) {
 }
 
 async function saveItem() {
-  if (!itemForm.value.name || !activeCampaignId.value) return
+  if (!itemForm.value.name || !activeCampaignId.value!) return
 
   saving.value = true
 

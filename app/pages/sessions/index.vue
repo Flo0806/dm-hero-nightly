@@ -795,18 +795,13 @@ const editorTheme = computed<'light' | 'dark'>(() =>
 )
 
 onMounted(async () => {
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   await Promise.all([
     loadSessions(),
-    entitiesStore.fetchNPCs(activeCampaignId.value),
-    entitiesStore.fetchLocations(activeCampaignId.value),
-    entitiesStore.fetchItems(activeCampaignId.value),
-    entitiesStore.fetchFactions(activeCampaignId.value),
-    entitiesStore.fetchLore(activeCampaignId.value),
+    entitiesStore.fetchNPCs(activeCampaignId.value!),
+    entitiesStore.fetchLocations(activeCampaignId.value!),
+    entitiesStore.fetchItems(activeCampaignId.value!),
+    entitiesStore.fetchFactions(activeCampaignId.value!),
+    entitiesStore.fetchLore(activeCampaignId.value!),
   ])
 })
 
@@ -967,7 +962,7 @@ const extractedMentions = computed(() => {
 })
 
 async function loadSessions() {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   pending.value = true
   try {
@@ -1185,7 +1180,7 @@ function deleteSession(session: Session) {
 }
 
 async function saveSession() {
-  if (!sessionForm.value.title || !activeCampaignId.value) return
+  if (!sessionForm.value.title || !activeCampaignId.value!) return
 
   saving.value = true
 

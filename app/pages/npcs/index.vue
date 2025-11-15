@@ -383,21 +383,13 @@ const activeCampaignId = computed(() => campaignStore.activeCampaignId)
 
 // Check if campaign is selected
 onMounted(async () => {
-  // Initialize campaign from cookie
-  campaignStore.initFromCookie()
-
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   // Load entities for this campaign
   await Promise.all([
-    entitiesStore.fetchNPCs(activeCampaignId.value),
-    entitiesStore.fetchLocations(activeCampaignId.value),
-    entitiesStore.fetchFactions(activeCampaignId.value),
-    entitiesStore.fetchItems(activeCampaignId.value),
-    entitiesStore.fetchLore(activeCampaignId.value),
+    entitiesStore.fetchNPCs(activeCampaignId.value!),
+    entitiesStore.fetchLocations(activeCampaignId.value!),
+    entitiesStore.fetchFactions(activeCampaignId.value!),
+    entitiesStore.fetchItems(activeCampaignId.value!),
+    entitiesStore.fetchLore(activeCampaignId.value!),
   ])
 
   // Load races and classes for dropdowns
@@ -558,7 +550,7 @@ let abortController: AbortController | null = null
 
 // Search execution function (extracted for reuse)
 async function executeSearch(query: string) {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   // Abort previous search if still running
   if (abortController) {
@@ -1076,7 +1068,7 @@ function editNote(note: (typeof npcNotes.value)[0]) {
 }
 
 async function saveNote() {
-  if (!editingNpc.value || !activeCampaignId.value) return
+  if (!editingNpc.value || !activeCampaignId.value!) return
 
   savingNote.value = true
 
@@ -1513,7 +1505,7 @@ async function generateName() {
 }
 
 async function saveNpc() {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   saving.value = true
 

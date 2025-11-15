@@ -913,18 +913,12 @@ const npcsForSelect = computed(() => {
 
 // Check for active campaign and handle highlighting
 onMounted(async () => {
-  // Redirect to campaigns if no active campaign
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   // Load Lore, Factions, Items and Locations
   await Promise.all([
-    entitiesStore.fetchLore(activeCampaignId.value),
-    entitiesStore.fetchFactions(activeCampaignId.value),
-    entitiesStore.fetchItems(activeCampaignId.value),
-    entitiesStore.fetchLocations(activeCampaignId.value),
+    entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchFactions(activeCampaignId.value!),
+    entitiesStore.fetchItems(activeCampaignId.value!),
+    entitiesStore.fetchLocations(activeCampaignId.value!),
   ])
 
   // Load counts for all lore entries in background
@@ -1111,7 +1105,7 @@ async function saveLore() {
       loreId = newLore.id
     }
 
-    if (activeCampaignId.value) {
+    if (activeCampaignId.value!) {
       await entitiesStore.fetchLore(activeCampaignId.value, true)
     }
 
@@ -1156,7 +1150,7 @@ async function deleteLore() {
       method: 'DELETE',
     })
 
-    if (activeCampaignId.value) {
+    if (activeCampaignId.value!) {
       await entitiesStore.fetchLore(activeCampaignId.value, true)
     }
     showDeleteDialog.value = false

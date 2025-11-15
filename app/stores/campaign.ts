@@ -33,14 +33,21 @@ export const useCampaignStore = defineStore('campaign', {
     },
 
     // Set active campaign
-    setActiveCampaign(campaignId: number | string) {
+    async setActiveCampaign(campaignId: number | string, campaignName?: string) {
       this.activeCampaignId = String(campaignId)
       const activeCampaignId = useCookie('activeCampaignId', {
         maxAge: 60 * 60 * 24 * 365, // 1 year
       })
       activeCampaignId.value = String(campaignId)
+
       // Load campaign details
-      this.loadCurrentCampaign()
+      await this.loadCurrentCampaign()
+
+      // Store campaign name in cookie (either from parameter or from loaded campaign)
+      const activeCampaignName = useCookie('activeCampaignName', {
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+      })
+      activeCampaignName.value = campaignName || this.currentCampaign?.name || ''
     },
 
     // Clear active campaign
@@ -60,15 +67,11 @@ export const useCampaignStore = defineStore('campaign', {
       try {
         const campaign = await $fetch<Campaign>(`/api/campaigns/${this.activeCampaignId}`)
         this.currentCampaign = campaign
-        // Also store campaign name in cookie
-        const activeCampaignName = useCookie('activeCampaignName', {
-          maxAge: 60 * 60 * 24 * 365, // 1 year
-        })
-        activeCampaignName.value = campaign.name
       } catch (error) {
         console.error('Failed to load current campaign:', error)
-        // If campaign doesn't exist, clear it
-        this.clearActiveCampaign()
+        // If campaign doesn't exist, clear it from state only
+        this.activeCampaignId = null
+        this.currentCampaign = null
       }
     },
 

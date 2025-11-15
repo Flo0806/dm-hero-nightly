@@ -880,21 +880,13 @@ function initializeFromQuery() {
 }
 
 onMounted(async () => {
-  // Initialize campaign from cookie
-  campaignStore.initFromCookie()
-
-  if (!activeCampaignId.value) {
-    router.push('/campaigns')
-    return
-  }
-
   // Load locations from store (cached)
-  await entitiesStore.fetchLocations(activeCampaignId.value)
+  await entitiesStore.fetchLocations(activeCampaignId.value!)
 
   // Load NPCs, Lore, and Items for linking
-  await entitiesStore.fetchNPCs(activeCampaignId.value)
-  await entitiesStore.fetchLore(activeCampaignId.value)
-  await entitiesStore.fetchItems(activeCampaignId.value)
+  await entitiesStore.fetchNPCs(activeCampaignId.value!)
+  await entitiesStore.fetchLore(activeCampaignId.value!)
+  await entitiesStore.fetchItems(activeCampaignId.value!)
 
   // Initialize from query params
   initializeFromQuery()
@@ -977,7 +969,7 @@ let abortController: AbortController | null = null
 
 // Search execution function
 async function executeSearch(query: string) {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   // Abort previous search if still running
   if (abortController) {
@@ -1437,8 +1429,8 @@ async function generateImage() {
       await loadLocationImages()
 
       // Refresh locations to update the list
-      if (activeCampaignId.value) {
-        await entitiesStore.fetchLocations(activeCampaignId.value)
+      if (activeCampaignId.value!) {
+        await entitiesStore.fetchLocations(activeCampaignId.value!)
       }
     }
   } catch (error: unknown) {
@@ -1625,8 +1617,8 @@ async function viewLocation(location: Location) {
   }
 
   // Load items for the form if not already loaded
-  if (!entitiesStore.itemsLoaded && activeCampaignId.value) {
-    await entitiesStore.fetchItems(activeCampaignId.value)
+  if (!entitiesStore.itemsLoaded && activeCampaignId.value!) {
+    await entitiesStore.fetchItems(activeCampaignId.value!)
   }
 }
 
@@ -1724,7 +1716,7 @@ function deleteLocation(location: Location) {
 }
 
 async function saveLocation() {
-  if (!activeCampaignId.value) return
+  if (!activeCampaignId.value!) return
 
   saving.value = true
 
@@ -2055,7 +2047,7 @@ function handleDocumentsChanged() {
 }
 
 async function confirmDelete() {
-  if (!deletingLocation.value || !activeCampaignId.value) return
+  if (!deletingLocation.value || !activeCampaignId.value!) return
 
   deleting.value = true
 
