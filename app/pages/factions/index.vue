@@ -249,6 +249,14 @@
       </v-card>
     </v-dialog>
 
+    <!-- View Faction Dialog -->
+    <FactionViewDialog
+      v-model="showViewDialog"
+      :faction="viewingFaction"
+      @edit="editFactionAndCloseView"
+      @preview-image="openImagePreview"
+    />
+
     <!-- Delete Confirmation Dialog -->
     <v-dialog v-model="showDeleteDialog" max-width="500">
       <v-card>
@@ -280,6 +288,7 @@
 <script setup lang="ts">
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import FactionCard from '~/components/factions/FactionCard.vue'
+import FactionViewDialog from '~/components/factions/FactionViewDialog.vue'
 import FactionDetailsForm from '~/components/factions/FactionDetailsForm.vue'
 import FactionMembersTab from '~/components/factions/FactionMembersTab.vue'
 import FactionLocationsTab from '~/components/factions/FactionLocationsTab.vue'
@@ -526,8 +535,10 @@ const filteredFactions = computed(() => {
 
 // Form state
 const showCreateDialog = ref(false)
+const showViewDialog = ref(false)
 const showDeleteDialog = ref(false)
 const editingFaction = ref<Faction | null>(null)
+const viewingFaction = ref<Faction | null>(null)
 const deletingFaction = ref<Faction | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
@@ -590,9 +601,16 @@ const factionForm = ref({
   },
 })
 
-// View Faction (currently just opens edit - can be extended to view-only dialog later)
+// View Faction
 function viewFaction(faction: Faction) {
-  editFaction(faction)
+  viewingFaction.value = faction
+  showViewDialog.value = true
+}
+
+// Edit from view dialog
+async function editFactionAndCloseView(faction: Faction) {
+  await editFaction(faction)
+  showViewDialog.value = false
 }
 
 async function editFaction(faction: Faction) {

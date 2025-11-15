@@ -514,11 +514,12 @@
                       class="mb-3"
                     />
 
-                    <v-combobox
+                    <v-select
                       v-model="newLocation.relationType"
                       :items="locationRelationTypeSuggestions"
+                      item-title="title"
+                      item-value="value"
                       :label="$t('items.locationRelationType')"
-                      :placeholder="$t('items.locationRelationTypePlaceholder')"
                       variant="outlined"
                       class="mb-3"
                     />
@@ -1163,12 +1164,12 @@ const addingLocation = ref(false)
 
 // Suggested location relation types (i18n)
 const locationRelationTypeSuggestions = computed(() => [
-  'contains',
-  'hidden',
-  'displayed',
-  'stored',
-  'lost',
-  'guarded',
+  { title: t('items.locationRelationTypes.contains'), value: 'contains' },
+  { title: t('items.locationRelationTypes.hidden'), value: 'hidden' },
+  { title: t('items.locationRelationTypes.displayed'), value: 'displayed' },
+  { title: t('items.locationRelationTypes.stored'), value: 'stored' },
+  { title: t('items.locationRelationTypes.lost'), value: 'lost' },
+  { title: t('items.locationRelationTypes.guarded'), value: 'guarded' },
 ])
 
 // Helper function for rarity colors (used in View Dialog)
@@ -1407,6 +1408,11 @@ async function addLocationToItem() {
 
     await loadItemLocations()
 
+    // Reload counts to update the badge on the card
+    if (editingItem.value) {
+      await reloadItemCounts(editingItem.value)
+    }
+
     // Reset form
     newLocation.value = {
       locationId: null,
@@ -1426,6 +1432,11 @@ async function removeLocation(relationId: number) {
       method: 'DELETE',
     })
     await loadItemLocations()
+
+    // Reload counts to update the badge on the card
+    if (editingItem.value) {
+      await reloadItemCounts(editingItem.value)
+    }
   } catch (error) {
     console.error('Failed to remove location:', error)
   }

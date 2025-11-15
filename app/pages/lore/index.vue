@@ -516,64 +516,257 @@
     </v-dialog>
 
     <!-- View Dialog -->
-    <v-dialog v-model="showViewDialog" max-width="1200" scrollable>
+    <v-dialog v-model="showViewDialog" max-width="900" scrollable>
       <v-card v-if="selectedLore">
-        <v-card-title class="d-flex align-center">
-          <v-icon icon="mdi-book-open-variant" class="mr-2" />
-          {{ selectedLore.name }}
-          <v-chip
-            v-if="selectedLore.metadata?.type"
-            :color="getTypeColor(selectedLore.metadata.type)"
-            size="small"
-            class="ml-2"
-          >
-            {{ $t(`lore.types.${selectedLore.metadata.type}`) }}
-          </v-chip>
-          <v-spacer />
-          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false" />
+        <!-- Header with Avatar & Name -->
+        <v-card-title class="d-flex align-center pa-4">
+          <v-avatar :size="64" class="mr-4">
+            <v-img v-if="selectedLore.image_url" :src="`/uploads/${selectedLore.image_url}`" cover />
+            <v-icon v-else icon="mdi-book-open-variant" size="32" />
+          </v-avatar>
+          <div class="flex-grow-1">
+            <div class="text-h5">{{ selectedLore.name }}</div>
+            <div v-if="selectedLore.metadata?.type" class="mt-1">
+              <v-chip
+                :color="getTypeColor(selectedLore.metadata.type)"
+                size="small"
+              >
+                {{ $t(`lore.types.${selectedLore.metadata.type}`) }}
+              </v-chip>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <v-btn
+              prepend-icon="mdi-pencil"
+              variant="text"
+              @click="editLore(selectedLore)"
+            >
+              {{ $t('common.edit') }}
+            </v-btn>
+            <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false" />
+          </div>
         </v-card-title>
-        <v-divider />
-        <v-card-text class="pa-6">
-          <!-- Image Gallery -->
-          <EntityImageGallery
-            v-if="selectedLore"
-            :entity-id="selectedLore.id"
-            entity-type="Lore"
-            class="mb-6"
-          />
 
-          <!-- Date -->
-          <div v-if="selectedLore.metadata?.date" class="mb-4">
-            <div class="text-caption text-medium-emphasis mb-1">
-              {{ $t('lore.date') }}
-            </div>
-            <div class="d-flex align-center">
-              <v-icon icon="mdi-calendar" size="small" class="mr-2" />
-              {{ selectedLore.metadata.date }}
-            </div>
-          </div>
+        <!-- Tabs -->
+        <v-tabs v-model="viewDialogTab" bg-color="surface">
+          <v-tab value="overview">
+            <v-icon start>mdi-information</v-icon>
+            {{ $t('common.details') }}
+          </v-tab>
+          <v-tab value="npcs">
+            <v-icon start>mdi-account-group</v-icon>
+            {{ $t('npcs.title') }}
+            <v-chip v-if="linkedNpcs" size="x-small" class="ml-2">{{ linkedNpcs.length }}</v-chip>
+          </v-tab>
+          <v-tab value="items">
+            <v-icon start>mdi-treasure-chest</v-icon>
+            {{ $t('items.title') }}
+            <v-chip v-if="linkedItems" size="x-small" class="ml-2">{{ linkedItems.length }}</v-chip>
+          </v-tab>
+          <v-tab value="factions">
+            <v-icon start>mdi-shield-account</v-icon>
+            {{ $t('factions.title') }}
+            <v-chip v-if="linkedFactions" size="x-small" class="ml-2">{{ linkedFactions.length }}</v-chip>
+          </v-tab>
+          <v-tab value="locations">
+            <v-icon start>mdi-map-marker</v-icon>
+            {{ $t('locations.title') }}
+            <v-chip v-if="linkedLocations" size="x-small" class="ml-2">{{ linkedLocations.length }}</v-chip>
+          </v-tab>
+          <v-tab value="documents">
+            <v-icon start>mdi-file-document</v-icon>
+            {{ $t('documents.title') }}
+          </v-tab>
+          <v-tab value="gallery">
+            <v-icon start>mdi-image</v-icon>
+            {{ $t('common.images') }}
+          </v-tab>
+        </v-tabs>
 
-          <!-- Description -->
-          <div v-if="selectedLore.description" class="mb-4">
-            <div class="text-caption text-medium-emphasis mb-1">
-              {{ $t('lore.description') }}
-            </div>
-            <div class="text-body-1">
-              {{ selectedLore.description }}
-            </div>
-          </div>
+        <!-- Tab Content -->
+        <v-card-text style="max-height: 600px; overflow-y: auto">
+          <v-window v-model="viewDialogTab">
+            <!-- Overview Tab -->
+            <v-window-item value="overview">
+              <div class="pa-4">
+                <!-- Date Card -->
+                <v-card v-if="selectedLore.metadata?.date" variant="tonal" class="mb-4">
+                  <v-card-text>
+                    <div class="text-caption text-medium-emphasis mb-1">
+                      {{ $t('lore.date') }}
+                    </div>
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-calendar" size="small" class="mr-2" />
+                      {{ selectedLore.metadata.date }}
+                    </div>
+                  </v-card-text>
+                </v-card>
 
-          <!-- Markdown Documents -->
-          <EntityDocuments
-            v-if="selectedLore"
-            :entity-id="selectedLore.id"
-            entity-type="Lore"
-            class="mt-6"
-          />
+                <!-- Description -->
+                <v-card v-if="selectedLore.description" variant="tonal">
+                  <v-card-text>
+                    <div class="text-caption text-medium-emphasis mb-2">
+                      {{ $t('lore.description') }}
+                    </div>
+                    <div class="text-body-1">
+                      {{ selectedLore.description }}
+                    </div>
+                  </v-card-text>
+                </v-card>
+
+                <!-- Empty state if no data -->
+                <div v-if="!selectedLore.description && !selectedLore.metadata?.date" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('common.noDetails') }}
+                </div>
+              </div>
+            </v-window-item>
+
+            <!-- NPCs Tab -->
+            <v-window-item value="npcs">
+              <div class="pa-4">
+                <div v-if="!linkedNpcs || linkedNpcs.length === 0" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('lore.noLinkedNpcs') }}
+                </div>
+                <v-list v-else lines="two">
+                  <v-list-item
+                    v-for="npc in linkedNpcs"
+                    :key="npc.id"
+                    :prepend-avatar="npc.image_url ? `/uploads/${npc.image_url}` : undefined"
+                  >
+                    <template #prepend>
+                      <v-avatar v-if="npc.image_url" size="48">
+                        <v-img :src="`/uploads/${npc.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else color="grey-lighten-2" size="48">
+                        <v-icon>mdi-account</v-icon>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-medium">{{ npc.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="npc.description">
+                      {{ npc.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </v-window-item>
+
+            <!-- Items Tab -->
+            <v-window-item value="items">
+              <div class="pa-4">
+                <div v-if="!linkedItems || linkedItems.length === 0" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('lore.noLinkedItems') }}
+                </div>
+                <v-list v-else lines="two">
+                  <v-list-item
+                    v-for="item in linkedItems"
+                    :key="item.id"
+                    :prepend-avatar="item.image_url ? `/uploads/${item.image_url}` : undefined"
+                  >
+                    <template #prepend>
+                      <v-avatar v-if="item.image_url" size="48">
+                        <v-img :src="`/uploads/${item.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else color="grey-lighten-2" size="48">
+                        <v-icon>mdi-treasure-chest</v-icon>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-medium">{{ item.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="item.description">
+                      {{ item.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </v-window-item>
+
+            <!-- Factions Tab -->
+            <v-window-item value="factions">
+              <div class="pa-4">
+                <div v-if="!linkedFactions || linkedFactions.length === 0" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('lore.noLinkedFactions') }}
+                </div>
+                <v-list v-else lines="two">
+                  <v-list-item
+                    v-for="faction in linkedFactions"
+                    :key="faction.id"
+                    :prepend-avatar="faction.image_url ? `/uploads/${faction.image_url}` : undefined"
+                  >
+                    <template #prepend>
+                      <v-avatar v-if="faction.image_url" size="48">
+                        <v-img :src="`/uploads/${faction.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else color="grey-lighten-2" size="48">
+                        <v-icon>mdi-shield-account</v-icon>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-medium">{{ faction.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="faction.description">
+                      {{ faction.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </v-window-item>
+
+            <!-- Locations Tab -->
+            <v-window-item value="locations">
+              <div class="pa-4">
+                <div v-if="!linkedLocations || linkedLocations.length === 0" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('lore.noLinkedLocations') }}
+                </div>
+                <v-list v-else lines="two">
+                  <v-list-item
+                    v-for="location in linkedLocations"
+                    :key="location.id"
+                    :prepend-avatar="location.image_url ? `/uploads/${location.image_url}` : undefined"
+                  >
+                    <template #prepend>
+                      <v-avatar v-if="location.image_url" size="48">
+                        <v-img :src="`/uploads/${location.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else color="grey-lighten-2" size="48">
+                        <v-icon>mdi-map-marker</v-icon>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-medium">{{ location.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="location.description">
+                      {{ location.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </v-window-item>
+
+            <!-- Documents Tab -->
+            <v-window-item value="documents">
+              <div class="pa-4">
+                <EntityDocuments
+                  v-if="selectedLore"
+                  :entity-id="selectedLore.id"
+                  entity-type="Lore"
+                  read-only
+                />
+              </div>
+            </v-window-item>
+
+            <!-- Gallery Tab -->
+            <v-window-item value="gallery">
+              <div class="pa-4">
+                <EntityImageGallery
+                  v-if="selectedLore"
+                  :entity-id="selectedLore.id"
+                  entity-type="Lore"
+                  read-only
+                  @preview-image="openImagePreview"
+                />
+              </div>
+            </v-window-item>
+          </v-window>
         </v-card-text>
+
         <v-divider />
         <v-card-actions>
-          <v-btn color="primary" variant="text" @click="editLore(selectedLore)">
+          <v-btn color="primary" variant="text" prepend-icon="mdi-pencil" @click="editLore(selectedLore)">
             {{ $t('common.edit') }}
           </v-btn>
           <v-spacer />
@@ -654,6 +847,7 @@ const saving = ref(false)
 const deleting = ref(false)
 const highlightedId = ref<number | null>(null)
 const loreDialogTab = ref('details')
+const viewDialogTab = ref('overview')
 const imageGenerating = ref(false)
 
 // Factions state
@@ -831,8 +1025,27 @@ function openImagePreview(url: string, name: string) {
 }
 
 // View lore entry
-function viewLore(loreEntry: Lore) {
-  editLore(loreEntry)
+async function viewLore(loreEntry: Lore) {
+  selectedLore.value = loreEntry
+  showViewDialog.value = true
+  viewDialogTab.value = 'overview'
+
+  // Load all relation data
+  try {
+    const [npcs, items, factions, locations] = await Promise.all([
+      $fetch<typeof linkedNpcs.value>(`/api/lore/${loreEntry.id}/npcs`).catch(() => []),
+      $fetch<typeof linkedItems.value>(`/api/lore/${loreEntry.id}/items`).catch(() => []),
+      $fetch<typeof linkedFactions.value>(`/api/lore/${loreEntry.id}/factions`).catch(() => []),
+      $fetch<typeof linkedLocations.value>(`/api/lore/${loreEntry.id}/locations`).catch(() => []),
+    ])
+
+    linkedNpcs.value = npcs
+    linkedItems.value = items
+    linkedFactions.value = factions
+    linkedLocations.value = locations
+  } catch (error) {
+    console.error('Failed to load lore relations:', error)
+  }
 }
 
 // Edit lore entry
@@ -1165,6 +1378,12 @@ async function addLocationRelation() {
       },
     })
     await loadLinkedLocations()
+
+    // Reload counts to update the badge on the card
+    if (editingLore.value) {
+      await reloadLoreCounts(editingLore.value)
+    }
+
     selectedLocationToLink.value = null
   } catch (error) {
     console.error('Failed to add Location relation:', error)
@@ -1185,6 +1404,11 @@ async function removeLocationRelation(locationId: number) {
         method: 'DELETE',
       })
       await loadLinkedLocations()
+
+      // Reload counts to update the badge on the card
+      if (editingLore.value) {
+        await reloadLoreCounts(editingLore.value)
+      }
     }
   } catch (error) {
     console.error('Failed to remove Location relation:', error)

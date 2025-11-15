@@ -143,6 +143,28 @@ export default defineEventHandler((event) => {
     factionName = faction?.name || null
   }
 
+  // Get lore count
+  const loreTypeId = db
+    .prepare("SELECT id FROM entity_types WHERE name = 'Lore'")
+    .get() as { id: number } | undefined
+
+  let loreCount = 0
+  if (loreTypeId) {
+    const loreResult = db
+      .prepare(
+        `
+      SELECT COUNT(*) as count
+      FROM entity_relations er
+      INNER JOIN entities e ON e.id = er.to_entity_id
+      WHERE er.from_entity_id = ?
+        AND e.type_id = ?
+        AND e.deleted_at IS NULL
+    `,
+      )
+      .get(Number(npcId), loreTypeId.id) as { count: number }
+    loreCount = loreResult.count
+  }
+
   return {
     relations: relationsCount.count,
     items: itemsCount,
@@ -150,6 +172,7 @@ export default defineEventHandler((event) => {
     documents: documentsCount.count,
     images: imagesCount.count,
     memberships: membershipsCount,
+    lore: loreCount,
     factionName,
   }
 })

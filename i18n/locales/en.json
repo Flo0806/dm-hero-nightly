@@ -179,7 +179,6 @@
     "npcRelations": "NPC Relations",
     "selectFaction": "Select Faction",
     "addFactionMembership": "Add Faction Membership",
-    "membershipType": "Membership Type",
     "membershipTypePlaceholder": "e.g. Member, Leader",
     "rank": "Rank",
     "rankPlaceholder": "e.g. Captain, Apprentice",
@@ -192,7 +191,6 @@
       "veteran": "Veteran",
       "exile": "Exile"
     },
-    "npcRelations": "NPC Relations",
     "selectNpc": "Select NPC",
     "addNpcRelation": "Add NPC Relation",
     "npcRelationType": "Relation Type",
@@ -296,6 +294,7 @@
     "membershipType": "Membership Type",
     "membershipTypePlaceholder": "e.g. Member, Leader",
     "rankPlaceholder": "e.g. Captain, Apprentice",
+    "noLore": "No Lore",
     "membershipTypes": {
       "member": "Member",
       "leader": "Leader",

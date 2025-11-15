@@ -311,26 +311,42 @@
             <v-tabs-window-item value="items">
               <div class="text-h6 mb-4">{{ $t('locations.linkedItems') }}</div>
 
-              <div class="d-flex align-start gap-4 mb-4">
-                <v-autocomplete
-                  v-model="selectedItemToLink"
-                  :items="itemsForSelect"
-                  item-title="name"
-                  item-value="id"
-                  :label="$t('locations.selectItem')"
-                  :placeholder="$t('locations.selectItemPlaceholder')"
-                  variant="outlined"
-                  clearable
-                  style="flex: 1"
-                />
-                <v-btn
-                  color="primary"
-                  :disabled="!selectedItemToLink"
-                  prepend-icon="mdi-link"
-                  @click="addItemRelation"
-                >
-                  {{ $t('locations.linkItem') }}
-                </v-btn>
+              <div class="d-flex flex-column gap-4 mb-4">
+                <div class="d-flex align-start gap-4">
+                  <v-autocomplete
+                    v-model="selectedItemToLink"
+                    :items="itemsForSelect"
+                    item-title="name"
+                    item-value="id"
+                    :label="$t('locations.selectItem')"
+                    :placeholder="$t('locations.selectItemPlaceholder')"
+                    variant="outlined"
+                    clearable
+                    style="flex: 1"
+                  />
+                  <v-select
+                    v-model="selectedItemRelationType"
+                    :items="[
+                      { value: 'contains', title: $t('locations.itemRelationTypes.contains') },
+                      { value: 'hidden', title: $t('locations.itemRelationTypes.hidden') },
+                      { value: 'displayed', title: $t('locations.itemRelationTypes.displayed') },
+                      { value: 'stored', title: $t('locations.itemRelationTypes.stored') },
+                      { value: 'lost', title: $t('locations.itemRelationTypes.lost') },
+                      { value: 'guarded', title: $t('locations.itemRelationTypes.guarded') },
+                    ]"
+                    :label="$t('locations.relationType')"
+                    variant="outlined"
+                    style="flex: 1"
+                  />
+                  <v-btn
+                    color="primary"
+                    :disabled="!selectedItemToLink || !selectedItemRelationType"
+                    prepend-icon="mdi-link"
+                    @click="addItemRelation"
+                  >
+                    {{ $t('locations.linkItem') }}
+                  </v-btn>
+                </div>
               </div>
 
               <v-list v-if="linkedItems.length > 0">
@@ -472,16 +488,73 @@
     </v-dialog>
 
     <!-- View Location Dialog -->
-    <v-dialog v-model="showViewDialog" max-width="900">
+    <v-dialog v-model="showViewDialog" max-width="900" scrollable>
       <v-card v-if="viewingLocation">
-        <v-card-title class="d-flex align-center">
-          <v-icon icon="mdi-map-marker" class="mr-2" />
-          {{ viewingLocation.name }}
-          <v-spacer />
-          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false" />
+        <v-card-title class="d-flex align-center pa-4">
+          <v-avatar :size="64" class="mr-4">
+            <v-img v-if="viewingLocation.image_url" :src="`/uploads/${viewingLocation.image_url}`" cover />
+            <v-icon v-else icon="mdi-map-marker" size="32" />
+          </v-avatar>
+          <div class="flex-grow-1">
+            <h2 class="text-h5">{{ viewingLocation.name }}</h2>
+            <div v-if="viewingLocation.metadata?.type" class="text-body-2 text-medium-emphasis">
+              {{ viewingLocation.metadata.type }}
+            </div>
+          </div>
+          <v-btn icon="mdi-pencil" variant="text" @click="editLocationAndCloseView(viewingLocation)">
+            <v-icon>mdi-pencil</v-icon>
+            <v-tooltip activator="parent" location="bottom">
+              {{ $t('common.edit') }}
+            </v-tooltip>
+          </v-btn>
+          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
         </v-card-title>
+
         <v-divider />
-        <v-card-text>
+
+        <!-- Tabs -->
+        <v-tabs v-model="viewDialogTab" bg-color="surface">
+          <v-tab value="overview">
+            <v-icon start>mdi-information</v-icon>
+            {{ $t('common.details') }}
+          </v-tab>
+          <v-tab value="npcs">
+            <v-icon start>mdi-account-group</v-icon>
+            {{ $t('npcs.title') }}
+            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.npcs }}</v-chip>
+          </v-tab>
+          <v-tab value="items">
+            <v-icon start>mdi-treasure-chest</v-icon>
+            {{ $t('items.title') }}
+            <v-chip v-if="locationItems" size="x-small" class="ml-2">{{ locationItems.length }}</v-chip>
+          </v-tab>
+          <v-tab value="lore">
+            <v-icon start>mdi-book-open-variant</v-icon>
+            {{ $t('lore.title') }}
+            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.lore }}</v-chip>
+          </v-tab>
+          <v-tab value="documents">
+            <v-icon start>mdi-file-document</v-icon>
+            {{ $t('documents.title') }}
+            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.documents }}</v-chip>
+          </v-tab>
+          <v-tab value="gallery">
+            <v-icon start>mdi-image</v-icon>
+            {{ $t('common.images') }}
+            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.images }}</v-chip>
+          </v-tab>
+        </v-tabs>
+
+        <v-divider />
+
+        <!-- Tab Content -->
+        <v-card-text style="max-height: 600px; overflow-y: auto">
+          <v-window v-model="viewDialogTab">
+            <!-- Overview Tab -->
+            <v-window-item value="overview">
+              <div class="pa-4">
           <!-- Breadcrumb Path -->
           <LocationBreadcrumb
             v-if="viewingLocation.parent_entity_id"
@@ -498,29 +571,48 @@
             </p>
           </div>
 
-          <v-row v-if="viewingLocation.metadata" class="mb-4">
-            <v-col v-if="viewingLocation.metadata.type" cols="12" md="6">
-              <h4 class="text-subtitle-2 text-medium-emphasis">
-                {{ $t('locations.type') }}
-              </h4>
-              <p>{{ viewingLocation.metadata.type }}</p>
+          <!-- Metadata Grid -->
+          <v-row dense>
+            <v-col v-if="viewingLocation.metadata?.type" cols="12" sm="6">
+              <v-card variant="outlined" class="pa-3">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-3" color="primary">mdi-shape</v-icon>
+                  <div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('locations.type') }}</div>
+                    <div class="font-weight-medium">{{ viewingLocation.metadata.type }}</div>
+                  </div>
+                </div>
+              </v-card>
             </v-col>
-            <v-col v-if="viewingLocation.metadata.region" cols="12" md="6">
-              <h4 class="text-subtitle-2 text-medium-emphasis">
-                {{ $t('locations.region') }}
-              </h4>
-              <p>{{ viewingLocation.metadata.region }}</p>
+            <v-col v-if="viewingLocation.metadata?.region" cols="12" sm="6">
+              <v-card variant="outlined" class="pa-3">
+                <div class="d-flex align-center">
+                  <v-icon class="mr-3" color="secondary">mdi-map</v-icon>
+                  <div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('locations.region') }}</div>
+                    <div class="font-weight-medium">{{ viewingLocation.metadata.region }}</div>
+                  </div>
+                </div>
+              </v-card>
             </v-col>
-            <v-col v-if="viewingLocation.metadata.notes" cols="12">
-              <h4 class="text-subtitle-2 text-medium-emphasis">
-                {{ $t('locations.notes') }}
-              </h4>
-              <p>{{ viewingLocation.metadata.notes }}</p>
+            <v-col v-if="viewingLocation.metadata?.notes" cols="12">
+              <v-card variant="outlined" class="pa-3">
+                <div class="d-flex align-start">
+                  <v-icon class="mr-3 mt-1">mdi-note-text</v-icon>
+                  <div>
+                    <div class="text-caption text-medium-emphasis">{{ $t('locations.notes') }}</div>
+                    <div class="font-weight-medium">{{ viewingLocation.metadata.notes }}</div>
+                  </div>
+                </div>
+              </v-card>
             </v-col>
           </v-row>
+              </div>
+            </v-window-item>
 
-          <v-divider class="my-4" />
-
+            <!-- NPCs Tab -->
+            <v-window-item value="npcs">
+              <div class="pa-4">
           <h3 class="text-h6 mb-3">
             {{ $t('locations.connectedNpcs') }}
           </h3>
@@ -537,87 +629,36 @@
               </template>
             </v-list-item>
           </v-list>
-          <p v-else class="text-body-2 text-medium-emphasis">
+          <div v-else class="text-center py-8 text-medium-emphasis">
             {{ $t('locations.noConnectedNpcs') }}
-          </p>
-
-          <v-divider class="my-4" />
-
-          <div class="d-flex justify-space-between align-center mb-3">
-            <h3 class="text-h6">
-              {{ $t('locations.items') }}
-            </h3>
-            <v-btn
-              size="small"
-              color="primary"
-              prepend-icon="mdi-plus"
-              @click="showAddItemForm = !showAddItemForm"
-            >
-              {{ $t('locations.addItem') }}
-            </v-btn>
           </div>
-
-          <!-- Add Item Form -->
-          <v-card v-if="showAddItemForm" class="mb-4" elevation="0" border>
-            <v-card-text>
-              <v-row>
-                <v-col cols="12">
-                  <v-select
-                    v-model="newItem.itemId"
-                    :items="items"
-                    :label="$t('locations.selectItem')"
-                    item-title="name"
-                    item-value="id"
-                    variant="outlined"
-                    density="compact"
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-combobox
-                    v-model="newItem.relationType"
-                    :items="itemRelationTypeSuggestions"
-                    :label="$t('locations.itemRelationType')"
-                    :placeholder="$t('locations.itemRelationTypePlaceholder')"
-                    variant="outlined"
-                    density="compact"
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model.number="newItem.quantity"
-                    :label="$t('locations.quantity')"
-                    :placeholder="$t('locations.quantityPlaceholder')"
-                    type="number"
-                    variant="outlined"
-                    density="compact"
-                  />
-                </v-col>
-              </v-row>
-              <div class="d-flex justify-end gap-2">
-                <v-btn variant="text" @click="cancelAddItem">
-                  {{ $t('common.cancel') }}
-                </v-btn>
-                <v-btn
-                  color="primary"
-                  :disabled="!newItem.itemId || !newItem.relationType"
-                  :loading="addingItem"
-                  @click="addItemToLocation"
-                >
-                  {{ $t('common.save') }}
-                </v-btn>
               </div>
-            </v-card-text>
-          </v-card>
+            </v-window-item>
 
-          <v-progress-linear v-if="loadingItems" indeterminate />
-          <v-list v-else-if="locationItems && locationItems.length > 0">
-            <v-list-item v-for="item in locationItems" :key="item.id" class="mb-2" border>
+            <!-- Items Tab -->
+            <v-window-item value="items">
+              <div class="pa-4">
+          <div v-if="loadingItems" class="text-center py-8">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+          <div v-else-if="!locationItems || locationItems.length === 0" class="text-center py-8 text-medium-emphasis">
+            {{ $t('locations.noItems') }}
+          </div>
+          <v-list v-else lines="two">
+            <v-list-item
+              v-for="item in locationItems"
+              :key="item.id"
+              :prepend-avatar="item.item_image ? `/uploads/${item.item_image}` : undefined"
+            >
               <template #prepend>
-                <v-icon icon="mdi-sword" color="primary" />
+                <v-avatar v-if="item.item_image" size="48">
+                  <v-img :src="`/uploads/${item.item_image}`" />
+                </v-avatar>
+                <v-avatar v-else color="grey-lighten-2" size="48">
+                  <v-icon>mdi-sword</v-icon>
+                </v-avatar>
               </template>
-              <v-list-item-title>
-                {{ item.item_name }}
-              </v-list-item-title>
+              <v-list-item-title class="font-weight-medium">{{ item.item_name }}</v-list-item-title>
               <v-list-item-subtitle>
                 <v-chip size="small" class="mr-1">
                   {{ $t(`locations.itemRelationTypes.${item.relation_type}`) }}
@@ -626,29 +667,73 @@
                   {{ $t('locations.quantity') }}: {{ item.notes.quantity }}
                 </span>
               </v-list-item-subtitle>
-              <template #append>
-                <v-btn
-                  icon="mdi-delete"
-                  variant="text"
-                  size="small"
-                  color="error"
-                  @click="removeItem(item.id)"
-                />
-              </template>
             </v-list-item>
           </v-list>
-          <p v-else class="text-body-2 text-medium-emphasis">
-            {{ $t('locations.noItems') }}
-          </p>
+              </div>
+            </v-window-item>
+
+            <!-- Lore Tab -->
+            <v-window-item value="lore">
+              <div class="pa-4">
+                <div v-if="loadingLore" class="text-center py-8">
+                  <v-progress-circular indeterminate color="primary" />
+                </div>
+                <div v-else-if="!locationLore || locationLore.length === 0" class="text-center py-8 text-medium-emphasis">
+                  {{ $t('locations.noLore') }}
+                </div>
+                <v-list v-else lines="two">
+                  <v-list-item
+                    v-for="lore in locationLore"
+                    :key="lore.id"
+                    :prepend-avatar="lore.image_url ? `/uploads/${lore.image_url}` : undefined"
+                  >
+                    <template #prepend>
+                      <v-avatar v-if="lore.image_url" size="48">
+                        <v-img :src="`/uploads/${lore.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else color="grey-lighten-2" size="48">
+                        <v-icon>mdi-book-open-variant</v-icon>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="font-weight-medium">{{ lore.name }}</v-list-item-title>
+                    <v-list-item-subtitle v-if="lore.description">
+                      {{ lore.description }}
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                </v-list>
+              </div>
+            </v-window-item>
+
+            <!-- Documents Tab -->
+            <v-window-item value="documents">
+              <div class="pa-4">
+                <EntityDocuments v-if="viewingLocation" :entity-id="viewingLocation.id" entity-type="Location" />
+              </div>
+            </v-window-item>
+
+            <!-- Gallery Tab -->
+            <v-window-item value="gallery">
+              <div class="pa-4">
+                <EntityImageGallery
+                  v-if="viewingLocation"
+                  :entity-id="viewingLocation.id"
+                  entity-type="Location"
+                  @preview-image="openImagePreview"
+                />
+              </div>
+            </v-window-item>
+          </v-window>
         </v-card-text>
+
+        <v-divider />
+
         <v-card-actions>
-          <v-spacer />
-          <v-btn
-            variant="text"
-            prepend-icon="mdi-pencil"
-            @click="editLocationAndCloseView(viewingLocation)"
-          >
+          <v-btn variant="text" prepend-icon="mdi-pencil" @click="editLocationAndCloseView(viewingLocation)">
             {{ $t('common.edit') }}
+          </v-btn>
+          <v-spacer />
+          <v-btn variant="text" @click="showViewDialog = false">
+            {{ $t('common.close') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -706,6 +791,8 @@ interface ConnectedNPC {
 interface LocationCounts {
   npcs: number
   lore: number
+  images: number
+  documents: number
 }
 
 // Debounced FTS5 + Levenshtein Search with AbortController (must be declared early for template)
@@ -1195,6 +1282,7 @@ const linkedItems = ref<
   }>
 >([])
 const selectedItemToLink = ref<number | null>(null)
+const selectedItemRelationType = ref<string>('contains')
 const imageGenerating = ref(false)
 
 // Image gallery state
@@ -1446,6 +1534,9 @@ function openImagePreview(imageUrl: string, title: string) {
   showImagePreview.value = true
 }
 
+// View Dialog State
+const viewDialogTab = ref('overview')
+
 // Connected NPCs
 const connectedNpcs = ref<ConnectedNPC[]>([])
 const loadingNpcs = ref(false)
@@ -1458,11 +1549,18 @@ const locationItems = ref<
     item_name: string
     item_description: string | null
     item_metadata: Record<string, unknown> | null
+    item_image: string | null
     relation_type: string
     notes: Record<string, unknown> | null
   }>
 >([])
 const loadingItems = ref(false)
+
+// Location Lore
+const locationLore = ref<
+  Array<{ id: number; name: string; description: string | null; image_url: string | null }>
+>([])
+const loadingLore = ref(false)
 const showAddItemForm = ref(false)
 const addingItem = ref(false)
 
@@ -1511,6 +1609,20 @@ async function viewLocation(location: Location) {
 
   // Load Items
   await loadLocationItems()
+
+  // Load Lore
+  loadingLore.value = true
+  try {
+    const lore = await $fetch<typeof locationLore.value>(
+      `/api/locations/${location.id}/lore`,
+    )
+    locationLore.value = lore
+  } catch (error) {
+    console.error('Failed to load location lore:', error)
+    locationLore.value = []
+  } finally {
+    loadingLore.value = false
+  }
 
   // Load items for the form if not already loaded
   if (!entitiesStore.itemsLoaded && activeCampaignId.value) {
@@ -1883,7 +1995,7 @@ async function loadLinkedItems() {
 }
 
 async function addItemRelation() {
-  if (!editingLocation.value || !selectedItemToLink.value) return
+  if (!editingLocation.value || !selectedItemToLink.value || !selectedItemRelationType.value) return
 
   try {
     await $fetch('/api/entity-relations', {
@@ -1891,13 +2003,14 @@ async function addItemRelation() {
       body: {
         fromEntityId: editingLocation.value.id,
         toEntityId: selectedItemToLink.value,
-        relationType: 'bezieht sich auf',
+        relationType: selectedItemRelationType.value,
         relationNotes: null,
       },
     })
 
     await loadLinkedItems()
     selectedItemToLink.value = null
+    selectedItemRelationType.value = 'contains' // Reset to default
   } catch (error) {
     console.error('Failed to add Item relation:', error)
   }

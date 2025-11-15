@@ -217,9 +217,9 @@
               prepend-icon="mdi-book-open-variant"
               size="small"
               variant="outlined"
-              :color="counts.lore > 0 ? 'primary' : undefined"
+              :color="(counts.lore || 0) > 0 ? 'primary' : undefined"
             >
-              {{ counts.lore }}
+              {{ counts.lore || 0 }}
             </v-chip>
             <v-chip
               v-else

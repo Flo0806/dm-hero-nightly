@@ -62,6 +62,11 @@
           {{ $t('documents.title') }}
           <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.documents }}</v-chip>
         </v-tab>
+        <v-tab value="lore">
+          <v-icon start>mdi-book-open-variant</v-icon>
+          {{ $t('npcs.badgeTooltips.lore') }}
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.lore || 0 }}</v-chip>
+        </v-tab>
         <v-tab value="gallery">
           <v-icon start>mdi-image</v-icon>
           {{ $t('common.images') }}
@@ -314,6 +319,38 @@
             </div>
           </v-window-item>
 
+          <!-- Lore Tab -->
+          <v-window-item value="lore">
+            <div class="pa-4">
+              <div v-if="loading" class="text-center py-8">
+                <v-progress-circular indeterminate color="primary" />
+              </div>
+              <div v-else-if="loreEntries.length === 0" class="text-center py-8 text-medium-emphasis">
+                {{ $t('npcs.noLore') }}
+              </div>
+              <v-list v-else lines="two">
+                <v-list-item
+                  v-for="loreEntry in loreEntries"
+                  :key="loreEntry.id"
+                  :prepend-avatar="loreEntry.image_url ? `/uploads/${loreEntry.image_url}` : undefined"
+                >
+                  <template #prepend>
+                    <v-avatar v-if="loreEntry.image_url" size="48">
+                      <v-img :src="`/uploads/${loreEntry.image_url}`" />
+                    </v-avatar>
+                    <v-avatar v-else color="grey-lighten-2" size="48">
+                      <v-icon>mdi-book-open-variant</v-icon>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title class="font-weight-medium">{{ loreEntry.name }}</v-list-item-title>
+                  <v-list-item-subtitle v-if="loreEntry.description">
+                    {{ loreEntry.description }}
+                  </v-list-item-subtitle>
+                </v-list-item>
+              </v-list>
+            </div>
+          </v-window-item>
+
           <!-- Gallery Tab -->
           <v-window-item value="gallery">
             <div class="pa-4">
@@ -444,6 +481,9 @@ const locations = ref<
 >([])
 const documents = ref<Array<{ id: number; title: string; content: string }>>([])
 const images = ref<Array<{ id: number; image_url: string; is_primary: boolean }>>([])
+const loreEntries = ref<
+  Array<{ id: number; name: string; description: string | null; image_url: string | null }>
+>([])
 
 // Image preview
 const showImagePreview = ref(false)
@@ -463,7 +503,7 @@ watch(
     loading.value = true
     try {
       // Load all data in parallel
-      const [relationsData, itemsData, locationsData, documentsData, imagesData] = await Promise.all([
+      const [relationsData, itemsData, locationsData, documentsData, imagesData, loreData] = await Promise.all([
         $fetch<
           Array<{
             id: number
@@ -520,6 +560,12 @@ watch(
           console.error('Failed to load images:', error)
           return []
         }),
+        $fetch<
+          Array<{ id: number; name: string; description: string | null; image_url: string | null }>
+        >(`/api/npcs/${newNpc.id}/lore`).catch((error) => {
+          console.error('Failed to load lore:', error)
+          return []
+        }),
       ])
 
       relations.value = relationsData
@@ -527,6 +573,7 @@ watch(
       locations.value = locationsData
       documents.value = documentsData
       images.value = imagesData
+      loreEntries.value = loreData
     } finally {
       loading.value = false
     }

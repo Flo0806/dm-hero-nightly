@@ -265,7 +265,8 @@
       "items": "Items im Besitz",
       "lore": "Verknüpftes Wissen",
       "memberships": "Fraktionsmitgliedschaften"
-    }
+    },
+    "noLore": "Kein verknüpftes Wissen vorhanden"
   },
   "factions": {
     "title": "Fraktionen",
