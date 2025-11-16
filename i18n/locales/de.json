@@ -510,6 +510,7 @@
     "quantity": "Anzahl",
     "quantityPlaceholder": "z.B. 1, 5, 10",
     "noItems": "Keine Items an diesem Ort",
+    "noLore": "Kein verknüpftes Wissen",
     "itemRelationTypes": {
       "contains": "enthält",
       "hidden": "versteckt",
@@ -641,6 +642,14 @@
       "very_rare": "Sehr selten",
       "legendary": "Legendär",
       "artifact": "Artefakt"
+    },
+    "relationTypes": {
+      "contains": "enthält",
+      "hidden": "versteckt",
+      "displayed": "ausgestellt",
+      "stored": "gelagert",
+      "lost": "verloren",
+      "guarded": "bewacht"
     },
     "details": "Details",
     "owners": "Besitzer",
