@@ -87,111 +87,24 @@
     </ClientOnly>
 
     <!-- View Item Dialog -->
-    <v-dialog v-model="showViewDialog" max-width="1200" scrollable>
-      <v-card v-if="viewingItem">
-        <v-card-title class="d-flex align-center">
-          <v-icon icon="mdi-sword" class="mr-2" color="primary" />
-          {{ viewingItem.name }}
-          <v-chip
-            v-if="viewingItem.metadata?.rarity"
-            :color="getRarityColor(viewingItem.metadata.rarity)"
-            size="small"
-            class="ml-2"
-          >
-            {{ $t(`items.rarities.${viewingItem.metadata.rarity}`) }}
-          </v-chip>
-        </v-card-title>
-
-        <v-card-text style="max-height: 70vh">
-          <v-row>
-            <!-- Image -->
-            <v-col v-if="viewingItem.image_url" cols="12" md="4">
-              <div class="position-relative image-container">
-                <v-img
-                  :src="`/uploads/${viewingItem.image_url}`"
-                  aspect-ratio="1"
-                  cover
-                  rounded="lg"
-                />
-                <v-btn
-                  icon="mdi-download"
-                  size="small"
-                  variant="tonal"
-                  class="image-download-btn"
-                  @click="downloadImage(`/uploads/${viewingItem.image_url}`, viewingItem.name)"
-                />
-              </div>
-            </v-col>
-
-            <!-- Content -->
-            <v-col :cols="viewingItem.image_url ? 12 : 12" :md="viewingItem.image_url ? 8 : 12">
-              <!-- Type & Attunement -->
-              <div class="mb-4">
-                <v-chip v-if="viewingItem.metadata?.type" size="small" variant="tonal" class="mr-2">
-                  {{ $t(`items.types.${viewingItem.metadata.type}`) }}
-                </v-chip>
-                <v-chip v-if="viewingItem.metadata?.attunement" size="small" color="purple">
-                  {{ $t('items.requiresAttunement') }}
-                </v-chip>
-              </div>
-
-              <!-- Description -->
-              <div v-if="viewingItem.description" class="text-body-1 mb-4">
-                {{ viewingItem.description }}
-              </div>
-              <div v-else class="text-body-2 text-disabled mb-4">
-                {{ $t('items.noDescription') }}
-              </div>
-
-              <v-divider class="my-4" />
-
-              <!-- Metadata -->
-              <v-row dense>
-                <v-col v-if="viewingItem.metadata?.value" cols="12" sm="6">
-                  <div class="text-caption text-medium-emphasis">
-                    {{ $t('items.value') }}
-                  </div>
-                  <div class="text-body-1">
-                    {{ viewingItem.metadata.value }}
-                  </div>
-                </v-col>
-                <v-col v-if="viewingItem.metadata?.weight" cols="12" sm="6">
-                  <div class="text-caption text-medium-emphasis">
-                    {{ $t('items.weight') }}
-                  </div>
-                  <div class="text-body-1">
-                    {{ viewingItem.metadata.weight }}
-                  </div>
-                </v-col>
-              </v-row>
-
-              <!-- Documents -->
-              <div v-if="viewingItem.id" class="mt-4">
-                <v-divider class="mb-4" />
-                <h3 class="text-h6 mb-2">
-                  {{ $t('items.documents') }}
-                </h3>
-                <EntityDocuments :entity-id="viewingItem.id" />
-              </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn
-            variant="text"
-            prepend-icon="mdi-pencil"
-            @click="editItemAndCloseView(viewingItem)"
-          >
-            {{ $t('common.edit') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn variant="text" @click="showViewDialog = false">
-            {{ $t('common.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ItemViewDialog
+      v-model="showViewDialog"
+      :item="viewingItem"
+      :owners="itemOwners"
+      :locations="itemLocations"
+      :factions="itemFactions"
+      :lore="itemLore"
+      :documents="itemDocuments"
+      :images="itemImages"
+      :counts="viewDialogCounts"
+      :loading="loadingViewData"
+      :loading-owners="loadingOwners"
+      :loading-locations="loadingLocations"
+      :loading-factions="loadingFactions"
+      :loading-lore="loadingLore"
+      @edit="editItemAndCloseView"
+      @preview-image="(image: { image_url: string }) => openImagePreview(`/uploads/${image.image_url}`, viewingItem?.name || '')"
+    />
 
     <!-- Create/Edit Item Dialog -->
     <v-dialog
@@ -220,11 +133,11 @@
           </v-tab>
           <v-tab value="owners">
             <v-icon start> mdi-account </v-icon>
-            {{ $t('items.owners') }} ({{ itemOwners.length }})
+            {{ $t('items.owners') }} ({{ editItemOwners.length }})
           </v-tab>
           <v-tab value="locations">
             <v-icon start> mdi-map-marker </v-icon>
-            {{ $t('items.locations') }} ({{ itemLocations.length }})
+            {{ $t('items.locations') }} ({{ editItemLocations.length }})
           </v-tab>
           <v-tab value="factions">
             <v-icon start> mdi-shield-account </v-icon>
@@ -361,8 +274,8 @@
                 {{ $t('items.ownersList') }}
               </div>
 
-              <v-list v-if="itemOwners.length > 0" class="mb-3">
-                <v-list-item v-for="owner in itemOwners" :key="owner.id" class="mb-2" border>
+              <v-list v-if="editItemOwners.length > 0" class="mb-3">
+                <v-list-item v-for="owner in editItemOwners" :key="owner.id" class="mb-2" border>
                   <template #prepend>
                     <v-icon icon="mdi-account" color="primary" />
                   </template>
@@ -466,9 +379,9 @@
                 {{ $t('items.locationsList') }}
               </div>
 
-              <v-list v-if="itemLocations.length > 0" class="mb-3">
+              <v-list v-if="editItemLocations.length > 0" class="mb-3">
                 <v-list-item
-                  v-for="location in itemLocations"
+                  v-for="location in editItemLocations"
                   :key="location.id"
                   class="mb-2"
                   border
@@ -844,6 +757,7 @@ import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import ItemCard from '~/components/items/ItemCard.vue'
+import ItemViewDialog from '~/components/items/ItemViewDialog.vue'
 
 // Check if OpenAI API key is configured
 const hasApiKey = ref(false)
@@ -1084,14 +998,13 @@ const hasUnsavedChanges = computed(() => {
 // Dialog tab state
 const itemDialogTab = ref('details')
 
-// Lore linking state
+// Lore linking state (EDIT Dialog)
 const linkedLore = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
 const selectedLoreId = ref<number | null>(null)
-const loadingLore = ref(false)
 
-// Factions linking state
+// Factions linking state (EDIT Dialog)
 const linkedFactions = ref<
   Array<{
     id: number
@@ -1102,7 +1015,6 @@ const linkedFactions = ref<
   }>
 >([])
 const selectedFactionId = ref<number | null>(null)
-const loadingFactions = ref(false)
 
 // Image state
 const imageGenerating = ref(false)
@@ -1110,8 +1022,55 @@ const imageGenerating = ref(false)
 // Use image download composable
 const { downloadImage } = useImageDownload()
 
-// Owners state
+// View Dialog data
+const viewDialogCounts = ref<{
+  owners: number
+  locations: number
+  factions: number
+  lore: number
+  documents: number
+  images: number
+} | null>(null)
+
+const loadingViewData = ref(false)
+const loadingOwners = ref(false)
+const loadingLocations = ref(false)
+const loadingFactions = ref(false)
+const loadingLore = ref(false)
+
+const itemDocuments = ref<Array<{ id: number; title: string; content: string }>>([])
+const itemImages = ref<Array<{ id: number; image_url: string; is_primary: boolean }>>([])
+const itemFactions = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+const itemLore = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+  }>
+>([])
+
+// Owners state (for VIEW Dialog, used in template line 93)
 const itemOwners = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+
+// Owners state for EDIT dialog
+const editItemOwners = ref<
   Array<{
     id: number
     from_entity_id: number
@@ -1141,8 +1100,19 @@ const ownerRelationTypeSuggestions = computed(() => [
   { title: t('items.ownerRelationTypes.lost'), value: 'lost' },
 ])
 
-// Locations state
+// Locations state (for VIEW Dialog, used in template line 94)
 const itemLocations = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+
+// Locations state for EDIT dialog
+const editItemLocations = ref<
   Array<{
     id: number
     from_entity_id: number
@@ -1169,22 +1139,41 @@ const locationRelationTypeSuggestions = computed(() => [
   { title: t('items.locationRelationTypes.guarded'), value: 'guarded' },
 ])
 
-// Helper function for rarity colors (used in View Dialog)
-function getRarityColor(rarity: string) {
-  const colors: Record<string, string> = {
-    common: 'grey',
-    uncommon: 'green',
-    rare: 'blue',
-    very_rare: 'purple',
-    legendary: 'orange',
-    artifact: 'red',
-  }
-  return colors[rarity] || 'grey'
-}
-
-function viewItem(item: Item) {
+async function viewItem(item: Item) {
   viewingItem.value = item
   showViewDialog.value = true
+
+  loadingViewData.value = true
+  loadingOwners.value = true
+  loadingLocations.value = true
+  loadingFactions.value = true
+  loadingLore.value = true
+
+  try {
+    const [owners, locations, factions, lore, documents, images, counts] = await Promise.all([
+      $fetch<typeof itemOwners.value>(`/api/entities/${item.id}/related/npcs`).catch(() => []),
+      $fetch<typeof itemLocations.value>(`/api/entities/${item.id}/related/locations`).catch(() => []),
+      $fetch<typeof itemFactions.value>(`/api/entities/${item.id}/related/factions`).catch(() => []),
+      $fetch<typeof itemLore.value>(`/api/entities/${item.id}/related/lore`).catch(() => []),
+      $fetch<typeof itemDocuments.value>(`/api/entities/${item.id}/documents`).catch(() => []),
+      $fetch<typeof itemImages.value>(`/api/entity-images/${item.id}`).catch(() => []),
+      $fetch<typeof viewDialogCounts.value>(`/api/items/${item.id}/counts`).catch(() => null),
+    ])
+
+    itemOwners.value = owners
+    itemLocations.value = locations
+    itemFactions.value = factions
+    itemLore.value = lore
+    itemDocuments.value = documents
+    itemImages.value = images
+    viewDialogCounts.value = counts
+  } finally {
+    loadingViewData.value = false
+    loadingOwners.value = false
+    loadingLocations.value = false
+    loadingFactions.value = false
+    loadingLore.value = false
+  }
 }
 
 async function editItem(item: Item) {
@@ -1311,22 +1300,22 @@ function closeDialog() {
     description: '',
     metadata: {},
   }
-  itemOwners.value = []
-  itemLocations.value = []
+  editItemOwners.value = []
+  editItemLocations.value = []
 }
 
-// Owner functions
+// Owner functions (for EDIT dialog)
 async function loadItemOwners() {
   if (!editingItem.value) return
 
   try {
-    const owners = await $fetch<typeof itemOwners.value>(
+    const owners = await $fetch<typeof editItemOwners.value>(
       `/api/entities/${editingItem.value.id}/related/npcs`,
     )
-    itemOwners.value = owners
+    editItemOwners.value = owners
   } catch (error) {
     console.error('Failed to load item owners:', error)
-    itemOwners.value = []
+    editItemOwners.value = []
   }
 }
 
@@ -1383,18 +1372,18 @@ async function removeOwner(relationId: number) {
   }
 }
 
-// Location functions
+// Location functions (for EDIT dialog)
 async function loadItemLocations() {
   if (!editingItem.value) return
 
   try {
-    const locs = await $fetch<typeof itemLocations.value>(
+    const locs = await $fetch<typeof editItemLocations.value>(
       `/api/entities/${editingItem.value.id}/related/locations`,
     )
-    itemLocations.value = locs
+    editItemLocations.value = locs
   } catch (error) {
     console.error('Failed to load item locations:', error)
-    itemLocations.value = []
+    editItemLocations.value = []
   }
 }
 
