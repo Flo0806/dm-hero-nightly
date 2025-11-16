@@ -14,17 +14,18 @@ export default defineEventHandler((event) => {
     })
   }
 
-  // Find the relation
+  // Find the relation (search bidirectionally)
   const relation = db
     .prepare(
       `
     SELECT id, from_entity_id, to_entity_id, relation_type
     FROM entity_relations
-    WHERE from_entity_id = ? AND to_entity_id = ?
+    WHERE (from_entity_id = ? AND to_entity_id = ?)
+       OR (from_entity_id = ? AND to_entity_id = ?)
     LIMIT 1
   `,
     )
-    .get(fromEntityId, toEntityId) as
+    .get(fromEntityId, toEntityId, toEntityId, fromEntityId) as
     | {
         id: number
         from_entity_id: number

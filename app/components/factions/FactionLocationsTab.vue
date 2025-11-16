@@ -12,7 +12,7 @@
           <v-icon icon="mdi-map-marker" color="primary" />
         </template>
         <v-list-item-title>
-          {{ location.location_name }}
+          {{ location.name }}
         </v-list-item-title>
         <v-list-item-subtitle>
           <v-chip size="small" class="mr-1">
@@ -83,7 +83,10 @@ interface FactionLocation {
   relation_type: string
   notes: Record<string, unknown> | null
   created_at: string
-  location_name: string
+  name: string
+  image_url?: string | null
+  description?: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
 interface Location {

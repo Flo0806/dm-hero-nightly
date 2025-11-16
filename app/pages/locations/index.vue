@@ -1493,7 +1493,7 @@ async function viewLocation(location: Location) {
   // Load connected NPCs
   loadingNpcs.value = true
   try {
-    const data = await $fetch<ConnectedNPC[]>(`/api/locations/${location.id}/npcs`)
+    const data = await $fetch<ConnectedNPC[]>(`/api/entities/${location.id}/related/npcs`)
     connectedNpcs.value = data
   } finally {
     loadingNpcs.value = false
@@ -1506,7 +1506,7 @@ async function viewLocation(location: Location) {
   loadingLore.value = true
   try {
     const lore = await $fetch<typeof locationLore.value>(
-      `/api/locations/${location.id}/lore`,
+      `/api/entities/${location.id}/related/lore`,
     )
     locationLore.value = lore
   } catch (error) {
@@ -1528,7 +1528,7 @@ async function loadLocationItems() {
   loadingItems.value = true
   try {
     const items = await $fetch<typeof locationItems.value>(
-      `/api/locations/${viewingLocation.value.id}/items`,
+      `/api/entities/${viewingLocation.value.id}/related/items`,
     )
     locationItems.value = items
   } catch (error) {
@@ -1657,7 +1657,7 @@ async function loadLinkedNpcs() {
   try {
     const npcs = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/locations/${editingLocation.value.id}/npcs`)
+    >(`/api/entities/${editingLocation.value.id}/related/npcs`)
     linkedNpcs.value = npcs
   } catch (error) {
     console.error('Failed to load linked NPCs:', error)
@@ -1735,7 +1735,7 @@ async function loadLinkedLore() {
   try {
     const lore = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/locations/${editingLocation.value.id}/lore`)
+    >(`/api/entities/${editingLocation.value.id}/related/lore`)
     linkedLore.value = lore
   } catch (error) {
     console.error('Failed to load linked Lore:', error)
@@ -1830,7 +1830,7 @@ async function loadLinkedItems() {
         image_url: string | null
         direction?: 'outgoing' | 'incoming'
       }>
-    >(`/api/locations/${editingLocation.value.id}/items`)
+    >(`/api/entities/${editingLocation.value.id}/related/items`)
     linkedItems.value = items
   } catch (error) {
     console.error('Failed to load linked Items:', error)

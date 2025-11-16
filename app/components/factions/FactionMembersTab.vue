@@ -12,7 +12,7 @@
           <v-icon icon="mdi-account" color="primary" />
         </template>
         <v-list-item-title>
-          {{ member.npc_name }}
+          {{ member.name }}
         </v-list-item-title>
         <v-list-item-subtitle>
           <v-chip size="small" class="mr-1">
@@ -94,7 +94,10 @@ interface FactionMember {
   relation_type: string
   notes: Record<string, unknown> | null
   created_at: string
-  npc_name: string
+  name: string
+  image_url?: string | null
+  description?: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
 interface NPC {

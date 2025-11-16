@@ -14,9 +14,6 @@
         </template>
         <v-list-item-title>
           {{ item.name }}
-          <v-chip v-if="item.direction === 'incoming'" size="x-small" color="info" class="ml-2">
-            ←
-          </v-chip>
         </v-list-item-title>
         <v-list-item-subtitle v-if="item.description">
           {{ item.description.substring(0, 100)
@@ -24,19 +21,12 @@
         </v-list-item-subtitle>
         <template #append>
           <v-btn
-            v-if="item.direction === 'outgoing' || !item.direction"
             icon="mdi-delete"
             variant="text"
             size="small"
             color="error"
             @click="$emit('remove', item.id)"
           />
-          <v-tooltip v-else location="left">
-            <template #activator="{ props }">
-              <v-icon v-bind="props" color="info" size="small"> mdi-information </v-icon>
-            </template>
-            {{ $t('factions.incomingItemTooltip') }}
-          </v-tooltip>
         </template>
       </v-list-item>
     </v-list>

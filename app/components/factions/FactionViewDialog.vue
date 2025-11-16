@@ -13,12 +13,6 @@
             {{ $t('factions.leader') }}: {{ faction.leader_name }}
           </div>
         </div>
-        <v-btn icon="mdi-pencil" variant="text" @click="$emit('edit', faction)">
-          <v-icon>mdi-pencil</v-icon>
-          <v-tooltip activator="parent" location="bottom">
-            {{ $t('common.edit') }}
-          </v-tooltip>
-        </v-btn>
         <v-btn icon="mdi-close" variant="text" @click="close">
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -361,8 +355,6 @@ const emit = defineEmits<{
   'preview-image': [imageUrl: string, title: string]
 }>()
 
-const { t } = useI18n()
-
 const internalShow = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value),
@@ -395,12 +387,12 @@ watch(
       try {
         const [countsData, membersData, itemsData, locationsData, loreData] = await Promise.all([
           $fetch<Faction['_counts']>(`/api/factions/${newFactionId}/counts`),
-          $fetch<typeof members.value>(`/api/factions/${newFactionId}/members`).catch(() => []),
-          $fetch<typeof items.value>(`/api/factions/${newFactionId}/items`).catch(() => []),
-          $fetch<typeof locations.value>(`/api/factions/${newFactionId}/locations`).catch(
+          $fetch<typeof members.value>(`/api/entities/${newFactionId}/related/npcs`).catch(() => []),
+          $fetch<typeof items.value>(`/api/entities/${newFactionId}/related/items`).catch(() => []),
+          $fetch<typeof locations.value>(`/api/entities/${newFactionId}/related/locations`).catch(
             () => [],
           ),
-          $fetch<typeof loreEntries.value>(`/api/factions/${newFactionId}/lore`).catch(() => []),
+          $fetch<typeof loreEntries.value>(`/api/entities/${newFactionId}/related/lore`).catch(() => []),
         ])
 
         counts.value = countsData

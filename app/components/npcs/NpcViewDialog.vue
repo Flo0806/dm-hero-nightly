@@ -3,14 +3,6 @@
     <v-card v-if="npc">
       <!-- Header with Avatar & Name -->
       <v-card-title class="d-flex align-center pa-4">
-        <!-- Back Button (only when viewing nested NPC) -->
-        <v-btn v-if="canGoBack" icon="mdi-arrow-left" variant="text" class="mr-2" @click="$emit('go-back')">
-          <v-icon>mdi-arrow-left</v-icon>
-          <v-tooltip activator="parent" location="bottom">
-            {{ $t('common.back') }}
-          </v-tooltip>
-        </v-btn>
-
         <v-avatar :size="64" class="mr-4">
           <v-img v-if="npc.image_url" :src="`/uploads/${npc.image_url}`" cover />
           <v-icon v-else icon="mdi-account" size="32" />
@@ -23,12 +15,6 @@
             <span v-if="npc.metadata?.class">{{ getClassDisplayName(npc.metadata.class) }}</span>
           </div>
         </div>
-        <v-btn icon="mdi-pencil" variant="text" @click="$emit('edit', npc)">
-          <v-icon>mdi-pencil</v-icon>
-          <v-tooltip activator="parent" location="bottom">
-            {{ $t('common.edit') }}
-          </v-tooltip>
-        </v-btn>
         <v-btn icon="mdi-close" variant="text" @click="close">
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -379,12 +365,11 @@
       <v-divider />
 
       <v-card-actions>
-        <v-spacer />
-        <v-btn variant="text" @click="close">{{ $t('common.close') }}</v-btn>
-        <v-btn color="primary" variant="tonal" @click="$emit('edit', npc)">
-          <v-icon start>mdi-pencil</v-icon>
+        <v-btn variant="text" prepend-icon="mdi-pencil" @click="$emit('edit', npc)">
           {{ $t('common.edit') }}
         </v-btn>
+        <v-spacer />
+        <v-btn variant="text" @click="close">{{ $t('common.close') }}</v-btn>
       </v-card-actions>
     </v-card>
 
@@ -529,7 +514,7 @@ watch(
             image_url?: string
             rarity?: string
           }>
-        >(`/api/npcs/${newNpc.id}/items`).catch((error) => {
+        >(`/api/entities/${newNpc.id}/related/items`).catch((error) => {
           console.error('Failed to load items:', error)
           return []
         }),
@@ -544,7 +529,7 @@ watch(
             type?: string
             region?: string
           }>
-        >(`/api/npcs/${newNpc.id}/locations`).catch((error) => {
+        >(`/api/entities/${newNpc.id}/related/locations`).catch((error) => {
           console.error('Failed to load locations:', error)
           return []
         }),
@@ -562,7 +547,7 @@ watch(
         }),
         $fetch<
           Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-        >(`/api/npcs/${newNpc.id}/lore`).catch((error) => {
+        >(`/api/entities/${newNpc.id}/related/lore`).catch((error) => {
           console.error('Failed to load lore:', error)
           return []
         }),

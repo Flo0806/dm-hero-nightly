@@ -367,7 +367,7 @@
                     <v-icon icon="mdi-account" color="primary" />
                   </template>
                   <v-list-item-title>
-                    {{ owner.npc_name }}
+                    {{ owner.name }}
                     <v-chip
                       v-if="owner.notes?.equipped"
                       size="x-small"
@@ -1115,7 +1115,7 @@ const itemOwners = ref<
   Array<{
     id: number
     from_entity_id: number
-    npc_name: string
+    name: string
     relation_type: string
     notes: Record<string, unknown> | null
   }>
@@ -1321,7 +1321,7 @@ async function loadItemOwners() {
 
   try {
     const owners = await $fetch<typeof itemOwners.value>(
-      `/api/items/${editingItem.value.id}/owners`,
+      `/api/entities/${editingItem.value.id}/related/npcs`,
     )
     itemOwners.value = owners
   } catch (error) {
@@ -1389,7 +1389,7 @@ async function loadItemLocations() {
 
   try {
     const locs = await $fetch<typeof itemLocations.value>(
-      `/api/items/${editingItem.value.id}/locations`,
+      `/api/entities/${editingItem.value.id}/related/locations`,
     )
     itemLocations.value = locs
   } catch (error) {
@@ -1483,7 +1483,7 @@ async function loadLinkedLore(itemId: number) {
   try {
     const relations = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/items/${itemId}/lore`)
+    >(`/api/entities/${itemId}/related/lore`)
     linkedLore.value = relations
   } catch (error) {
     console.error('Failed to load linked lore:', error)
@@ -1551,7 +1551,7 @@ async function loadLinkedFactions(itemId: number) {
         image_url: string | null
         direction?: 'outgoing' | 'incoming'
       }>
-    >(`/api/items/${itemId}/factions`)
+    >(`/api/entities/${itemId}/related/factions`)
     linkedFactions.value = factions
   } catch (error) {
     console.error('Failed to load linked factions:', error)
@@ -1581,24 +1581,19 @@ async function addFactionRelation() {
   }
 }
 
-async function removeFactionRelation(factionId: number) {
+async function removeFactionRelation(relationId: number) {
   if (!editingItem.value) return
 
   try {
-    // Find the relation ID
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: editingItem.value.id,
-        toEntityId: factionId,
-      },
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation?.id) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
+    await loadLinkedFactions(editingItem.value.id)
 
-      await loadLinkedFactions(editingItem.value.id)
+    // Reload counts to update the badge on the card
+    if (editingItem.value) {
+      await reloadItemCounts(editingItem.value)
     }
   } catch (error) {
     console.error('Failed to remove faction relation:', error)

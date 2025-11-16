@@ -1247,7 +1247,7 @@ async function loadNpcItems() {
   if (!editingNpc.value) return
 
   try {
-    const items = await $fetch<typeof npcItems.value>(`/api/npcs/${editingNpc.value.id}/items`)
+    const items = await $fetch<typeof npcItems.value>(`/api/entities/${editingNpc.value.id}/related/items`)
     npcItems.value = items
   } catch (error) {
     console.error('Failed to load NPC items:', error)
@@ -1349,7 +1349,7 @@ async function editNpc(npc: NPC) {
         type?: string
         region?: string
       }>
-    >(`/api/npcs/${npc.id}/locations`)
+    >(`/api/entities/${npc.id}/related/locations`)
 
     // Map locations to the same structure as npcRelations (legacy format)
     const mappedLocationRelations = locationRelations.map((loc) => ({
@@ -1775,7 +1775,7 @@ async function loadLinkedLore(npcId: number) {
   try {
     const relations = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/npcs/${npcId}/lore`)
+    >(`/api/entities/${npcId}/related/lore`)
     linkedLore.value = relations
   } catch (error) {
     console.error('Failed to load linked lore:', error)
@@ -1809,28 +1809,16 @@ async function addLoreRelation(loreId: number) {
 }
 
 // Remove lore relation
-async function removeLoreRelation(loreId: number) {
+async function removeLoreRelation(relationId: number) {
   if (!editingNpc.value) return
 
   try {
-    // Find the relation ID
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        from_entity_id: editingNpc.value.id,
-        to_entity_id: loreId,
-      },
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation?.id) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-
-      await loadLinkedLore(editingNpc.value.id)
-
-      // Reload counts for this NPC (lore count changed)
-      await reloadNpcCounts(editingNpc.value)
-    }
+    await loadLinkedLore(editingNpc.value.id)
+    await reloadNpcCounts(editingNpc.value)
   } catch (error) {
     console.error('Failed to remove lore relation:', error)
   }

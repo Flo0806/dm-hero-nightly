@@ -239,10 +239,19 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" :disabled="saving" @click="closeDialog">
+          <v-btn
+            variant="text"
+            :disabled="saving || uploadingImage || generatingImage"
+            @click="closeDialog"
+          >
             {{ $t('common.cancel') }}
           </v-btn>
-          <v-btn color="primary" :loading="saving" @click="saveFaction">
+          <v-btn
+            color="primary"
+            :loading="saving"
+            :disabled="uploadingImage || generatingImage"
+            @click="saveFaction"
+          >
             {{ editingFaction ? $t('common.save') : $t('common.create') }}
           </v-btn>
         </v-card-actions>
@@ -332,7 +341,10 @@ interface FactionMember {
   relation_type: string
   notes: Record<string, unknown> | null
   created_at: string
-  npc_name: string
+  name: string
+  image_url?: string | null
+  description?: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
 interface FactionLocation {
@@ -342,7 +354,10 @@ interface FactionLocation {
   relation_type: string
   notes: Record<string, unknown> | null
   created_at: string
-  location_name: string
+  name: string
+  image_url?: string | null
+  description?: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
 // Search state (must be declared early for template)
@@ -671,7 +686,7 @@ async function saveFaction() {
     if (editingFaction.value && editingFaction.value.leader_id) {
       try {
         // Find and delete the old leader relation
-        const members = await $fetch<FactionMember[]>(`/api/factions/${factionId}/members`)
+        const members = await $fetch<FactionMember[]>(`/api/entities/${factionId}/related/npcs`)
         const leaderRelation = members.find((m) => m.relation_type === 'Anführer')
         if (leaderRelation) {
           await $fetch(`/api/entity-relations/${leaderRelation.id}`, { method: 'DELETE' })
@@ -681,10 +696,10 @@ async function saveFaction() {
       }
     }
 
-    // Step 2: Create new "Anführer" relation if leaderId is set
-    if (factionForm.value.leaderId) {
+    // Step 2: Create new "Anführer" relation if leaderId is set and different from old one
+    if (factionForm.value.leaderId && factionForm.value.leaderId !== editingFaction.value?.leader_id) {
       try {
-        await $fetch(`/api/factions/${factionId}/members`, {
+        await $fetch<{ success: boolean }>(`/api/factions/${factionId}/members`, {
           method: 'POST',
           body: {
             npcId: factionForm.value.leaderId,
@@ -738,7 +753,7 @@ async function loadFactionMembers() {
 
   try {
     const members = await $fetch<FactionMember[]>(
-      `/api/factions/${editingFaction.value.id}/members`,
+      `/api/entities/${editingFaction.value.id}/related/npcs`,
     )
     factionMembers.value = members
   } catch (error) {
@@ -759,7 +774,7 @@ async function addNpcMember(payload: {
   addingMember.value = true
 
   try {
-    await $fetch(`/api/factions/${editingFaction.value.id}/members`, {
+    await $fetch<{ success: boolean }>(`/api/factions/${editingFaction.value.id}/members`, {
       method: 'POST',
       body: {
         npcId: payload.npcId,
@@ -796,7 +811,7 @@ async function loadFactionLocations() {
 
   try {
     const locations = await $fetch<FactionLocation[]>(
-      `/api/factions/${editingFaction.value.id}/locations`,
+      `/api/entities/${editingFaction.value.id}/related/locations`,
     )
     factionLocations.value = locations
   } catch (error) {
@@ -813,7 +828,7 @@ async function addLocationLink(payload: { locationId: number; relationType: stri
   addingLocation.value = true
 
   try {
-    await $fetch(`/api/factions/${editingFaction.value.id}/locations`, {
+    await $fetch<{ success: boolean }>(`/api/factions/${editingFaction.value.id}/locations`, {
       method: 'POST',
       body: {
         locationId: payload.locationId,
@@ -848,7 +863,7 @@ async function loadLinkedLore() {
   try {
     const lore = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/factions/${editingFaction.value.id}/lore`)
+    >(`/api/entities/${editingFaction.value.id}/related/lore`)
     linkedLore.value = lore
   } catch (error) {
     console.error('Failed to load linked Lore:', error)
@@ -858,7 +873,7 @@ async function loadLinkedLore() {
 async function addLoreRelation(loreId: number) {
   if (!editingFaction.value) return
   try {
-    await $fetch('/api/entity-relations', {
+    await $fetch<{ success: boolean }>('/api/entity-relations', {
       method: 'POST',
       body: {
         fromEntityId: loreId,
@@ -887,7 +902,7 @@ async function loadLinkedItems() {
         image_url: string | null
         direction?: 'outgoing' | 'incoming'
       }>
-    >(`/api/factions/${editingFaction.value.id}/items`)
+    >(`/api/entities/${editingFaction.value.id}/related/items`)
     linkedItems.value = items
   } catch (error) {
     console.error('Failed to load linked Items:', error)
@@ -897,7 +912,7 @@ async function loadLinkedItems() {
 async function addItemRelation(itemId: number) {
   if (!editingFaction.value) return
   try {
-    await $fetch('/api/entity-relations', {
+    await $fetch<{ success: boolean }>('/api/entity-relations', {
       method: 'POST',
       body: {
         fromEntityId: editingFaction.value.id,
@@ -914,23 +929,15 @@ async function addItemRelation(itemId: number) {
   }
 }
 
-async function removeItemRelation(itemId: number) {
+async function removeItemRelation(relationId: number) {
   if (!editingFaction.value) return
   try {
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: editingFaction.value.id,
-        toEntityId: itemId,
-      },
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-      await loadLinkedItems()
-      // Reload counts immediately after removing item
-      await reloadFactionCounts(editingFaction.value)
-    }
+    await loadLinkedItems()
+    // Reload counts immediately after removing item
+    await reloadFactionCounts(editingFaction.value)
   } catch (error) {
     console.error('Failed to remove Item relation:', error)
   }

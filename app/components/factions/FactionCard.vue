@@ -251,13 +251,6 @@
           {{ $t('common.view') }}
         </v-tooltip>
       </v-btn>
-      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', faction)">
-        <v-icon>mdi-pencil</v-icon>
-        <v-tooltip activator="parent" location="bottom">
-          {{ $t('common.edit') }}
-        </v-tooltip>
-      </v-btn>
-      <v-spacer />
       <v-btn
         icon="mdi-download"
         size="small"
@@ -268,6 +261,13 @@
         <v-icon>mdi-download</v-icon>
         <v-tooltip activator="parent" location="bottom">
           {{ $t('common.download') }}
+        </v-tooltip>
+      </v-btn>
+      <v-spacer />
+      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', faction)">
+        <v-icon>mdi-pencil</v-icon>
+        <v-tooltip activator="parent" location="bottom">
+          {{ $t('common.edit') }}
         </v-tooltip>
       </v-btn>
       <v-btn

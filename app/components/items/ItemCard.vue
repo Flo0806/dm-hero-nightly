@@ -128,6 +128,33 @@
           <span>{{ $t('items.badgeTooltips.locations') }}</span>
         </v-tooltip>
 
+        <!-- Factions Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-shield-account"
+              size="small"
+              variant="outlined"
+              :color="counts.factions > 0 ? 'primary' : undefined"
+            >
+              {{ counts.factions }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-shield-account"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('items.badgeTooltips.factions') }}</span>
+        </v-tooltip>
+
         <!-- Lore Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">
@@ -220,13 +247,6 @@
           {{ $t('common.view') }}
         </v-tooltip>
       </v-btn>
-      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', item)">
-        <v-icon>mdi-pencil</v-icon>
-        <v-tooltip activator="parent" location="bottom">
-          {{ $t('common.edit') }}
-        </v-tooltip>
-      </v-btn>
-      <v-spacer />
       <v-btn
         icon="mdi-download"
         size="small"
@@ -237,6 +257,13 @@
         <v-icon>mdi-download</v-icon>
         <v-tooltip activator="parent" location="bottom">
           {{ $t('common.download') }}
+        </v-tooltip>
+      </v-btn>
+      <v-spacer />
+      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', item)">
+        <v-icon>mdi-pencil</v-icon>
+        <v-tooltip activator="parent" location="bottom">
+          {{ $t('common.edit') }}
         </v-tooltip>
       </v-btn>
       <v-btn

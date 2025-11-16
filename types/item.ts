@@ -37,6 +37,7 @@ export interface ItemMetadata {
 export interface ItemCounts {
   owners: number
   locations: number
+  factions: number
   lore: number
   documents: number
   images: number

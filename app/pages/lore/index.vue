@@ -198,14 +198,6 @@
                   </template>
                   <v-list-item-title>
                     {{ npc.name }}
-                    <v-chip
-                      v-if="npc.direction === 'incoming'"
-                      size="x-small"
-                      color="info"
-                      class="ml-2"
-                    >
-                      ←
-                    </v-chip>
                   </v-list-item-title>
                   <v-list-item-subtitle v-if="npc.description">
                     {{ npc.description.substring(0, 100) }}{{ npc.description.length > 100 ? '...' : '' }}
@@ -219,12 +211,6 @@
                       color="error"
                       @click="removeNpcRelation(npc.id)"
                     />
-                    <v-tooltip v-else location="left">
-                      <template #activator="{ props }">
-                        <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
-                      </template>
-                      {{ $t('lore.incomingNpcTooltip') }}
-                    </v-tooltip>
                   </template>
                 </v-list-item>
               </v-list>
@@ -422,14 +408,6 @@
                   </template>
                   <v-list-item-title>
                     {{ location.name }}
-                    <v-chip
-                      v-if="location.direction === 'incoming'"
-                      size="x-small"
-                      color="info"
-                      class="ml-2"
-                    >
-                      ←
-                    </v-chip>
                   </v-list-item-title>
                   <v-list-item-subtitle v-if="location.description">
                     {{ location.description.substring(0, 80)
@@ -444,14 +422,6 @@
                       size="small"
                       @click="removeLocationRelation(location.id)"
                     />
-                    <v-tooltip v-else location="left">
-                      <template #activator="{ props }">
-                        <v-icon v-bind="props" color="info" size="small">
-                          mdi-information
-                        </v-icon>
-                      </template>
-                      {{ $t('lore.incomingLocationTooltip') }}
-                    </v-tooltip>
                   </template>
                 </v-list-item>
               </v-list>
@@ -913,9 +883,10 @@ const npcsForSelect = computed(() => {
 
 // Check for active campaign and handle highlighting
 onMounted(async () => {
-  // Load Lore, Factions, Items and Locations
+  // Load Lore, NPCs, Factions, Items and Locations
   await Promise.all([
     entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchNPCs(activeCampaignId.value!),
     entitiesStore.fetchFactions(activeCampaignId.value!),
     entitiesStore.fetchItems(activeCampaignId.value!),
     entitiesStore.fetchLocations(activeCampaignId.value!),
@@ -1027,10 +998,10 @@ async function viewLore(loreEntry: Lore) {
   // Load all relation data
   try {
     const [npcs, items, factions, locations] = await Promise.all([
-      $fetch<typeof linkedNpcs.value>(`/api/lore/${loreEntry.id}/npcs`).catch(() => []),
-      $fetch<typeof linkedItems.value>(`/api/lore/${loreEntry.id}/items`).catch(() => []),
-      $fetch<typeof linkedFactions.value>(`/api/lore/${loreEntry.id}/factions`).catch(() => []),
-      $fetch<typeof linkedLocations.value>(`/api/lore/${loreEntry.id}/locations`).catch(() => []),
+      $fetch<typeof linkedNpcs.value>(`/api/entities/${loreEntry.id}/related/npcs`).catch(() => []),
+      $fetch<typeof linkedItems.value>(`/api/entities/${loreEntry.id}/related/items`).catch(() => []),
+      $fetch<typeof linkedFactions.value>(`/api/entities/${loreEntry.id}/related/factions`).catch(() => []),
+      $fetch<typeof linkedLocations.value>(`/api/entities/${loreEntry.id}/related/locations`).catch(() => []),
     ])
 
     linkedNpcs.value = npcs
@@ -1168,7 +1139,7 @@ async function loadLinkedFactions() {
   try {
     const factions = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/lore/${editingLore.value.id}/factions`)
+    >(`/api/entities/${editingLore.value.id}/related/factions`)
     linkedFactions.value = factions
   } catch (error) {
     console.error('Failed to load linked Factions:', error)
@@ -1226,7 +1197,7 @@ async function loadLinkedNpcs() {
         image_url: string | null
         direction?: 'outgoing' | 'incoming'
       }>
-    >(`/api/lore/${editingLore.value.id}/npcs`)
+    >(`/api/entities/${editingLore.value.id}/related/npcs`)
     linkedNpcs.value = npcs
   } catch (error) {
     console.error('Failed to load linked NPCs:', error)
@@ -1286,7 +1257,7 @@ async function loadLinkedItems() {
   try {
     const items = await $fetch<
       Array<{ id: number; name: string; description: string | null; image_url: string | null }>
-    >(`/api/lore/${editingLore.value.id}/items`)
+    >(`/api/entities/${editingLore.value.id}/related/items`)
     linkedItems.value = items
   } catch (error) {
     console.error('Failed to load linked Items:', error)
@@ -1352,7 +1323,7 @@ async function loadLinkedLocations() {
         image_url: string | null
         direction?: 'outgoing' | 'incoming'
       }>
-    >(`/api/lore/${editingLore.value.id}/locations`)
+    >(`/api/entities/${editingLore.value.id}/related/locations`)
     linkedLocations.value = locations
   } catch (error) {
     console.error('Failed to load linked Locations:', error)
@@ -1384,25 +1355,17 @@ async function addLocationRelation() {
   }
 }
 
-async function removeLocationRelation(locationId: number) {
+async function removeLocationRelation(relationId: number) {
   if (!editingLore.value) return
   try {
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: editingLore.value.id,
-        toEntityId: locationId,
-      },
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-      await loadLinkedLocations()
+    await loadLinkedLocations()
 
-      // Reload counts to update the badge on the card
-      if (editingLore.value) {
-        await reloadLoreCounts(editingLore.value)
-      }
+    // Reload counts to update the badge on the card
+    if (editingLore.value) {
+      await reloadLoreCounts(editingLore.value)
     }
   } catch (error) {
     console.error('Failed to remove Location relation:', error)
