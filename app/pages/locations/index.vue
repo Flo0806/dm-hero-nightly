@@ -178,7 +178,7 @@
     <v-dialog
       v-model="showCreateDialog"
       max-width="800"
-      :persistent="saving || uploadingImage || generatingImage"
+      :persistent="saving"
     >
       <v-card>
         <v-card-title>
@@ -193,23 +193,28 @@
           </v-tab>
           <v-tab value="images">
             <v-icon start>mdi-image-multiple</v-icon>
-            {{ $t('common.images') }} ({{ locationCounts?.images || 0 }})
+            {{ $t('common.images') }}
+            <v-chip size="x-small" class="ml-2">{{ locationCounts?.images || 0 }}</v-chip>
           </v-tab>
           <v-tab value="documents">
             <v-icon start>mdi-file-document</v-icon>
-            {{ $t('documents.title') }} ({{ locationCounts?.documents || 0 }})
+            {{ $t('documents.title') }}
+            <v-chip size="x-small" class="ml-2">{{ locationCounts?.documents || 0 }}</v-chip>
           </v-tab>
           <v-tab value="npcs">
             <v-icon start>mdi-account-group</v-icon>
-            {{ $t('npcs.title') }} ({{ locationCounts?.npcs || 0 }})
+            {{ $t('npcs.title') }}
+            <v-chip size="x-small" class="ml-2">{{ locationCounts?.npcs || 0 }}</v-chip>
           </v-tab>
           <v-tab value="items">
             <v-icon start>mdi-treasure-chest</v-icon>
-            {{ $t('items.title') }} ({{ linkedItems.length }})
+            {{ $t('items.title') }}
+            <v-chip size="x-small" class="ml-2">{{ linkedItems.length }}</v-chip>
           </v-tab>
           <v-tab value="lore">
             <v-icon start>mdi-book-open-variant</v-icon>
-            {{ $t('lore.title') }} ({{ locationCounts?.lore || 0 }})
+            {{ $t('lore.title') }}
+            <v-chip size="x-small" class="ml-2">{{ locationCounts?.lore || 0 }}</v-chip>
           </v-tab>
         </v-tabs>
 
@@ -299,9 +304,10 @@
 
             <!-- NPCs Tab -->
             <v-tabs-window-item value="npcs">
-              <LocationNpcsTab
+              <SharedEntityNpcsTab
                 :linked-npcs="linkedNpcs"
                 :available-npcs="npcForSelect"
+                :show-avatar="true"
                 @add="addNpcRelation"
                 @remove="removeNpcRelation"
               />
@@ -309,9 +315,12 @@
 
             <!-- Items Tab -->
             <v-tabs-window-item value="items">
-              <LocationItemsTab
+              <SharedEntityItemsTab
                 :linked-items="linkedItems"
                 :available-items="itemsForSelect"
+                :show-avatar="true"
+                :show-relation-type="true"
+                :relation-type-suggestions="itemRelationTypeSuggestions"
                 @add="addItemRelation"
                 @remove="removeItemRelation"
               />
@@ -319,7 +328,7 @@
 
             <!-- Lore Tab -->
             <v-tabs-window-item value="lore">
-              <LocationLoreTab
+              <SharedEntityLoreTab
                 :linked-lore="linkedLore"
                 :available-lore="loreForSelect"
                 @add="addLoreRelation"
@@ -390,14 +399,14 @@
           <v-spacer />
           <v-btn
             variant="text"
-            :disabled="saving || uploadingImage || generatingImage"
+            :disabled="saving"
             @click="closeDialog"
           >
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
             color="primary"
-            :disabled="!locationForm.name || uploadingImage || generatingImage"
+            :disabled="!locationForm.name"
             :loading="saving"
             @click="saveLocation"
           >
@@ -408,256 +417,22 @@
     </v-dialog>
 
     <!-- View Location Dialog -->
-    <v-dialog v-model="showViewDialog" max-width="900" scrollable>
-      <v-card v-if="viewingLocation">
-        <v-card-title class="d-flex align-center pa-4">
-          <v-avatar :size="64" class="mr-4">
-            <v-img v-if="viewingLocation.image_url" :src="`/uploads/${viewingLocation.image_url}`" cover />
-            <v-icon v-else icon="mdi-map-marker" size="32" />
-          </v-avatar>
-          <div class="flex-grow-1">
-            <h2 class="text-h5">{{ viewingLocation.name }}</h2>
-            <div v-if="viewingLocation.metadata?.type" class="text-body-2 text-medium-emphasis">
-              {{ viewingLocation.metadata.type }}
-            </div>
-          </div>
-          <v-btn icon="mdi-pencil" variant="text" @click="editLocationAndCloseView(viewingLocation)">
-            <v-icon>mdi-pencil</v-icon>
-            <v-tooltip activator="parent" location="bottom">
-              {{ $t('common.edit') }}
-            </v-tooltip>
-          </v-btn>
-          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false">
-            <v-icon>mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-
-        <v-divider />
-
-        <!-- Tabs -->
-        <v-tabs v-model="viewDialogTab" bg-color="surface">
-          <v-tab value="overview">
-            <v-icon start>mdi-information</v-icon>
-            {{ $t('common.details') }}
-          </v-tab>
-          <v-tab value="npcs">
-            <v-icon start>mdi-account-group</v-icon>
-            {{ $t('npcs.title') }}
-            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.npcs }}</v-chip>
-          </v-tab>
-          <v-tab value="items">
-            <v-icon start>mdi-treasure-chest</v-icon>
-            {{ $t('items.title') }}
-            <v-chip v-if="locationItems" size="x-small" class="ml-2">{{ locationItems.length }}</v-chip>
-          </v-tab>
-          <v-tab value="lore">
-            <v-icon start>mdi-book-open-variant</v-icon>
-            {{ $t('lore.title') }}
-            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.lore }}</v-chip>
-          </v-tab>
-          <v-tab value="documents">
-            <v-icon start>mdi-file-document</v-icon>
-            {{ $t('documents.title') }}
-            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.documents }}</v-chip>
-          </v-tab>
-          <v-tab value="gallery">
-            <v-icon start>mdi-image</v-icon>
-            {{ $t('common.images') }}
-            <v-chip v-if="locationCounts" size="x-small" class="ml-2">{{ locationCounts.images }}</v-chip>
-          </v-tab>
-        </v-tabs>
-
-        <v-divider />
-
-        <!-- Tab Content -->
-        <v-card-text style="max-height: 600px; overflow-y: auto">
-          <v-window v-model="viewDialogTab">
-            <!-- Overview Tab -->
-            <v-window-item value="overview">
-              <div class="pa-4">
-          <!-- Breadcrumb Path -->
-          <LocationBreadcrumb
-            v-if="viewingLocation.parent_entity_id"
-            :location-id="viewingLocation.id"
-            class="mb-4"
-          />
-
-          <div v-if="viewingLocation.description" class="mb-4">
-            <h3 class="text-h6 mb-2">
-              {{ $t('locations.description') }}
-            </h3>
-            <p class="text-body-1">
-              {{ viewingLocation.description }}
-            </p>
-          </div>
-
-          <!-- Metadata Grid -->
-          <v-row dense>
-            <v-col v-if="viewingLocation.metadata?.type" cols="12" sm="6">
-              <v-card variant="outlined" class="pa-3">
-                <div class="d-flex align-center">
-                  <v-icon class="mr-3" color="primary">mdi-shape</v-icon>
-                  <div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('locations.type') }}</div>
-                    <div class="font-weight-medium">{{ viewingLocation.metadata.type }}</div>
-                  </div>
-                </div>
-              </v-card>
-            </v-col>
-            <v-col v-if="viewingLocation.metadata?.region" cols="12" sm="6">
-              <v-card variant="outlined" class="pa-3">
-                <div class="d-flex align-center">
-                  <v-icon class="mr-3" color="secondary">mdi-map</v-icon>
-                  <div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('locations.region') }}</div>
-                    <div class="font-weight-medium">{{ viewingLocation.metadata.region }}</div>
-                  </div>
-                </div>
-              </v-card>
-            </v-col>
-            <v-col v-if="viewingLocation.metadata?.notes" cols="12">
-              <v-card variant="outlined" class="pa-3">
-                <div class="d-flex align-start">
-                  <v-icon class="mr-3 mt-1">mdi-note-text</v-icon>
-                  <div>
-                    <div class="text-caption text-medium-emphasis">{{ $t('locations.notes') }}</div>
-                    <div class="font-weight-medium">{{ viewingLocation.metadata.notes }}</div>
-                  </div>
-                </div>
-              </v-card>
-            </v-col>
-          </v-row>
-              </div>
-            </v-window-item>
-
-            <!-- NPCs Tab -->
-            <v-window-item value="npcs">
-              <div class="pa-4">
-          <h3 class="text-h6 mb-3">
-            {{ $t('locations.connectedNpcs') }}
-          </h3>
-          <v-progress-linear v-if="loadingNpcs" indeterminate />
-          <v-list v-else-if="connectedNpcs && connectedNpcs.length > 0">
-            <v-list-item
-              v-for="npc in connectedNpcs"
-              :key="npc.id"
-              :title="npc.name"
-              :subtitle="`${npc.relation_type}${npc.relation_notes ? ': ' + npc.relation_notes : ''}`"
-            >
-              <template #prepend>
-                <v-icon icon="mdi-account" />
-              </template>
-            </v-list-item>
-          </v-list>
-          <div v-else class="text-center py-8 text-medium-emphasis">
-            {{ $t('locations.noConnectedNpcs') }}
-          </div>
-              </div>
-            </v-window-item>
-
-            <!-- Items Tab -->
-            <v-window-item value="items">
-              <div class="pa-4">
-          <div v-if="loadingItems" class="text-center py-8">
-            <v-progress-circular indeterminate color="primary" />
-          </div>
-          <div v-else-if="!locationItems || locationItems.length === 0" class="text-center py-8 text-medium-emphasis">
-            {{ $t('locations.noItems') }}
-          </div>
-          <v-list v-else lines="two">
-            <v-list-item
-              v-for="item in locationItems"
-              :key="item.id"
-              :prepend-avatar="item.item_image ? `/uploads/${item.item_image}` : undefined"
-            >
-              <template #prepend>
-                <v-avatar v-if="item.item_image" size="48">
-                  <v-img :src="`/uploads/${item.item_image}`" />
-                </v-avatar>
-                <v-avatar v-else color="grey-lighten-2" size="48">
-                  <v-icon>mdi-sword</v-icon>
-                </v-avatar>
-              </template>
-              <v-list-item-title class="font-weight-medium">{{ item.item_name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                <v-chip size="small" class="mr-1">
-                  {{ $t(`locations.itemRelationTypes.${item.relation_type}`) }}
-                </v-chip>
-                <span v-if="item.notes?.quantity" class="text-caption">
-                  {{ $t('locations.quantity') }}: {{ item.notes.quantity }}
-                </span>
-              </v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-              </div>
-            </v-window-item>
-
-            <!-- Lore Tab -->
-            <v-window-item value="lore">
-              <div class="pa-4">
-                <div v-if="loadingLore" class="text-center py-8">
-                  <v-progress-circular indeterminate color="primary" />
-                </div>
-                <div v-else-if="!locationLore || locationLore.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('locations.noLore') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="lore in locationLore"
-                    :key="lore.id"
-                    :prepend-avatar="lore.image_url ? `/uploads/${lore.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="lore.image_url" size="48">
-                        <v-img :src="`/uploads/${lore.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-book-open-variant</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ lore.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="lore.description">
-                      {{ lore.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
-            </v-window-item>
-
-            <!-- Documents Tab -->
-            <v-window-item value="documents">
-              <div class="pa-4">
-                <EntityDocuments v-if="viewingLocation" :entity-id="viewingLocation.id" entity-type="Location" />
-              </div>
-            </v-window-item>
-
-            <!-- Gallery Tab -->
-            <v-window-item value="gallery">
-              <div class="pa-4">
-                <EntityImageGallery
-                  v-if="viewingLocation"
-                  :entity-id="viewingLocation.id"
-                  entity-type="Location"
-                  @preview-image="openImagePreview"
-                />
-              </div>
-            </v-window-item>
-          </v-window>
-        </v-card-text>
-
-        <v-divider />
-
-        <v-card-actions>
-          <v-btn variant="text" prepend-icon="mdi-pencil" @click="editLocationAndCloseView(viewingLocation)">
-            {{ $t('common.edit') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn variant="text" @click="showViewDialog = false">
-            {{ $t('common.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <LocationViewDialog
+      v-model="showViewDialog"
+      :location="viewingLocation"
+      :npcs="connectedNpcs"
+      :items="locationItems"
+      :lore="locationLore"
+      :documents="locationDocuments"
+      :images="locationImages"
+      :counts="viewDialogCounts"
+      :loading="loadingViewData"
+      :loading-npcs="loadingNpcs"
+      :loading-items="loadingItems"
+      :loading-lore="loadingLore"
+      @edit="editLocationAndCloseView"
+      @preview-image="(image: { image_url: string }) => openImagePreview(`/uploads/${image.image_url}`, viewingLocation?.name || '')"
+    />
 
     <!-- Delete Confirmation -->
     <UiDeleteConfirmDialog
@@ -680,12 +455,10 @@
 </template>
 
 <script setup lang="ts">
-import LocationNpcsTab from '~/components/locations/LocationNpcsTab.vue'
-import LocationLoreTab from '~/components/locations/LocationLoreTab.vue'
-import LocationItemsTab from '~/components/locations/LocationItemsTab.vue'
+import LocationViewDialog from '~/components/locations/LocationViewDialog.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
-import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
+import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 
 interface Location {
   id: number
@@ -752,14 +525,11 @@ function handleSearchClear() {
   if (inputTimeout) clearTimeout(inputTimeout)
 }
 
-const { t, locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const entitiesStore = useEntitiesStore()
 const campaignStore = useCampaignStore()
-
-// Use image download composable
-const { downloadImage } = useImageDownload()
 
 // Get active campaign from campaign store
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
@@ -883,6 +653,15 @@ const itemsForSelect = computed(() => {
       name: item.name,
     }))
 })
+
+const itemRelationTypeSuggestions = computed(() => [
+  { title: t('locations.itemRelationTypes.contains'), value: 'contains' },
+  { title: t('locations.itemRelationTypes.hidden'), value: 'hidden' },
+  { title: t('locations.itemRelationTypes.displayed'), value: 'displayed' },
+  { title: t('locations.itemRelationTypes.stored'), value: 'stored' },
+  { title: t('locations.itemRelationTypes.lost'), value: 'lost' },
+  { title: t('locations.itemRelationTypes.guarded'), value: 'guarded' },
+])
 
 // Debounce search with abort controller
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -1160,6 +939,7 @@ const editingLocation = ref<Location | null>(null)
 const viewingLocation = ref<Location | null>(null)
 const deletingLocation = ref<Location | null>(null)
 const locationCounts = ref<LocationCounts | null>(null)
+const viewDialogCounts = ref<LocationCounts | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
 
@@ -1196,247 +976,10 @@ const linkedItems = ref<
 >([])
 const imageGenerating = ref(false)
 
-// Image gallery state
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const uploadingImage = ref(false)
-const generatingImage = ref(false)
-const loadingImages = ref(false)
+// Image gallery state (removed - now in EntityImageGallery component)
 const hasApiKey = ref(false)
-const locationImages = ref<
-  Array<{
-    id: number
-    entity_id: number
-    image_url: string
-    caption: string | null
-    is_primary: number
-    display_order: number
-    created_at: string
-  }>
->([])
 
-// Trigger file input click
-function triggerImageUpload() {
-  fileInputRef.value?.click()
-}
-
-// Load images for location
-async function loadLocationImages() {
-  if (!editingLocation.value) return
-
-  loadingImages.value = true
-  try {
-    const images = await $fetch<typeof locationImages.value>(
-      `/api/entity-images/${editingLocation.value.id}`,
-    )
-    locationImages.value = images
-  } catch (error) {
-    console.error('Failed to load images:', error)
-    locationImages.value = []
-  } finally {
-    loadingImages.value = false
-  }
-}
-
-// Handle image upload from native input (multiple files)
-async function handleImageUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (!target.files || !target.files.length || !editingLocation.value) return
-
-  uploadingImage.value = true
-
-  try {
-    const formData = new FormData()
-    for (const file of Array.from(target.files)) {
-      formData.append('file', file)
-    }
-
-    const response = await $fetch<{
-      success: boolean
-      images: Array<{ id: number; imageUrl: string; isPrimary: boolean }>
-    }>(`/api/entities/${editingLocation.value.id}/upload-image`, {
-      method: 'POST',
-      body: formData,
-    })
-
-    // Reload images
-    await loadLocationImages()
-
-    // If a primary image was uploaded, update the location
-    const primaryImage = response.images.find((img) => img.isPrimary)
-    if (primaryImage && editingLocation.value) {
-      editingLocation.value.image_url = primaryImage.imageUrl
-
-      // Update the location in the store list directly
-      const locationInList = entitiesStore.locations?.find(
-        (l) => l.id === editingLocation.value!.id,
-      )
-      if (locationInList) {
-        locationInList.image_url = primaryImage.imageUrl
-      }
-    }
-
-    // Clear file input
-    target.value = ''
-  } catch (error) {
-    console.error('Failed to upload images:', error)
-    alert(t('locations.uploadImageError'))
-  } finally {
-    uploadingImage.value = false
-  }
-}
-
-// AI Image Generation
-async function generateImage() {
-  if (!editingLocation.value || !locationForm.value.name) return
-
-  generatingImage.value = true
-
-  try {
-    // Build detailed prompt from all available location data
-    const details = []
-
-    // Type (tavern, dungeon, forest, etc.)
-    if (locationForm.value.metadata.type) {
-      details.push(locationForm.value.metadata.type)
-    }
-
-    // Region (adds geographical context)
-    if (locationForm.value.metadata.region) {
-      details.push(`in ${locationForm.value.metadata.region}`)
-    }
-
-    // Name (required)
-    details.push(locationForm.value.name)
-
-    // Description (free-form details)
-    if (locationForm.value.description) {
-      details.push(locationForm.value.description)
-    }
-
-    // Notes (additional context)
-    if (locationForm.value.metadata.notes) {
-      details.push(locationForm.value.metadata.notes)
-    }
-
-    const prompt = details.filter((d) => d).join(', ')
-
-    const result = await $fetch<{ imageUrl: string; revisedPrompt?: string }>(
-      '/api/ai/generate-image',
-      {
-        method: 'POST',
-        body: {
-          prompt,
-          entityName: locationForm.value.name,
-          entityType: 'Location',
-          style: 'fantasy-art',
-        },
-      },
-    )
-
-    if (result.imageUrl && editingLocation.value) {
-      // Add the generated image directly to the gallery (no re-upload needed)
-      const filename = result.imageUrl.replace('/uploads/', '')
-
-      await $fetch(`/api/entities/${editingLocation.value.id}/add-generated-image`, {
-        method: 'POST',
-        body: {
-          imageUrl: filename,
-        },
-      })
-
-      // Reload images
-      await loadLocationImages()
-
-      // Refresh locations to update the list
-      if (activeCampaignId.value!) {
-        await entitiesStore.fetchLocations(activeCampaignId.value!)
-      }
-    }
-  } catch (error: unknown) {
-    console.error('[Location] Failed to generate image:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image'
-    alert(errorMessage)
-  } finally {
-    generatingImage.value = false
-  }
-}
-
-// Delete image from gallery
-async function deleteImageFromGallery(imageId: number) {
-  try {
-    await $fetch(`/api/entity-images/${imageId}`, {
-      method: 'DELETE',
-    })
-
-    // Remove image from local array
-    locationImages.value = locationImages.value.filter((img) => img.id !== imageId)
-
-    // Update the editingLocation's image_url with the new primary image (if any)
-    const primaryImage = locationImages.value.find((img) => img.is_primary === 1)
-    if (editingLocation.value) {
-      editingLocation.value.image_url = primaryImage?.image_url || null
-
-      // Update the location in the store list directly
-      const locationInList = entitiesStore.locations?.find(
-        (l) => l.id === editingLocation.value!.id,
-      )
-      if (locationInList) {
-        locationInList.image_url = primaryImage?.image_url || null
-      }
-    }
-  } catch (error) {
-    console.error('Failed to delete image:', error)
-    alert(t('locations.deleteImageError'))
-  }
-}
-
-// Set image as primary
-async function setPrimaryImage(imageId: number) {
-  try {
-    await $fetch(`/api/entity-images/${imageId}/set-primary`, {
-      method: 'PATCH',
-    })
-
-    // Update local image states
-    locationImages.value.forEach((img) => {
-      img.is_primary = img.id === imageId ? 1 : 0
-    })
-
-    // Update the editingLocation's image_url with the new primary image
-    const primaryImage = locationImages.value.find((img) => img.id === imageId)
-    if (primaryImage && editingLocation.value) {
-      editingLocation.value.image_url = primaryImage.image_url
-
-      // Update the location in the store list directly
-      const locationInList = entitiesStore.locations?.find(
-        (l) => l.id === editingLocation.value!.id,
-      )
-      if (locationInList) {
-        locationInList.image_url = primaryImage.image_url
-      }
-    }
-  } catch (error) {
-    console.error('Failed to set primary image:', error)
-  }
-}
-
-// Update image caption
-async function updateImageCaption(imageId: number, caption: string) {
-  try {
-    await $fetch(`/api/entity-images/${imageId}/caption`, {
-      method: 'PATCH',
-      body: { caption },
-    })
-
-    // Update local state
-    const image = locationImages.value.find((img) => img.id === imageId)
-    if (image) {
-      image.caption = caption
-    }
-  } catch (error) {
-    console.error('Failed to update caption:', error)
-  }
-}
+// Image functions removed - now handled by EntityImageGallery component in LocationViewDialog
 
 // Open image preview dialog
 function openImagePreview(imageUrl: string, title: string) {
@@ -1445,24 +988,21 @@ function openImagePreview(imageUrl: string, title: string) {
   showImagePreview.value = true
 }
 
-// View Dialog State
-const viewDialogTab = ref('overview')
+// View Dialog State (removed - now in LocationViewDialog component)
 
 // Connected NPCs
 const connectedNpcs = ref<ConnectedNPC[]>([])
 const loadingNpcs = ref(false)
 
-// Location Items
+// Location Items (compatible with EntityRelationsList)
 const locationItems = ref<
   Array<{
     id: number
-    to_entity_id: number
-    item_name: string
-    item_description: string | null
-    item_metadata: Record<string, unknown> | null
-    item_image: string | null
-    relation_type: string
-    notes: Record<string, unknown> | null
+    name: string
+    description?: string | null
+    relation_type?: string
+    image_url?: string | null
+    metadata?: Record<string, unknown> | null
   }>
 >([])
 const loadingItems = ref(false)
@@ -1472,6 +1012,11 @@ const locationLore = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
 const loadingLore = ref(false)
+
+// Location Documents & Images
+const locationDocuments = ref<Array<{ id: number; title: string; content: string }>>([])
+const locationImages = ref<Array<{ id: number; image_url: string; is_primary: boolean }>>([])
+const loadingViewData = ref(false)
 
 // Available parent locations (exclude current location to prevent circular references)
 const availableParentLocations = computed(() => {
@@ -1490,29 +1035,32 @@ async function viewLocation(location: Location) {
   viewingLocation.value = location
   showViewDialog.value = true
 
-  // Load connected NPCs
+  // Load all view data in parallel
+  loadingViewData.value = true
   loadingNpcs.value = true
-  try {
-    const data = await $fetch<ConnectedNPC[]>(`/api/entities/${location.id}/related/npcs`)
-    connectedNpcs.value = data
-  } finally {
-    loadingNpcs.value = false
-  }
-
-  // Load Items
-  await loadLocationItems()
-
-  // Load Lore
+  loadingItems.value = true
   loadingLore.value = true
+
   try {
-    const lore = await $fetch<typeof locationLore.value>(
-      `/api/entities/${location.id}/related/lore`,
-    )
+    const [npcs, items, lore, documents, images, counts] = await Promise.all([
+      $fetch<ConnectedNPC[]>(`/api/entities/${location.id}/related/npcs`).catch(() => []),
+      $fetch<typeof locationItems.value>(`/api/entities/${location.id}/related/items`).catch(() => []),
+      $fetch<typeof locationLore.value>(`/api/entities/${location.id}/related/lore`).catch(() => []),
+      $fetch<typeof locationDocuments.value>(`/api/entities/${location.id}/documents`).catch(() => []),
+      $fetch<typeof locationImages.value>(`/api/entity-images/${location.id}`).catch(() => []),
+      $fetch<LocationCounts>(`/api/locations/${location.id}/counts`).catch(() => null),
+    ])
+
+    connectedNpcs.value = npcs
+    locationItems.value = items
     locationLore.value = lore
-  } catch (error) {
-    console.error('Failed to load location lore:', error)
-    locationLore.value = []
+    locationDocuments.value = documents
+    locationImages.value = images
+    viewDialogCounts.value = counts
   } finally {
+    loadingViewData.value = false
+    loadingNpcs.value = false
+    loadingItems.value = false
     loadingLore.value = false
   }
 
@@ -1522,22 +1070,7 @@ async function viewLocation(location: Location) {
   }
 }
 
-async function loadLocationItems() {
-  if (!viewingLocation.value) return
-
-  loadingItems.value = true
-  try {
-    const items = await $fetch<typeof locationItems.value>(
-      `/api/entities/${viewingLocation.value.id}/related/items`,
-    )
-    locationItems.value = items
-  } catch (error) {
-    console.error('Failed to load location items:', error)
-    locationItems.value = []
-  } finally {
-    loadingItems.value = false
-  }
-}
+// loadLocationItems removed - now loaded in viewLocation() via Promise.all()
 
 async function editLocation(location: Location) {
   editingLocation.value = location
@@ -1552,8 +1085,6 @@ async function editLocation(location: Location) {
     },
   }
   showCreateDialog.value = true
-  // Load images for this location
-  await loadLocationImages()
 }
 
 async function editLocationAndCloseView(location: Location) {
@@ -1664,14 +1195,14 @@ async function loadLinkedNpcs() {
   }
 }
 
-async function addNpcRelation(npcId: number) {
-  if (!editingLocation.value || !npcId) return
+async function addNpcRelation(payload: { npcId: number }) {
+  if (!editingLocation.value || !payload.npcId) return
 
   try {
     await $fetch('/api/entity-relations', {
       method: 'POST',
       body: {
-        fromEntityId: npcId,
+        fromEntityId: payload.npcId,
         toEntityId: editingLocation.value.id,
         relationType: 'befindet sich in',
         relationNotes: null,
@@ -1679,7 +1210,7 @@ async function addNpcRelation(npcId: number) {
     })
 
     // Find the NPC and add to local array (no reload needed)
-    const npc = entitiesStore.npcs?.find((n) => n.id === npcId)
+    const npc = entitiesStore.npcs?.find((n) => n.id === payload.npcId)
     if (npc) {
       linkedNpcs.value.push({
         id: npc.id,
@@ -1787,30 +1318,21 @@ async function addLoreRelation(loreId: number) {
   }
 }
 
-async function removeLoreRelation(loreId: number) {
+async function removeLoreRelation(relationId: number) {
   if (!editingLocation.value) return
 
   try {
-    // Find the relation
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: loreId,
-        toEntityId: editingLocation.value.id,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
+    // Remove from local array by relation ID
+    linkedLore.value = linkedLore.value.filter((lore) => lore.id !== relationId)
 
-      // Remove from local array (no reload needed)
-      linkedLore.value = linkedLore.value.filter((lore) => lore.id !== loreId)
-
-      // Update counts reactively
-      if (locationCounts.value && locationCounts.value.lore > 0) {
-        locationCounts.value.lore--
-      }
+    // Update counts reactively
+    if (locationCounts.value && locationCounts.value.lore > 0) {
+      locationCounts.value.lore--
     }
   } catch (error) {
     console.error('Failed to remove Lore relation:', error)
@@ -1837,8 +1359,10 @@ async function loadLinkedItems() {
   }
 }
 
-async function addItemRelation(payload: { itemId: number; relationType: string }) {
-  if (!editingLocation.value || !payload.itemId || !payload.relationType) return
+async function addItemRelation(payload: { itemId: number; relationType?: string }) {
+  if (!editingLocation.value || !payload.itemId) return
+
+  const relationType = payload.relationType || 'contains'
 
   try {
     await $fetch('/api/entity-relations', {
@@ -1846,7 +1370,7 @@ async function addItemRelation(payload: { itemId: number; relationType: string }
       body: {
         fromEntityId: editingLocation.value.id,
         toEntityId: payload.itemId,
-        relationType: payload.relationType,
+        relationType,
         relationNotes: null,
       },
     })
@@ -1857,25 +1381,16 @@ async function addItemRelation(payload: { itemId: number; relationType: string }
   }
 }
 
-async function removeItemRelation(itemId: number) {
+async function removeItemRelation(relationId: number) {
   if (!editingLocation.value) return
 
   try {
-    // Find the relation
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: editingLocation.value.id,
-        toEntityId: itemId,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-
-      await loadLinkedItems()
-    }
+    await loadLinkedItems()
   } catch (error) {
     console.error('Failed to remove Item relation:', error)
   }

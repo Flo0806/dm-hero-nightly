@@ -40,6 +40,7 @@ export interface NpcCounts {
   images: number
   memberships: number
   lore: number
+  notes: number
   factionName: string | null
 }
 

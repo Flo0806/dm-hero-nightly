@@ -1,14 +1,16 @@
 <template>
   <v-app>
-    <NavigationDrawer
-      v-model="drawer"
-      v-model:rail="rail"
-      :has-active-campaign="hasActiveCampaign"
-      :active-campaign-name="activeCampaignName"
-      :is-dark="theme.global.current.value.dark"
-      @search-click="showSearch = true"
-      @toggle-theme="toggleTheme"
-    />
+    <ClientOnly>
+      <NavigationDrawer
+        v-model="drawer"
+        v-model:rail="rail"
+        :has-active-campaign="hasActiveCampaign"
+        :active-campaign-name="activeCampaignName"
+        :is-dark="theme.global.current.value.dark"
+        @search-click="showSearch = true"
+        @toggle-theme="toggleTheme"
+      />
+    </ClientOnly>
 
     <AppBar
       :current-locale="currentLocale"

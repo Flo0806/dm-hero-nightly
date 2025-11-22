@@ -1,47 +1,48 @@
 <template>
   <div>
-    <!-- Add Lore Relation -->
+    <!-- Add Lore Section -->
     <v-card variant="outlined" class="mb-4">
       <v-card-text>
         <v-autocomplete
           v-model="localLoreId"
-          :items="loreItems"
-          :label="$t('lore.selectLore')"
-          :placeholder="$t('lore.selectLorePlaceholder')"
+          :items="availableLore"
+          item-title="name"
+          item-value="id"
+          :label="$t('common.selectLore')"
+          :placeholder="$t('common.selectLorePlaceholder')"
           variant="outlined"
           clearable
-          :loading="loadingLore"
+          :loading="loading"
           class="mb-2"
         />
-        <v-btn color="primary" :disabled="!localLoreId" @click="handleAdd">
-          <v-icon start> mdi-link-plus </v-icon>
-          {{ $t('lore.addRelation') }}
+        <v-btn color="primary" block :disabled="!localLoreId" @click="handleAdd">
+          <v-icon start>mdi-link-plus</v-icon>
+          {{ $t('common.linkLore') }}
         </v-btn>
       </v-card-text>
     </v-card>
 
     <!-- Linked Lore List -->
-    <v-list v-if="linkedLore.length > 0">
-      <v-list-item v-for="lore in linkedLore" :key="lore.id" class="mb-2">
+    <v-list v-if="linkedLore.length > 0" class="pa-0">
+      <v-list-item v-for="lore in linkedLore" :key="lore.id" class="mb-2" border>
         <template #prepend>
-          <v-avatar v-if="lore.image_url" size="56" rounded="lg" class="mr-3">
+          <v-avatar v-if="lore.image_url" size="48" rounded="lg" class="mr-3">
             <v-img :src="`/uploads/${lore.image_url}`" />
           </v-avatar>
-          <v-avatar v-else size="56" rounded="lg" class="mr-3" color="surface-variant">
+          <v-avatar v-else size="48" rounded="lg" class="mr-3" color="surface-variant">
             <v-icon icon="mdi-book-open-variant" />
           </v-avatar>
         </template>
         <v-list-item-title>{{ lore.name }}</v-list-item-title>
         <v-list-item-subtitle v-if="lore.description">
-          {{ lore.description.substring(0, 100)
-          }}{{ lore.description.length > 100 ? '...' : '' }}
+          {{ lore.description.substring(0, 100) }}{{ lore.description.length > 100 ? '...' : '' }}
         </v-list-item-subtitle>
         <template #append>
           <v-btn
             icon="mdi-delete"
             variant="text"
-            color="error"
             size="small"
+            color="error"
             @click="$emit('remove', lore.id)"
           />
         </template>
@@ -50,9 +51,9 @@
 
     <v-empty-state
       v-else
-      icon="mdi-book-open-variant"
-      :title="$t('lore.noLinkedLore')"
-      :text="$t('lore.noLinkedLoreText')"
+      icon="mdi-book-off"
+      :title="$t('common.noLinkedLore')"
+      :text="$t('common.noLinkedLoreText')"
     />
   </div>
 </template>
@@ -63,25 +64,26 @@ interface LinkedLore {
   name: string
   description?: string | null
   image_url?: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
-interface LoreItem {
-  title: string
-  value: number
+interface AvailableLore {
+  id: number
+  name: string
 }
 
 interface Props {
   linkedLore: LinkedLore[]
-  loreItems: LoreItem[]
-  loadingLore: boolean
-}
-
-interface Emits {
-  (e: 'add' | 'remove', loreId: number): void
+  availableLore: AvailableLore[]
+  loading?: boolean
 }
 
 defineProps<Props>()
-const emit = defineEmits<Emits>()
+
+const emit = defineEmits<{
+  add: [loreId: number]
+  remove: [loreId: number]
+}>()
 
 const localLoreId = ref<number | null>(null)
 
@@ -89,8 +91,6 @@ function handleAdd() {
   if (!localLoreId.value) return
 
   emit('add', localLoreId.value)
-
-  // Reset form
   localLoreId.value = null
 }
 </script>

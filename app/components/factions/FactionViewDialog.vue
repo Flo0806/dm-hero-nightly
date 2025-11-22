@@ -144,155 +144,69 @@
 
           <!-- Members Tab -->
           <v-window-item value="members">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="members.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('factions.noMembers') }}
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="member in members"
-                  :key="member.id"
-                  :prepend-avatar="
-                    member.image_url ? `/uploads/${member.image_url}` : undefined
-                  "
-                >
-                  <template #prepend>
-                    <v-avatar v-if="member.image_url" size="48">
-                      <v-img :src="`/uploads/${member.image_url}`" />
-                    </v-avatar>
-                    <v-avatar v-else color="grey-lighten-2" size="48">
-                      <v-icon>mdi-account</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">{{ member.name }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="member.description">
-                    {{ member.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="members"
+              :loading="loading"
+              entity-type="npc"
+              :empty-message="$t('factions.noMembers')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
           </v-window-item>
 
           <!-- Items Tab -->
           <v-window-item value="items">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="items.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('factions.noItems') }}
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="item in items"
-                  :key="item.id"
-                  :prepend-avatar="item.image_url ? `/uploads/${item.image_url}` : undefined"
-                >
-                  <template #prepend>
-                    <v-avatar v-if="item.image_url" size="48">
-                      <v-img :src="`/uploads/${item.image_url}`" />
-                    </v-avatar>
-                    <v-avatar v-else color="grey-lighten-2" size="48">
-                      <v-icon>mdi-sword</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">{{ item.name }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="item.description">
-                    {{ item.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="items"
+              :loading="loading"
+              entity-type="item"
+              :empty-message="$t('factions.noItems')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
           </v-window-item>
 
           <!-- Locations Tab -->
           <v-window-item value="locations">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="locations.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('factions.noLocations') }}
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="location in locations"
-                  :key="location.id"
-                  :prepend-avatar="
-                    location.image_url ? `/uploads/${location.image_url}` : undefined
-                  "
-                >
-                  <template #prepend>
-                    <v-avatar v-if="location.image_url" size="48">
-                      <v-img :src="`/uploads/${location.image_url}`" />
-                    </v-avatar>
-                    <v-avatar v-else color="grey-lighten-2" size="48">
-                      <v-icon>mdi-map-marker</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">{{
-                    location.name
-                  }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="location.description">
-                    {{ location.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="locations"
+              :loading="loading"
+              entity-type="location"
+              :empty-message="$t('factions.noLocations')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
           </v-window-item>
 
           <!-- Lore Tab -->
           <v-window-item value="lore">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="loreEntries.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('factions.noLore') }}
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="lore in loreEntries"
-                  :key="lore.id"
-                  :prepend-avatar="lore.image_url ? `/uploads/${lore.image_url}` : undefined"
-                >
-                  <template #prepend>
-                    <v-avatar v-if="lore.image_url" size="48">
-                      <v-img :src="`/uploads/${lore.image_url}`" />
-                    </v-avatar>
-                    <v-avatar v-else color="grey-lighten-2" size="48">
-                      <v-icon>mdi-book-open-variant</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">{{ lore.name }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="lore.description">
-                    {{ lore.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="loreEntries"
+              :loading="loading"
+              entity-type="lore"
+              :empty-message="$t('factions.noLore')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
           </v-window-item>
 
           <!-- Documents Tab -->
           <v-window-item value="documents">
-            <div class="pa-4">
-              <EntityDocuments v-if="faction" :entity-id="faction.id" entity-type="Faction" />
-            </div>
+            <EntityDocumentsView
+              :documents="documents"
+              :loading="loading"
+              :empty-message="$t('documents.empty')"
+            />
           </v-window-item>
 
           <!-- Gallery Tab -->
           <v-window-item value="gallery">
-            <div class="pa-4">
-              <EntityImageGallery
-                v-if="faction"
-                :entity-id="faction.id"
-                entity-type="Faction"
-                @preview-image="(imageUrl, title) => emit('preview-image', imageUrl, title)"
-              />
-            </div>
+            <EntityImageGalleryView
+              :images="images"
+              :loading="loading"
+              :empty-message="$t('common.noImages')"
+              @preview="(image: Image) => emit('preview-image', `/uploads/${image.image_url}`, faction?.name || '')"
+            />
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -314,8 +228,9 @@
 </template>
 
 <script setup lang="ts">
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
-import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
+import EntityDocumentsView from '~/components/shared/EntityDocumentsView.vue'
+import EntityImageGalleryView from '~/components/shared/EntityImageGalleryView.vue'
 
 interface Faction {
   id: number
@@ -340,6 +255,18 @@ interface Faction {
     documents: number
     images: number
   }
+}
+
+interface Image {
+  id: number
+  image_url: string
+  is_primary: boolean
+}
+
+interface Document {
+  id: number
+  title: string
+  content: string
 }
 
 interface Props {
@@ -377,6 +304,8 @@ const locations = ref<
 const loreEntries = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
+const documents = ref<Document[]>([])
+const images = ref<Image[]>([])
 
 // Load data when faction changes
 watch(
@@ -385,21 +314,28 @@ watch(
     if (newFactionId) {
       loading.value = true
       try {
-        const [countsData, membersData, itemsData, locationsData, loreData] = await Promise.all([
-          $fetch<Faction['_counts']>(`/api/factions/${newFactionId}/counts`),
-          $fetch<typeof members.value>(`/api/entities/${newFactionId}/related/npcs`).catch(() => []),
-          $fetch<typeof items.value>(`/api/entities/${newFactionId}/related/items`).catch(() => []),
-          $fetch<typeof locations.value>(`/api/entities/${newFactionId}/related/locations`).catch(
-            () => [],
-          ),
-          $fetch<typeof loreEntries.value>(`/api/entities/${newFactionId}/related/lore`).catch(() => []),
-        ])
+        const [countsData, membersData, itemsData, locationsData, loreData, documentsData, imagesData] =
+          await Promise.all([
+            $fetch<Faction['_counts']>(`/api/factions/${newFactionId}/counts`),
+            $fetch<typeof members.value>(`/api/entities/${newFactionId}/related/npcs`).catch(() => []),
+            $fetch<typeof items.value>(`/api/entities/${newFactionId}/related/items`).catch(() => []),
+            $fetch<typeof locations.value>(`/api/entities/${newFactionId}/related/locations`).catch(
+              () => [],
+            ),
+            $fetch<typeof loreEntries.value>(`/api/entities/${newFactionId}/related/lore`).catch(
+              () => [],
+            ),
+            $fetch<Document[]>(`/api/entities/${newFactionId}/documents`).catch(() => []),
+            $fetch<Image[]>(`/api/entity-images/${newFactionId}`).catch(() => []),
+          ])
 
         counts.value = countsData
         members.value = membersData
         items.value = itemsData
         locations.value = locationsData
         loreEntries.value = loreData
+        documents.value = documentsData
+        images.value = imagesData
       } catch (error) {
         console.error('Failed to load faction data:', error)
       } finally {

@@ -92,7 +92,7 @@
             :disabled="uploading || generating"
             @click="$emit('delete')"
           >
-            {{ $t('entity.deleteImage') }}
+            {{ $t(deleteImageKey) }}
           </v-btn>
 
           <!-- AI Hint -->
@@ -169,6 +169,17 @@ const generateImageKey = computed(() => {
     Item: 'items.generateImage',
     Location: 'locations.generateImage',
     Lore: 'lore.generateImage',
+  }
+  return typeMap[props.entityType]
+})
+
+const deleteImageKey = computed(() => {
+  const typeMap: Record<typeof props.entityType, string> = {
+    NPC: 'npcs.deleteImage',
+    Faction: 'factions.deleteImage',
+    Item: 'items.deleteImage',
+    Location: 'locations.deleteImage',
+    Lore: 'lore.deleteImage',
   }
   return typeMap[props.entityType]
 })

@@ -1,11 +1,11 @@
 <template>
-  <v-dialog :model-value="show" max-width="900" scrollable @update:model-value="$emit('update:show', $event)">
+  <v-dialog :model-value="show" max-width="900" scrollable @update:model-value="(v) => emit('update:show', v)">
     <v-card>
       <v-card-title>
         {{ editingNpc ? $t('npcs.edit') : $t('npcs.create') }}
       </v-card-title>
 
-      <v-tabs v-if="editingNpc" :model-value="activeTab" class="mb-4" @update:model-value="$emit('update:activeTab', $event)">
+      <v-tabs v-if="editingNpc" :model-value="activeTab" class="mb-4" @update:model-value="(v) => emit('update:activeTab', v as string)">
         <v-tab value="details">
           <v-icon start> mdi-account-details </v-icon>
           {{ $t('npcs.details') }}
@@ -13,32 +13,37 @@
         <v-tab value="npcRelations">
           <v-icon start> mdi-account-multiple </v-icon>
           {{ $t('npcs.npcRelations') }}
-          ({{ npcRelationCount }})
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.relations || 0 }}</v-chip>
         </v-tab>
         <v-tab value="locations">
           <v-icon start> mdi-map-marker </v-icon>
           {{ $t('npcs.linkedLocations') }}
-          ({{ locationRelationCount }})
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.locations || 0 }}</v-chip>
         </v-tab>
         <v-tab value="memberships">
           <v-icon start> mdi-shield-account </v-icon>
-          {{ $t('npcs.memberships') }} ({{ factionMemberships.length }})
+          {{ $t('npcs.memberships') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.memberships || 0 }}</v-chip>
         </v-tab>
         <v-tab value="items">
           <v-icon start> mdi-sword </v-icon>
-          {{ $t('npcs.items') }} ({{ npcItems.length }})
+          {{ $t('npcs.items') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.items || 0 }}</v-chip>
         </v-tab>
         <v-tab value="notes">
           <v-icon start> mdi-note-text </v-icon>
-          {{ $t('npcs.notes') }} ({{ npcNotes.length }})
+          {{ $t('npcs.notes') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.notes || 0 }}</v-chip>
         </v-tab>
         <v-tab value="documents">
           <v-icon start> mdi-file-document </v-icon>
-          {{ $t('documents.title') }} ({{ editingNpc?._counts?.documents || 0 }})
+          {{ $t('documents.title') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.documents || 0 }}</v-chip>
         </v-tab>
         <v-tab value="lore">
           <v-icon start>mdi-book-open-variant</v-icon>
-          {{ $t('npcs.badgeTooltips.lore') }} ({{ linkedLore?.length || 0 }})
+          {{ $t('npcs.badgeTooltips.lore') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.lore || 0 }}</v-chip>
         </v-tab>
       </v-tabs>
 
@@ -46,120 +51,34 @@
         <v-tabs-window v-if="editingNpc" :model-value="activeTab">
           <!-- Details Tab -->
           <v-tabs-window-item value="details">
+            <!-- Hidden file input -->
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleImageUpload"
+            />
+
             <!-- Image Upload Section -->
-            <v-card variant="outlined" class="mb-4">
-              <v-card-text>
-                <div class="d-flex align-center gap-4">
-                  <!-- Image Preview -->
-                  <div style="position: relative">
-                    <v-avatar
-                      size="160"
-                      rounded="lg"
-                      :color="editingNpc?.image_url ? undefined : 'grey-lighten-2'"
-                      :style="editingNpc?.image_url ? 'cursor: pointer;' : ''"
-                      @click="
-                        editingNpc?.image_url
-                          ? $emit('open-image-preview', `/uploads/${editingNpc.image_url}`, form.name)
-                          : null
-                      "
-                    >
-                      <v-img
-                        v-if="editingNpc?.image_url"
-                        :src="`/uploads/${editingNpc.image_url}`"
-                        cover
-                        :class="{ 'blur-image': uploadingImage || generatingImage }"
-                      />
-                      <v-icon
-                        v-else-if="!uploadingImage && !generatingImage"
-                        icon="mdi-account"
-                        size="80"
-                        color="grey"
-                      />
-                    </v-avatar>
-                    <v-progress-circular
-                      v-if="uploadingImage || generatingImage"
-                      indeterminate
-                      color="primary"
-                      size="64"
-                      width="6"
-                      style="
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                      "
-                    />
-                  </div>
-
-                  <!-- Image Actions -->
-                  <div class="flex-grow-1" style="max-width: 280px; margin-left: 16px">
-                    <!-- Upload Button -->
-                    <v-btn
-                      prepend-icon="mdi-camera"
-                      color="primary"
-                      variant="tonal"
-                      block
-                      class="mb-2"
-                      :disabled="uploadingImage || deletingImage || generatingImage"
-                      @click="$emit('trigger-image-upload')"
-                    >
-                      {{ editingNpc?.image_url ? $t('npcs.changeImage') : $t('npcs.uploadImage') }}
-                    </v-btn>
-
-                    <!-- AI Generate Button -->
-                    <v-btn
-                      prepend-icon="mdi-creation"
-                      color="primary"
-                      variant="tonal"
-                      block
-                      class="mb-2"
-                      :loading="generatingImage"
-                      :disabled="!form.name || uploadingImage || deletingImage || generatingImage || !hasApiKey"
-                      @click="$emit('generate-image')"
-                    >
-                      {{ $t('npcs.generateImage') }}
-                    </v-btn>
-
-                    <!-- Download Button (only if image exists) -->
-                    <v-btn
-                      v-if="editingNpc?.image_url"
-                      prepend-icon="mdi-download"
-                      variant="outlined"
-                      block
-                      class="mb-2"
-                      :disabled="uploadingImage || generatingImage"
-                      @click="$emit('download-image', `/uploads/${editingNpc.image_url}`, form.name)"
-                    >
-                      Download
-                    </v-btn>
-
-                    <!-- Delete Button (only if image exists) -->
-                    <v-btn
-                      v-if="editingNpc?.image_url"
-                      prepend-icon="mdi-delete"
-                      color="error"
-                      variant="outlined"
-                      block
-                      :loading="deletingImage"
-                      :disabled="uploadingImage || generatingImage"
-                      @click="$emit('delete-image')"
-                    >
-                      {{ $t('npcs.deleteImage') }}
-                    </v-btn>
-
-                    <!-- AI Hint -->
-                    <div v-if="!hasApiKey" class="text-caption text-medium-emphasis mt-3">
-                      <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                      KI-Generierung: OpenAI API-Key in Einstellungen hinterlegen
-                    </div>
-                    <div v-else-if="!form.name" class="text-caption text-medium-emphasis mt-3">
-                      <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                      KI-Generierung: Bitte zuerst einen Namen eingeben
-                    </div>
-                  </div>
-                </div>
-              </v-card-text>
-            </v-card>
+            <EntityImageUpload
+              class="mb-4"
+              :image-url="editingNpc?.image_url"
+              :entity-name="form.name"
+              entity-type="NPC"
+              :uploading="uploadingImage"
+              :generating="generatingImage"
+              :deleting="deletingImage"
+              :has-api-key="hasApiKey"
+              :generate-disabled="!form.name || uploadingImage || deletingImage || generatingImage || !hasApiKey"
+              :avatar-size="160"
+              default-icon="mdi-account"
+              @preview-image="handleImagePreview"
+              @upload="triggerImageUpload"
+              @generate="generateImage"
+              @download="downloadImage"
+              @delete="deleteImage"
+            />
 
             <v-text-field
               :model-value="form.name"
@@ -176,7 +95,7 @@
                   variant="text"
                   size="small"
                   color="primary"
-                  @click="$emit('generate-name')"
+                  @click="generateName"
                 />
               </template>
             </v-text-field>
@@ -256,8 +175,8 @@
                   clearable
                   @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, type: $event } })"
                 >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props">
+                  <template #item="{ props: itemProps, item }">
+                    <v-list-item v-bind="itemProps">
                       <template #prepend>
                         <v-icon :icon="getNpcTypeIcon(item.value)" />
                       </template>
@@ -282,8 +201,8 @@
                   clearable
                   @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, status: $event } })"
                 >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props">
+                  <template #item="{ props: itemProps, item }">
+                    <v-list-item v-bind="itemProps">
                       <template #prepend>
                         <v-icon :icon="getNpcStatusIcon(item.value)" :color="getNpcStatusColor(item.value)" />
                       </template>
@@ -310,22 +229,12 @@
               :available-npcs="availableNpcs"
               :adding="addingNpcRelation"
               @add="$emit('add-npc-relation', $event)"
-              @edit="$emit('edit-relation', $event)"
-              @remove="$emit('remove-relation', $event)"
             />
           </v-tabs-window-item>
 
           <!-- Locations Tab -->
           <v-tabs-window-item value="locations">
-            <NpcLocationsTab
-              v-if="editingNpc"
-              :location-relations="npcRelations"
-              :available-locations="availableLocations"
-              :adding="addingLocationRelation"
-              @add="$emit('add-location-relation', $event)"
-              @edit="$emit('edit-relation', $event)"
-              @remove="$emit('remove-relation', $event)"
-            />
+            <EntityLocationsTab v-if="editingNpc" :npc-id="editingNpc.id" />
           </v-tabs-window-item>
 
           <!-- Memberships Tab -->
@@ -342,71 +251,24 @@
 
           <!-- Items Tab -->
           <v-tabs-window-item value="items">
-            <NpcItemsTab
-              :items="npcItems"
+            <EntityItemsTab
+              :linked-items="npcItems"
               :available-items="availableItems"
-              :adding="addingItem"
-              @add="$emit('add-item', $event)"
-              @remove="$emit('remove-item', $event)"
+              :loading="addingItem"
+              :show-avatar="false"
+              :show-relation-type="true"
+              :show-quantity="true"
+              :show-equipped="true"
+              :show-rarity="true"
+              :relation-type-suggestions="npcItemRelationTypeSuggestions"
+              @add="(payload) => $emit('add-item', payload)"
+              @remove="(id) => $emit('remove-item', id)"
             />
           </v-tabs-window-item>
 
           <!-- Notes Tab -->
           <v-tabs-window-item value="notes">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <v-text-field
-                :model-value="notesSearch"
-                :placeholder="$t('npcs.searchNotes')"
-                prepend-inner-icon="mdi-magnify"
-                variant="outlined"
-                density="compact"
-                clearable
-                hide-details
-                class="mr-2"
-                @update:model-value="$emit('update:notesSearch', $event)"
-              />
-              <v-btn color="primary" prepend-icon="mdi-plus" @click="$emit('new-note')">
-                {{ $t('npcs.newNote') }}
-              </v-btn>
-            </div>
-
-            <v-progress-linear v-if="loadingNotes" indeterminate />
-
-            <v-list v-else-if="filteredNotes.length > 0">
-              <v-list-item v-for="note in filteredNotes" :key="note.id" class="mb-2" border>
-                <template #prepend>
-                  <v-icon icon="mdi-note-text" color="primary" />
-                </template>
-                <v-list-item-title>
-                  <span class="text-caption text-medium-emphasis mr-2">
-                    {{ formatDate(note.date || note.created_at) }}
-                  </span>
-                  <span v-if="note.title" class="font-weight-medium">
-                    {{ note.title }}
-                  </span>
-                </v-list-item-title>
-                <v-list-item-subtitle class="mt-1">
-                  {{ truncateText(note.summary, 150) }}
-                </v-list-item-subtitle>
-                <template #append>
-                  <v-btn icon="mdi-pencil" variant="text" size="small" @click="$emit('edit-note', note)" />
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    size="small"
-                    color="error"
-                    @click="$emit('delete-note', note)"
-                  />
-                </template>
-              </v-list-item>
-            </v-list>
-
-            <v-empty-state
-              v-else
-              icon="mdi-note-text-outline"
-              :title="$t('npcs.noNotes')"
-              :text="$t('npcs.noNotesText')"
-            />
+            <NpcNotesTab v-if="editingNpc" :npc-id="editingNpc.id" />
           </v-tabs-window-item>
 
           <!-- Documents Tab -->
@@ -416,11 +278,11 @@
 
           <!-- Lore Tab -->
           <v-tabs-window-item value="lore">
-            <NpcLoreTab
+            <EntityLoreTab
               v-if="editingNpc"
               :linked-lore="linkedLore"
-              :lore-items="loreItems"
-              :loading-lore="loadingLore"
+              :available-lore="availableLore"
+              :loading="loadingLore"
               @add="$emit('add-lore', $event)"
               @remove="$emit('remove-lore', $event)"
             />
@@ -524,8 +386,8 @@
                 clearable
                 @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, type: $event } })"
               >
-                <template #item="{ props, item }">
-                  <v-list-item v-bind="props">
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item v-bind="itemProps">
                     <template #prepend>
                       <v-icon :icon="getNpcTypeIcon(item.value)" />
                     </template>
@@ -550,8 +412,8 @@
                 clearable
                 @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, status: $event } })"
               >
-                <template #item="{ props, item }">
-                  <v-list-item v-bind="props">
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item v-bind="itemProps">
                     <template #prepend>
                       <v-icon :icon="getNpcStatusIcon(item.value)" :color="getNpcStatusColor(item.value)" />
                     </template>
@@ -594,14 +456,21 @@
 
 <script setup lang="ts">
 import type { NPC } from '~~/types/npc'
+import type { Item } from '~~/types/item'
+import type { Lore } from '~~/types/lore'
+import type { NpcItem, NpcMembership } from '~~/types/npc-components'
 import NpcRelationsTab from './NpcRelationsTab.vue'
-import NpcLocationsTab from './NpcLocationsTab.vue'
+import EntityLocationsTab from '../shared/EntityLocationsTab.vue'
 import NpcMembershipsTab from './NpcMembershipsTab.vue'
-import NpcItemsTab from './NpcItemsTab.vue'
-import NpcLoreTab from './NpcLoreTab.vue'
+import EntityItemsTab from '../shared/EntityItemsTab.vue'
+import EntityLoreTab from '../shared/EntityLoreTab.vue'
+import NpcNotesTab from './NpcNotesTab.vue'
 import EntityDocuments from '../shared/EntityDocuments.vue'
+import EntityImageUpload from '../shared/EntityImageUpload.vue'
+import { useImageDownload } from '~/composables/useImageDownload'
 
-const { t, locale } = useI18n()
+const { locale, t } = useI18n()
+const { downloadImage: downloadImageFile } = useImageDownload()
 
 // NPC Type Icons
 function getNpcTypeIcon(type: string): string {
@@ -639,17 +508,17 @@ function getNpcStatusColor(status: string): string {
   return colors[status] || 'grey'
 }
 
-// Helper functions
-function formatDate(dateString: string): string {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('de-DE', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
-
-function truncateText(text: string, maxLength: number): string {
-  if (!text || text.length <= maxLength) return text
-  return text.substring(0, maxLength) + '...'
-}
+// Item relation type suggestions for NPCs
+const npcItemRelationTypeSuggestions = computed(() => [
+  { title: t('npcs.itemRelationTypes.owns'), value: 'owns' },
+  { title: t('npcs.itemRelationTypes.carries'), value: 'carries' },
+  { title: t('npcs.itemRelationTypes.wields'), value: 'wields' },
+  { title: t('npcs.itemRelationTypes.wears'), value: 'wears' },
+  { title: t('npcs.itemRelationTypes.seeks'), value: 'seeks' },
+  { title: t('npcs.itemRelationTypes.guards'), value: 'guards' },
+  { title: t('npcs.itemRelationTypes.stole'), value: 'stole' },
+  { title: t('npcs.itemRelationTypes.lost'), value: 'lost' },
+])
 
 // Interfaces
 interface NpcForm {
@@ -663,16 +532,6 @@ interface NpcForm {
     type?: string
     status?: string
   }
-}
-
-interface Note {
-  id: number
-  title: string | null
-  summary: string
-  date: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
 }
 
 // Relation types matching parent component
@@ -715,67 +574,293 @@ interface Props {
   npcStatuses: Array<{ title: string; value: string }>
   // Relations data
   npcRelations: NpcRelation[]
-  factionMemberships: Relation[]
-  npcItems: unknown[]
-  npcNotes: Note[]
-  linkedLore: Array<{ id: number; name: string; description: string | null; image_url: string | null }>
+  factionMemberships: NpcMembership[]
+  npcItems: NpcItem[]
+  linkedLore: Array<Pick<Lore, 'id' | 'name' | 'description' | 'image_url'>>
   // Available entities for selects
-  availableNpcs: unknown[]
-  availableLocations: unknown[]
-  availableFactions: unknown[]
-  availableItems: unknown[]
-  loreItems: unknown[]
+  availableNpcs: Array<Pick<NPC, 'id' | 'name' | 'image_url'>>
+  availableFactions: Array<{ id: number; name: string }>
+  availableItems: Array<Pick<Item, 'id' | 'name'>>
+  availableLore: Array<{ id: number; name: string }>
   // Loading states
   saving: boolean
-  uploadingImage: boolean
-  deletingImage: boolean
-  generatingImage: boolean
-  generatingName: boolean
   addingNpcRelation: boolean
-  addingLocationRelation: boolean
   addingMembership: boolean
   addingItem: boolean
-  loadingNotes: boolean
   loadingLore: boolean
   // Other
-  hasApiKey: boolean
-  notesSearch: string
-  filteredNotes: Note[]
   npcRelationCount: number
-  locationRelationCount: number
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+// Image management state (moved from page)
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploadingImage = ref(false)
+const deletingImage = ref(false)
+const generatingImage = ref(false)
+const hasApiKey = ref(false)
+
+// Name generation state (moved from page)
+const generatingName = ref(false)
+
+// Check if API key is available
+onMounted(async () => {
+  try {
+    const result = await $fetch<{ hasKey: boolean }>('/api/settings/openai-key/check')
+    hasApiKey.value = result.hasKey
+  } catch {
+    hasApiKey.value = false
+  }
+})
+
+const emit = defineEmits<{
   'update:show': [value: boolean]
   'update:form': [value: NpcForm]
   'update:activeTab': [value: string]
-  'update:notesSearch': [value: string]
-  save: []
-  close: []
-  'trigger-image-upload': []
-  'generate-image': []
-  'delete-image': []
-  'download-image': [url: string, name: string]
   'open-image-preview': [url: string, name: string]
-  'generate-name': []
   'add-npc-relation': [payload: unknown]
-  'add-location-relation': [payload: unknown]
-  'add-membership': [payload: unknown]
-  'add-item': [payload: unknown]
-  'edit-relation': [relation: NpcRelation]
-  'remove-relation': [id: number]
+  'add-membership': [payload: { factionId: number; relationType: string; rank?: string }]
+  'add-item': [
+    payload: {
+      itemId: number
+      relationType?: string
+      quantity?: number
+      equipped?: boolean
+    },
+  ]
   'edit-membership': [membership: Relation]
   'remove-membership': [id: number]
   'remove-item': [id: number]
-  'new-note': []
-  'edit-note': [note: Note]
-  'delete-note': [note: Note]
-  'documents-changed': []
   'add-lore': [id: number]
   'remove-lore': [id: number]
+  save: []
+  close: []
+  'image-changed': []
+  'documents-changed': []
+  'generate-name': []
 }>()
+
+// Image management functions (moved from page)
+function triggerImageUpload() {
+  fileInputRef.value?.click()
+}
+
+async function handleImageUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  if (!files || files.length === 0 || !props.editingNpc) return
+
+  uploadingImage.value = true
+  try {
+    const formData = new FormData()
+    const file = files[0]
+    if (file) {
+      formData.append('image', file)
+    }
+
+    // Use native fetch for FormData uploads
+    const response = await fetch(`/api/entities/${props.editingNpc.id}/upload-image`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Upload failed')
+    }
+
+    await response.json()
+
+    // Emit event to parent to update the NPC
+    emit('image-changed')
+  } catch (error) {
+    console.error('Failed to upload image:', error)
+    alert(t('npcs.uploadImageError'))
+  } finally {
+    uploadingImage.value = false
+    if (target) target.value = ''
+  }
+}
+
+async function generateImage() {
+  if (!props.editingNpc || !props.form.name) return
+
+  generatingImage.value = true
+
+  try {
+    // Build detailed prompt from all available NPC data
+    const details = []
+
+    // Race and Class (most important for visual appearance)
+    if (props.form.metadata.race) {
+      details.push(props.form.metadata.race)
+    }
+    if (props.form.metadata.class) {
+      details.push(props.form.metadata.class)
+    }
+
+    // Name (required)
+    details.push(props.form.name)
+
+    // Description (free-form details)
+    if (props.form.description) {
+      details.push(props.form.description)
+    }
+
+    // Type (ally, enemy, neutral, etc.) - adds context
+    if (props.form.metadata.type) {
+      const typeTranslations: Record<string, string> = {
+        ally: 'friendly ally',
+        enemy: 'menacing enemy',
+        neutral: 'neutral character',
+        questgiver: 'wise quest giver',
+        merchant: 'merchant',
+        guard: 'guard',
+        noble: 'noble',
+        commoner: 'commoner',
+        villain: 'villainous',
+        mentor: 'wise mentor',
+        companion: 'loyal companion',
+        informant: 'secretive informant',
+      }
+      const typeDesc = typeTranslations[props.form.metadata.type] || props.form.metadata.type
+      details.push(typeDesc)
+    }
+
+    // Status (alive, undead, etc.) - affects appearance
+    if (props.form.metadata.status) {
+      const statusTranslations: Record<string, string> = {
+        alive: '',
+        dead: '',
+        missing: '',
+        imprisoned: 'wearing chains',
+        unknown: '',
+        undead: 'undead, pale skin, glowing eyes',
+      }
+      const statusDesc = statusTranslations[props.form.metadata.status]
+      if (statusDesc) {
+        details.push(statusDesc)
+      }
+    }
+
+    const prompt = details.filter((d) => d).join(', ')
+
+    const result = await $fetch<{ imageUrl: string; revisedPrompt?: string }>(
+      '/api/ai/generate-image',
+      {
+        method: 'POST',
+        body: {
+          prompt,
+          entityName: props.form.name,
+          entityType: 'NPC',
+          style: 'fantasy-art',
+        },
+      },
+    )
+
+    if (result.imageUrl && props.editingNpc) {
+      // Update the NPC with the generated image
+      const response = await $fetch<{ success: boolean }>(
+        `/api/entities/${props.editingNpc.id}/set-image`,
+        {
+          method: 'POST',
+          body: {
+            imageUrl: result.imageUrl.replace('/uploads/', ''), // Remove /uploads/ prefix
+          },
+        },
+      )
+
+      if (response.success) {
+        // Emit event to parent to update the NPC
+        emit('image-changed')
+      }
+    }
+  } catch (error: unknown) {
+    console.error('[NPC] Failed to generate image:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image'
+    alert(errorMessage)
+  } finally {
+    generatingImage.value = false
+  }
+}
+
+async function deleteImage() {
+  if (!props.editingNpc?.image_url) return
+
+  deletingImage.value = true
+
+  try {
+    await $fetch<{ success: boolean }>(`/api/entities/${props.editingNpc.id}/delete-image`, {
+      method: 'DELETE' as const,
+    })
+
+    // Emit event to parent to update the NPC
+    emit('image-changed')
+  } catch (error) {
+    console.error('Failed to delete image:', error)
+    alert(t('npcs.deleteImageError'))
+  } finally {
+    deletingImage.value = false
+  }
+}
+
+function downloadImage() {
+  if (!props.editingNpc?.image_url) return
+  downloadImageFile(`/uploads/${props.editingNpc.image_url}`, props.form.name)
+}
+
+function handleImagePreview(url: string, name: string) {
+  emit('open-image-preview', url, name)
+}
+
+// Name generation (moved from page)
+async function generateName() {
+  generatingName.value = true
+
+  try {
+    // Build context from current form data
+    const context = []
+    if (props.form.metadata.race) {
+      context.push(props.form.metadata.race)
+    }
+    if (props.form.metadata.class) {
+      context.push(props.form.metadata.class)
+    }
+
+    const contextString = context.length > 0 ? context.join(', ') : undefined
+
+    const result = await $fetch<{ name: string }>('/api/ai/generate-name', {
+      method: 'POST',
+      body: {
+        entityType: 'NPC',
+        context: contextString,
+        language: locale.value as 'de' | 'en',
+      },
+    })
+
+    if (result.name) {
+      // Update form via emit
+      emit('update:form', {
+        ...props.form,
+        name: result.name,
+      })
+    }
+  } catch (error: unknown) {
+    console.error('[NPC] Failed to generate name:', error)
+    const errorMessage =
+      error &&
+      typeof error === 'object' &&
+      'data' in error &&
+      error.data &&
+      typeof error.data === 'object' &&
+      'message' in error.data
+        ? String(error.data.message)
+        : 'Failed to generate name'
+    alert(errorMessage)
+  } finally {
+    generatingName.value = false
+  }
+}
 </script>
 
 <style scoped>

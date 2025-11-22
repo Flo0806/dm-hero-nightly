@@ -188,176 +188,55 @@
 
           <!-- Items Tab -->
           <v-window-item value="items">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="items.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('npcs.items') }} - Keine Daten
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="item in items"
-                  :key="item.relation_id"
-                  class="mb-2"
-                  style="cursor: pointer"
-                  @click="$emit('view-item', item.id)"
-                >
-                  <template #prepend>
-                    <v-avatar color="secondary" size="48">
-                      <v-img v-if="item.image_url" :src="`/uploads/${item.image_url}`" />
-                      <v-icon v-else>mdi-treasure-chest</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">
-                    {{ item.name }}
-                    <v-chip v-if="item.rarity" size="x-small" :color="getRarityColor(item.rarity)" class="ml-2">
-                      {{ $t(`items.rarities.${item.rarity}`) }}
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <div class="d-flex align-center gap-2 mt-1">
-                      <v-chip v-if="item.relation_type" size="x-small" color="primary" variant="tonal">
-                        {{ $t(`npcs.itemRelationTypes.${item.relation_type}`, item.relation_type) }}
-                      </v-chip>
-                      <v-chip v-if="item.quantity && item.quantity > 1" size="x-small" variant="outlined">
-                        {{ item.quantity }}x
-                      </v-chip>
-                      <v-chip v-if="item.equipped" size="x-small" color="success" variant="tonal">
-                        {{ $t('npcs.equipped') }}
-                      </v-chip>
-                      <span v-if="item.description" class="text-caption text-medium-emphasis">
-                        {{ item.description }}
-                      </span>
-                    </div>
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="items"
+              :loading="loading"
+              entity-type="item"
+              :empty-message="$t('npcs.items') + ' - Keine Daten'"
+              @click="$emit('view-item', $event)"
+            />
           </v-window-item>
 
           <!-- Locations Tab -->
           <v-window-item value="locations">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="locations.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('nav.locations') }} - Keine Daten
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="location in locations"
-                  :key="location.relation_id"
-                  class="mb-2"
-                  style="cursor: pointer"
-                  @click="$emit('view-location', location.id)"
-                >
-                  <template #prepend>
-                    <v-avatar color="accent" size="48">
-                      <v-img v-if="location.image_url" :src="`/uploads/${location.image_url}`" />
-                      <v-icon v-else>mdi-map-marker</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">
-                    {{ location.name }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <div class="d-flex align-center gap-2 mt-1">
-                      <v-chip v-if="location.relation_type" size="x-small" color="primary" variant="tonal">
-                        {{ $t(`npcs.relationTypes.${location.relation_type}`, location.relation_type) }}
-                      </v-chip>
-                      <v-chip v-if="location.type" size="x-small" variant="outlined">
-                        {{ $t(`locations.types.${location.type}`) }}
-                      </v-chip>
-                      <span v-if="location.description" class="text-caption text-medium-emphasis">
-                        {{ location.description }}
-                      </span>
-                    </div>
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="locations"
+              :loading="loading"
+              entity-type="location"
+              :empty-message="$t('nav.locations') + ' - Keine Daten'"
+              @click="$emit('view-location', $event)"
+            />
           </v-window-item>
 
           <!-- Documents Tab -->
           <v-window-item value="documents">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="documents.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('documents.empty') }}
-              </div>
-              <div v-else>
-                <v-expansion-panels variant="accordion">
-                  <v-expansion-panel v-for="doc in documents" :key="doc.id">
-                    <v-expansion-panel-title>
-                      <v-icon start>mdi-file-document</v-icon>
-                      {{ doc.title }}
-                    </v-expansion-panel-title>
-                    <v-expansion-panel-text>
-                      <MdPreview :model-value="doc.content || ''" language="en-US" />
-                    </v-expansion-panel-text>
-                  </v-expansion-panel>
-                </v-expansion-panels>
-              </div>
-            </div>
+            <EntityDocumentsView
+              :documents="documents"
+              :loading="loading"
+              :empty-message="$t('documents.empty')"
+            />
           </v-window-item>
 
           <!-- Lore Tab -->
           <v-window-item value="lore">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="loreEntries.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('npcs.noLore') }}
-              </div>
-              <v-list v-else lines="two">
-                <v-list-item
-                  v-for="loreEntry in loreEntries"
-                  :key="loreEntry.id"
-                  :prepend-avatar="loreEntry.image_url ? `/uploads/${loreEntry.image_url}` : undefined"
-                >
-                  <template #prepend>
-                    <v-avatar v-if="loreEntry.image_url" size="48">
-                      <v-img :src="`/uploads/${loreEntry.image_url}`" />
-                    </v-avatar>
-                    <v-avatar v-else color="grey-lighten-2" size="48">
-                      <v-icon>mdi-book-open-variant</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="font-weight-medium">{{ loreEntry.name }}</v-list-item-title>
-                  <v-list-item-subtitle v-if="loreEntry.description">
-                    {{ loreEntry.description }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </div>
+            <EntityRelationsList
+              :entities="loreEntries"
+              :loading="loading"
+              entity-type="lore"
+              :empty-message="$t('npcs.noLore')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
           </v-window-item>
 
           <!-- Gallery Tab -->
           <v-window-item value="gallery">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="images.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('common.noImages') }}
-              </div>
-              <v-row v-else dense>
-                <v-col v-for="image in images" :key="image.id" cols="6" sm="4" md="3">
-                  <v-card @click="openImagePreview(image)">
-                    <v-img :src="`/uploads/${image.image_url}`" aspect-ratio="1" cover>
-                      <v-chip v-if="image.is_primary" size="x-small" color="primary" class="ma-2">
-                        {{ $t('common.primary') }}
-                      </v-chip>
-                    </v-img>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </div>
+            <EntityImageGalleryView
+              :images="images"
+              :loading="loading"
+              :empty-message="$t('common.noImages')"
+              @preview="openImagePreview"
+            />
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -387,9 +266,10 @@
 </template>
 
 <script setup lang="ts">
-import { MdPreview } from 'md-editor-v3'
-import 'md-editor-v3/lib/preview.css'
 import type { NPC } from '~~/types/npc'
+import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
+import EntityDocumentsView from '~/components/shared/EntityDocumentsView.vue'
+import EntityImageGalleryView from '~/components/shared/EntityImageGalleryView.vue'
 
 interface Props {
   show: boolean
@@ -521,18 +401,29 @@ watch(
         $fetch<
           Array<{
             id: number
-            relation_id: number
             name: string
             description?: string
             relation_type?: string
             image_url?: string
-            type?: string
-            region?: string
+            metadata?: { type?: string; region?: string } | null
           }>
-        >(`/api/entities/${newNpc.id}/related/locations`).catch((error) => {
-          console.error('Failed to load locations:', error)
-          return []
-        }),
+        >(`/api/entities/${newNpc.id}/related/locations`)
+          .then((data) =>
+            data.map((loc) => ({
+              id: loc.id,
+              relation_id: loc.id, // Map id to relation_id for consistency
+              name: loc.name,
+              description: loc.description || undefined,
+              relation_type: loc.relation_type,
+              image_url: loc.image_url || undefined,
+              type: loc.metadata?.type,
+              region: loc.metadata?.region,
+            })),
+          )
+          .catch((error) => {
+            console.error('Failed to load locations:', error)
+            return []
+          }),
         $fetch<Array<{ id: number; title: string; content: string }>>(`/api/entities/${newNpc.id}/documents`).catch(
           (error) => {
             console.error('Failed to load documents:', error)
@@ -629,17 +520,5 @@ function getStatusColor(status: string): string {
     undead: 'purple',
   }
   return colors[status] || 'grey'
-}
-
-function getRarityColor(rarity: string): string {
-  const colors: Record<string, string> = {
-    common: 'grey',
-    uncommon: 'green',
-    rare: 'blue',
-    very_rare: 'purple',
-    legendary: 'orange',
-    artifact: 'red',
-  }
-  return colors[rarity] || 'grey'
 }
 </script>

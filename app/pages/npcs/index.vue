@@ -110,7 +110,6 @@
       v-model:show="showCreateDialog"
       v-model:form="npcForm"
       v-model:active-tab="npcDialogTab"
-      v-model:notes-search="notesSearch"
       :editing-npc="editingNpc"
       :race-items="raceItems"
       :class-items="classItems"
@@ -120,171 +119,31 @@
       :npc-relations="npcRelations"
       :faction-memberships="factionMemberships"
       :npc-items="npcItems"
-      :npc-notes="npcNotes"
       :linked-lore="linkedLore"
       :available-npcs="npcsForSelect || []"
-      :available-locations="locations || []"
       :available-factions="factions || []"
       :available-items="items || []"
-      :lore-items="loreItems"
+      :available-lore="loreForSelect"
       :saving="saving"
-      :uploading-image="uploadingImage"
-      :deleting-image="deletingImage"
-      :generating-image="generatingImage"
-      :generating-name="generatingName"
       :adding-npc-relation="addingNpcRelation"
-      :adding-location-relation="addingRelation"
       :adding-membership="addingMembership"
       :adding-item="addingItem"
-      :loading-notes="loadingNotes"
       :loading-lore="loadingLore"
-      :has-api-key="hasApiKey"
-      :filtered-notes="filteredNotes"
       :npc-relation-count="npcRelationCount"
-      :location-relation-count="locationRelationCount"
       @save="saveNpc"
       @close="closeDialog"
-      @trigger-image-upload="triggerImageUpload"
-      @generate-image="generateImage"
-      @delete-image="deleteImage"
-      @download-image="(url, name) => downloadImage(url, name)"
-      @open-image-preview="(url, name) => openImagePreview(url, name)"
-      @generate-name="generateName"
+      @image-changed="handleDocumentsChanged"
+      @open-image-preview="(url: string, name: string) => openImagePreview(url, name)"
       @add-npc-relation="addNpcRelation"
-      @add-location-relation="addLocationRelation"
       @add-membership="addFactionMembership"
       @add-item="addItemToNpc"
-      @edit-relation="editRelation"
-      @remove-relation="removeRelation"
       @edit-membership="editMembership"
       @remove-membership="removeMembership"
       @remove-item="removeItem"
-      @new-note="showNoteDialog = true"
-      @edit-note="editNote"
-      @delete-note="deleteNote"
       @documents-changed="handleDocumentsChanged"
       @add-lore="addLoreRelation"
       @remove-lore="removeLoreRelation"
     />
-
-    <!-- Note Create/Edit Dialog -->
-    <v-dialog v-model="showNoteDialog" max-width="700">
-      <v-card>
-        <v-card-title>
-          {{ editingNote ? $t('npcs.editNote') : $t('npcs.newNote') }}
-        </v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="noteForm.title"
-            :label="$t('npcs.noteTitle')"
-            :placeholder="$t('npcs.noteTitlePlaceholder')"
-            variant="outlined"
-            class="mb-4"
-          />
-
-          <v-textarea
-            v-model="noteForm.summary"
-            :label="$t('npcs.noteContent')"
-            :placeholder="$t('npcs.noteContentPlaceholder')"
-            :rules="[(v: string) => !!v || $t('npcs.noteContentRequired')]"
-            variant="outlined"
-            rows="6"
-            class="mb-4"
-          />
-
-          <v-text-field
-            v-model="noteForm.date"
-            :label="$t('npcs.noteDate')"
-            type="datetime-local"
-            variant="outlined"
-            class="mb-4"
-          />
-
-          <v-textarea
-            v-model="noteForm.notes"
-            :label="$t('npcs.noteDetails')"
-            :placeholder="$t('npcs.noteDetailsPlaceholder')"
-            variant="outlined"
-            rows="3"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="closeNoteDialog">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!noteForm.summary"
-            :loading="savingNote"
-            @click="saveNote"
-          >
-            {{ editingNote ? $t('common.save') : $t('common.create') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Delete Note Confirmation -->
-    <v-dialog v-model="showDeleteNoteDialog" max-width="500">
-      <v-card>
-        <v-card-title>{{ $t('npcs.deleteNoteTitle') }}</v-card-title>
-        <v-card-text>
-          {{ $t('npcs.deleteNoteConfirm') }}
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="showDeleteNoteDialog = false">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn color="error" :loading="deletingNoteLoading" @click="confirmDeleteNote">
-            {{ $t('common.delete') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Edit Relation Dialog -->
-    <v-dialog v-model="showEditRelationDialog" max-width="600">
-      <v-card v-if="editingRelation">
-        <v-card-title>{{ $t('npcs.editRelation') }}</v-card-title>
-        <v-card-text>
-          <v-text-field
-            :model-value="editingRelation.to_entity_name"
-            :label="$t('npcs.location')"
-            variant="outlined"
-            readonly
-            disabled
-            class="mb-3"
-          />
-
-          <v-combobox
-            v-model="relationEditForm.relationType"
-            :items="relationTypeSuggestions"
-            :label="$t('npcs.relationType')"
-            variant="outlined"
-            class="mb-3"
-          />
-
-          <v-textarea
-            v-model="relationEditForm.notes"
-            :label="$t('npcs.relationNotes')"
-            :placeholder="$t('npcs.relationNotesPlaceholder')"
-            variant="outlined"
-            rows="3"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="closeEditRelationDialog">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn color="primary" :loading="savingRelation" @click="saveRelation">
-            {{ $t('common.save') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <!-- Edit Membership Dialog -->
     <v-dialog v-model="showEditMembershipDialog" max-width="600">
@@ -463,7 +322,6 @@ watch(searchQuery, () => {
 
 // Get data from stores
 const npcs = computed(() => entitiesStore.npcs)
-const locations = computed(() => entitiesStore.locationsForSelect)
 const factions = computed(() => entitiesStore.factionsForSelect)
 const items = computed(() => entitiesStore.itemsForSelect)
 
@@ -520,14 +378,14 @@ async function loadReferenceData() {
 // Translated race/class items for dropdowns (uses DB translations or i18n fallback)
 // IMPORTANT: We read locale.value to make this computed reactive to language changes
 const raceItems = computed(() => {
-  const _lang = locale.value // Track locale dependency
+  void locale.value // Track locale dependency for reactivity
   return races.value.map((r: (typeof races.value)[0]) => ({
     title: useRaceName(r),
     value: r.name,
   }))
 })
 const classItems = computed(() => {
-  const _lang = locale.value // Track locale dependency
+  void locale.value // Track locale dependency for reactivity
   return classes.value.map((c: (typeof classes.value)[0]) => ({
     title: useClassName(c),
     value: c.name,
@@ -672,167 +530,7 @@ const npcForm = ref({
 // User can generate images anytime as long as they have a name and API key
 
 // Check if API key is configured
-const hasApiKey = ref(false)
-
-// Check API key on mount
-onMounted(async () => {
-  try {
-    const response = await $fetch<{ hasKey: boolean }>('/api/settings/check-api-key')
-    hasApiKey.value = response.hasKey
-  } catch (error) {
-    console.error('[NPC] API Key check failed:', error)
-    hasApiKey.value = false
-  }
-})
-
-// Computed for generate button disabled state
-// Image upload state
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const uploadingImage = ref(false)
-const deletingImage = ref(false)
-const generatingImage = ref(false)
-
-// Trigger native file input
-function triggerImageUpload() {
-  fileInputRef.value?.click()
-}
-
-// Delete image function
-// AI Image Generation
-async function generateImage() {
-  if (!editingNpc.value || !npcForm.value.name) return
-
-  generatingImage.value = true
-
-  try {
-    // Build detailed prompt from all available NPC data
-    const details = []
-
-    // Race and Class (most important for visual appearance)
-    if (npcForm.value.metadata.race) {
-      details.push(npcForm.value.metadata.race)
-    }
-    if (npcForm.value.metadata.class) {
-      details.push(npcForm.value.metadata.class)
-    }
-
-    // Name (required)
-    details.push(npcForm.value.name)
-
-    // Description (free-form details)
-    if (npcForm.value.description) {
-      details.push(npcForm.value.description)
-    }
-
-    // Type (ally, enemy, neutral, etc.) - adds context
-    if (npcForm.value.metadata.type) {
-      const typeTranslations: Record<string, string> = {
-        ally: 'friendly ally',
-        enemy: 'menacing enemy',
-        neutral: 'neutral character',
-        questgiver: 'wise quest giver',
-        merchant: 'merchant',
-        guard: 'guard',
-        noble: 'noble',
-        commoner: 'commoner',
-        villain: 'villainous',
-        mentor: 'wise mentor',
-        companion: 'loyal companion',
-        informant: 'secretive informant',
-      }
-      const typeDesc = typeTranslations[npcForm.value.metadata.type] || npcForm.value.metadata.type
-      details.push(typeDesc)
-    }
-
-    // Status (alive, undead, etc.) - affects appearance
-    if (npcForm.value.metadata.status) {
-      const statusTranslations: Record<string, string> = {
-        alive: '',
-        dead: '',
-        missing: '',
-        imprisoned: 'wearing chains',
-        unknown: '',
-        undead: 'undead, pale skin, glowing eyes',
-      }
-      const statusDesc = statusTranslations[npcForm.value.metadata.status]
-      if (statusDesc) {
-        details.push(statusDesc)
-      }
-    }
-
-    const prompt = details.filter((d) => d).join(', ')
-
-    const result = await $fetch<{ imageUrl: string; revisedPrompt?: string }>(
-      '/api/ai/generate-image',
-      {
-        method: 'POST',
-        body: {
-          prompt,
-          entityName: npcForm.value.name,
-          entityType: 'NPC',
-          style: 'fantasy-art',
-        },
-      },
-    )
-
-    if (result.imageUrl && editingNpc.value) {
-      // Update the NPC with the generated image
-      const response = await $fetch<{ success: boolean }>(
-        `/api/entities/${editingNpc.value.id}/set-image`,
-        {
-          method: 'POST',
-          body: {
-            imageUrl: result.imageUrl.replace('/uploads/', ''), // Remove /uploads/ prefix
-          },
-        },
-      )
-
-      if (response.success) {
-        // Update local NPC
-        const imageUrl = result.imageUrl.replace('/uploads/', '')
-        editingNpc.value.image_url = imageUrl
-
-        // Update store reactively (no fetch needed!)
-        const npcInStore = entitiesStore.npcs.find((n) => n.id === editingNpc.value!.id)
-        if (npcInStore) {
-          npcInStore.image_url = imageUrl
-        }
-      }
-    }
-  } catch (error: unknown) {
-    console.error('[NPC] Failed to generate image:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image'
-    alert(errorMessage)
-  } finally {
-    generatingImage.value = false
-  }
-}
-
-async function deleteImage() {
-  if (!editingNpc.value?.image_url) return
-
-  deletingImage.value = true
-
-  try {
-    await $fetch<{ success: boolean }>(`/api/entities/${editingNpc.value.id}/delete-image`, {
-      method: 'DELETE' as const,
-    })
-
-    // Update the editing NPC
-    editingNpc.value.image_url = null
-
-    // Update store reactively (no fetch needed!)
-    const npcInStore = entitiesStore.npcs.find((n) => n.id === editingNpc.value!.id)
-    if (npcInStore) {
-      npcInStore.image_url = null
-    }
-  } catch (error) {
-    console.error('Failed to delete image:', error)
-    alert(t('npcs.deleteImageError'))
-  } finally {
-    deletingImage.value = false
-  }
-}
+// Image management now handled in NpcEditDialog component (including API key check)
 
 // NPC Types for select
 const npcTypes = computed(() =>
@@ -854,13 +552,6 @@ const npcStatuses = computed(() =>
 const npcRelationCount = computed(() => {
   return npcRelations.value.filter(
     (r: (typeof npcRelations.value)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
-  ).length
-})
-
-const locationRelationCount = computed(() => {
-  return npcRelations.value.filter(
-    (r: (typeof npcRelations.value)[0]) =>
-      (r.related_npc_type || r.to_entity_type) === 'Location',
   ).length
 })
 
@@ -889,8 +580,6 @@ const newRelation = ref({
   notes: '',
 })
 
-const addingRelation = ref(false)
-
 // NPC-to-NPC relation state
 const newNpcRelation = ref({
   npcId: null as number | null,
@@ -899,28 +588,6 @@ const newNpcRelation = ref({
 })
 
 const addingNpcRelation = ref(false)
-const addingLocationRelation = ref(false)
-
-// Relation editing state
-const showEditRelationDialog = ref(false)
-const editingRelation = ref<(typeof npcRelations.value)[0] | null>(null)
-const savingRelation = ref(false)
-const relationEditForm = ref({
-  relationType: '',
-  notes: '',
-})
-
-// Suggested relation types (i18n)
-const relationTypeSuggestions = computed(() => [
-  t('npcs.relationTypes.livesIn'),
-  t('npcs.relationTypes.worksAt'),
-  t('npcs.relationTypes.visitsOften'),
-  t('npcs.relationTypes.bornIn'),
-  t('npcs.relationTypes.hidesIn'),
-  t('npcs.relationTypes.owns'),
-  t('npcs.relationTypes.searchesFor'),
-  t('npcs.relationTypes.banishedFrom'),
-])
 
 const npcsForSelect = computed(() => {
   // Filter out the current NPC from the list
@@ -990,12 +657,6 @@ const npcItems = ref<
   }>
 >([])
 
-const newItem = ref({
-  itemId: null as number | null,
-  relationType: '',
-  quantity: 1,
-  equipped: false,
-})
 const addingItem = ref(false)
 
 // Suggested item relation types (i18n)
@@ -1011,133 +672,6 @@ const npcNotes = ref<
     updated_at: string
   }>
 >([])
-
-const loadingNotes = ref(false)
-const notesSearch = ref('')
-const showNoteDialog = ref(false)
-const showDeleteNoteDialog = ref(false)
-const editingNote = ref<(typeof npcNotes.value)[0] | null>(null)
-const deletingNote = ref<(typeof npcNotes.value)[0] | null>(null)
-const savingNote = ref(false)
-const deletingNoteLoading = ref(false)
-
-const noteForm = ref({
-  title: '',
-  summary: '',
-  date: '',
-  notes: '',
-})
-
-const filteredNotes = computed(() => {
-  if (!notesSearch.value) return npcNotes.value
-
-  const query = notesSearch.value.toLowerCase()
-  return npcNotes.value.filter(
-    (note) =>
-      note.title?.toLowerCase().includes(query) ||
-      note.summary?.toLowerCase().includes(query) ||
-      note.notes?.toLowerCase().includes(query),
-  )
-})
-
-async function loadNotes() {
-  if (!editingNpc.value) return
-
-  loadingNotes.value = true
-  try {
-    const notes = await $fetch<typeof npcNotes.value>(`/api/npcs/${editingNpc.value.id}/notes`, {
-      query: notesSearch.value ? { search: notesSearch.value } : {},
-    })
-    npcNotes.value = notes
-  } catch (error) {
-    console.error('Failed to load notes:', error)
-    npcNotes.value = []
-  } finally {
-    loadingNotes.value = false
-  }
-}
-
-function editNote(note: (typeof npcNotes.value)[0]) {
-  editingNote.value = note
-  noteForm.value = {
-    title: note.title || '',
-    summary: note.summary,
-    date: note.date ? new Date(note.date).toISOString().slice(0, 16) : '',
-    notes: note.notes || '',
-  }
-  showNoteDialog.value = true
-}
-
-async function saveNote() {
-  if (!editingNpc.value || !activeCampaignId.value!) return
-
-  savingNote.value = true
-
-  try {
-    if (editingNote.value) {
-      // Update existing note
-      await $fetch<{ success: boolean }>(
-        `/api/npcs/${editingNpc.value.id}/notes/${editingNote.value.id}`,
-        {
-          method: 'PATCH',
-          body: {
-            title: noteForm.value.title || null,
-            summary: noteForm.value.summary,
-            date: noteForm.value.date ? new Date(noteForm.value.date).toISOString() : null,
-            notes: noteForm.value.notes || null,
-          },
-        },
-      )
-    } else {
-      // Create new note
-      await $fetch(`/api/npcs/${editingNpc.value.id}/notes`, {
-        method: 'POST',
-        body: {
-          title: noteForm.value.title || null,
-          summary: noteForm.value.summary,
-          date: noteForm.value.date ? new Date(noteForm.value.date).toISOString() : null,
-          notes: noteForm.value.notes || null,
-          campaignId: activeCampaignId.value,
-        },
-      })
-    }
-
-    await loadNotes()
-    closeNoteDialog()
-  } catch (error) {
-    console.error('Failed to save note:', error)
-  } finally {
-    savingNote.value = false
-  }
-}
-
-function deleteNote(note: (typeof npcNotes.value)[0]) {
-  deletingNote.value = note
-  showDeleteNoteDialog.value = true
-}
-
-async function confirmDeleteNote() {
-  if (!deletingNote.value) return
-
-  deletingNoteLoading.value = true
-
-  try {
-    await $fetch<{ success: boolean }>(
-      `/api/npcs/${editingNpc.value!.id}/notes/${deletingNote.value.id}`,
-      {
-        method: 'DELETE' as const,
-      },
-    )
-
-    await loadNotes()
-    showDeleteNoteDialog.value = false
-    deletingNote.value = null
-  } catch (error) {
-    console.error('Failed to delete note:', error)
-  } finally {
-    deletingNoteLoading.value = false
-  }
-}
 
 // Memberships functions
 async function loadAllRelations() {
@@ -1255,8 +789,10 @@ async function loadNpcItems() {
   }
 }
 
-async function addItemToNpc(payload: { itemId: number; relationType: string; quantity?: number; equipped: boolean }) {
-  if (!editingNpc.value || !payload.itemId || !payload.relationType) return
+async function addItemToNpc(payload: { itemId: number; relationType?: string; quantity?: number; equipped?: boolean }) {
+  if (!editingNpc.value || !payload.itemId) return
+
+  const relationType = payload.relationType || 'owns'
 
   addingItem.value = true
 
@@ -1265,7 +801,7 @@ async function addItemToNpc(payload: { itemId: number; relationType: string; qua
       method: 'POST',
       body: {
         itemId: payload.itemId,
-        relationType: payload.relationType,
+        relationType,
         quantity: payload.quantity || undefined,
         equipped: payload.equipped,
       },
@@ -1297,17 +833,6 @@ async function removeItem(relationId: number) {
     await reloadNpcCounts(editingNpc.value)
   } catch (error) {
     console.error('Failed to remove item:', error)
-  }
-}
-
-function closeNoteDialog() {
-  showNoteDialog.value = false
-  editingNote.value = null
-  noteForm.value = {
-    title: '',
-    summary: '',
-    date: '',
-    notes: '',
   }
 }
 
@@ -1372,9 +897,6 @@ async function editNpc(npc: NPC) {
   } catch (error) {
     console.error('Failed to load location relations:', error)
   }
-
-  // Load notes
-  await loadNotes()
 
   // Load all relations (memberships + NPC relations)
   await loadAllRelations()
@@ -1451,51 +973,7 @@ function deleteNpc(npc: NPC) {
 }
 
 // AI Name Generation
-const generatingName = ref(false)
-
-async function generateName() {
-  generatingName.value = true
-
-  try {
-    // Build context from current form data
-    const context = []
-    if (npcForm.value.metadata.race) {
-      context.push(npcForm.value.metadata.race)
-    }
-    if (npcForm.value.metadata.class) {
-      context.push(npcForm.value.metadata.class)
-    }
-
-    const contextString = context.length > 0 ? context.join(', ') : undefined
-
-    const result = await $fetch<{ name: string }>('/api/ai/generate-name', {
-      method: 'POST',
-      body: {
-        entityType: 'NPC',
-        context: contextString,
-        language: locale.value as 'de' | 'en',
-      },
-    })
-
-    if (result.name) {
-      npcForm.value.name = result.name
-    }
-  } catch (error: unknown) {
-    console.error('[NPC] Failed to generate name:', error)
-    const errorMessage =
-      error &&
-      typeof error === 'object' &&
-      'data' in error &&
-      error.data &&
-      typeof error.data === 'object' &&
-      'message' in error.data
-        ? String(error.data.message)
-        : 'Failed to generate name'
-    alert(errorMessage)
-  } finally {
-    generatingName.value = false
-  }
-}
+// Name generation now handled in NpcEditDialog component
 
 async function saveNpc() {
   if (!activeCampaignId.value!) return
@@ -1612,112 +1090,11 @@ async function addNpcRelation() {
   }
 }
 
-async function addLocationRelation(payload: { locationId: number; relationType: string; notes?: string }) {
-  if (!editingNpc.value || !payload.locationId) return
-
-  addingLocationRelation.value = true
-
-  try {
-    const relation = await $fetch<Relation>(`/api/npcs/${editingNpc.value.id}/relations`, {
-      method: 'POST',
-      body: {
-        toEntityId: payload.locationId,
-        relationType: payload.relationType || t('npcs.relationTypes.livesIn'),
-        notes: payload.notes || null,
-      },
-    })
-
-    npcRelations.value.push({
-      id: relation.id,
-      related_npc_id: relation.to_entity_id,
-      related_npc_name: relation.to_entity_name,
-      related_npc_type: relation.to_entity_type,
-      relation_type: relation.relation_type,
-      notes: typeof relation.notes === 'string' ? relation.notes : null,
-      image_url: null,
-      direction: 'outgoing',
-      // Legacy fields
-      to_entity_id: relation.to_entity_id,
-      to_entity_name: relation.to_entity_name,
-      to_entity_type: relation.to_entity_type,
-    })
-
-    // Reload counts to update location count badge
-    if (editingNpc.value) {
-      await reloadNpcCounts(editingNpc.value)
-    }
-  } catch (error) {
-    console.error('Failed to add relation:', error)
-  } finally {
-    addingLocationRelation.value = false
-  }
-}
-
-function editRelation(relation: (typeof npcRelations.value)[0]) {
-  editingRelation.value = relation
-  relationEditForm.value = {
-    relationType: relation.relation_type,
-    notes: relation.notes || '',
-  }
-  showEditRelationDialog.value = true
-}
-
-async function saveRelation() {
-  if (!editingRelation.value) return
-
-  savingRelation.value = true
-
-  try {
-    const updated = await $fetch<Relation>(`/api/entity-relations/${editingRelation.value.id}`, {
-      method: 'PATCH' as const,
-      body: {
-        relationType: relationEditForm.value.relationType,
-        notes: relationEditForm.value.notes || null,
-      },
-    })
-
-    // Update in local array - only update relation_type and notes
-    const index = npcRelations.value.findIndex((r) => r.id === editingRelation.value!.id)
-    if (index !== -1 && npcRelations.value[index]) {
-      npcRelations.value[index].relation_type = updated.relation_type
-      npcRelations.value[index].notes = typeof updated.notes === 'string' ? updated.notes : null
-    }
-
-    closeEditRelationDialog()
-  } catch (error) {
-    console.error('Failed to update relation:', error)
-  } finally {
-    savingRelation.value = false
-  }
-}
-
-function closeEditRelationDialog() {
-  showEditRelationDialog.value = false
-  editingRelation.value = null
-  relationEditForm.value = {
-    relationType: '',
-    notes: '',
-  }
-}
-
-async function removeRelation(relationId: number) {
-  try {
-    await $fetch<{ success: boolean }>(`/api/entity-relations/${relationId}`, {
-      method: 'DELETE' as const,
-    })
-
-    npcRelations.value = npcRelations.value.filter((r) => r.id !== relationId)
-  } catch (error) {
-    console.error('Failed to remove relation:', error)
-  }
-}
-
 function closeDialog() {
   showCreateDialog.value = false
   editingNpc.value = null
   npcRelations.value = []
   npcNotes.value = []
-  notesSearch.value = ''
   npcDialogTab.value = 'details'
   allRelations.value = []
   newRelation.value = {
@@ -1749,13 +1126,8 @@ function closeDialog() {
   }
 }
 
-// Lore items for autocomplete
-const loreItems = computed(() => {
-  return entitiesStore.loreForSelect.map((lore: { id: number; name: string }) => ({
-    title: lore.name,
-    value: lore.id,
-  }))
-})
+// Lore for autocomplete (used in EntityLoreTab)
+const loreForSelect = computed(() => entitiesStore.loreForSelect)
 
 // Load linked lore when editing NPC
 watch(

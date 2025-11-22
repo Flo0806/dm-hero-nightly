@@ -127,17 +127,41 @@ export default defineEventHandler(async (event) => {
     .all(entityId, targetType.id, entityId, targetType.id)
 
   // Map to consistent response format
-  return relatedEntities.map((entity) => ({
-    id: entity.id, // Relation ID
-    from_entity_id: entity.from_entity_id,
-    to_entity_id: entity.to_entity_id,
-    relation_type: entity.relation_type,
-    notes: entity.notes ? JSON.parse(entity.notes) : null,
-    created_at: entity.created_at,
-    name: entity.entity_name,
-    description: entity.entity_description,
-    metadata: entity.entity_metadata ? JSON.parse(entity.entity_metadata) : null,
-    image_url: entity.entity_image_url,
-    direction: entity.direction,
-  }))
+  return relatedEntities.map((entity) => {
+    // Try to parse notes as JSON, fallback to plain text if it fails
+    let parsedNotes = null
+    if (entity.notes) {
+      try {
+        parsedNotes = JSON.parse(entity.notes)
+      } catch {
+        // If not valid JSON, keep as plain text string
+        parsedNotes = entity.notes
+      }
+    }
+
+    // Try to parse metadata as JSON
+    let parsedMetadata = null
+    if (entity.entity_metadata) {
+      try {
+        parsedMetadata = JSON.parse(entity.entity_metadata)
+      } catch {
+        // If not valid JSON, keep as null
+        parsedMetadata = null
+      }
+    }
+
+    return {
+      id: entity.id, // Relation ID
+      from_entity_id: entity.from_entity_id,
+      to_entity_id: entity.to_entity_id,
+      relation_type: entity.relation_type,
+      notes: parsedNotes,
+      created_at: entity.created_at,
+      name: entity.entity_name,
+      description: entity.entity_description,
+      metadata: parsedMetadata,
+      image_url: entity.entity_image_url,
+      direction: entity.direction,
+    }
+  })
 })

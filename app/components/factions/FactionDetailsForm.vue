@@ -222,11 +222,11 @@ interface FactionFormData {
   description: string
   leaderId: number | null
   metadata: {
-    type: string
-    alignment: string
-    headquarters: string
-    goals: string
-    notes: string
+    type?: string
+    alignment?: string
+    headquarters?: string
+    goals?: string
+    notes?: string
   }
 }
 
@@ -246,17 +246,16 @@ interface Props {
   hasApiKey?: boolean
 }
 
-interface Emits {
-  (e: 'update:modelValue', value: FactionFormData): void
-  (e: 'preview-image', url: string): void
-  (e: 'upload-click'): void
-  (e: 'generate-image'): void
-  (e: 'download-image'): void
-  (e: 'delete-image'): void
-}
-
 defineProps<Props>()
-defineEmits<Emits>()
+
+defineEmits<{
+  'update:modelValue': [value: FactionFormData]
+  'preview-image': [url: string]
+  'upload-click': []
+  'generate-image': []
+  'download-image': []
+  'delete-image': []
+}>()
 </script>
 
 <style scoped>

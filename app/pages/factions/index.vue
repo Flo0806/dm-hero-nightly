@@ -89,174 +89,56 @@
     </ClientOnly>
 
     <!-- Create/Edit Dialog -->
-    <v-dialog
-      v-model="showCreateDialog"
-      max-width="800"
-      :persistent="saving || uploadingImage || generatingImage"
-    >
-      <v-card>
-        <v-card-title>
-          {{ editingFaction ? $t('factions.edit') : $t('factions.create') }}
-        </v-card-title>
+    <FactionEditDialog
+      v-model:show="showCreateDialog"
+      v-model:form="factionForm"
+      v-model:active-tab="factionDialogTab"
+      :editing-faction="editingFaction"
+      :faction-members="factionMembers"
+      :linked-items="linkedItems"
+      :faction-locations="factionLocations"
+      :linked-lore="linkedLore"
+      :available-npcs="npcs || []"
+      :available-locations="locations || []"
+      :available-items="itemsForSelect"
+      :available-lore="loreForSelect"
+      :saving="saving"
+      :uploading-image="uploadingImage"
+      :generating-image="generatingImage"
+      :deleting-image="deletingImage"
+      :loading-members="loadingMembers"
+      :loading-locations="loadingLocations"
+      :adding-member="addingMember"
+      :adding-location="addingLocation"
+      :has-api-key="hasApiKey"
+      @save="saveFaction"
+      @close="closeDialog"
+      @preview-image="openImagePreview"
+      @upload-click="triggerImageUpload"
+      @generate-image="generateImage"
+      @download-image="() => downloadImage(`/uploads/${editingFaction?.image_url}`, factionForm.name)"
+      @delete-image="deleteImage"
+      @image-generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
+      @images-changed="handleImagesUpdated"
+      @documents-changed="handleDocumentsChanged"
+      @add-member="addNpcMember"
+      @remove-member="removeMember"
+      @add-location="addLocationLink"
+      @remove-location="removeLocation"
+      @add-item="addItemRelation"
+      @remove-item="removeItemRelation"
+      @add-lore="addLoreRelation"
+      @remove-lore="removeLoreRelation"
+    />
 
-        <!-- Tabs (only in edit mode) -->
-        <v-tabs v-if="editingFaction" v-model="factionDialogTab" class="mb-4">
-          <v-tab value="details">
-            <v-icon start> mdi-shield-account </v-icon>
-            {{ $t('common.details') }}
-          </v-tab>
-          <v-tab value="images">
-            <v-icon start> mdi-image-multiple </v-icon>
-            {{ $t('common.images') }} ({{ editingFaction._counts?.images ?? 0 }})
-          </v-tab>
-          <v-tab value="documents">
-            <v-icon start> mdi-file-document </v-icon>
-            {{ $t('documents.title') }} ({{ editingFaction._counts?.documents ?? 0 }})
-          </v-tab>
-          <v-tab value="members">
-            <v-icon start> mdi-account-group </v-icon>
-            {{ $t('factions.members') }} ({{ editingFaction._counts?.members ?? 0 }})
-          </v-tab>
-          <v-tab value="items">
-            <v-icon start> mdi-treasure-chest </v-icon>
-            {{ $t('common.items') }} ({{ editingFaction._counts?.items ?? 0 }})
-          </v-tab>
-          <v-tab value="locations">
-            <v-icon start> mdi-map-marker </v-icon>
-            {{ $t('common.locations') }} ({{ editingFaction._counts?.locations ?? 0 }})
-          </v-tab>
-          <v-tab value="lore">
-            <v-icon start> mdi-book-open-variant </v-icon>
-            {{ $t('common.lore') }} ({{ editingFaction._counts?.lore ?? 0 }})
-          </v-tab>
-        </v-tabs>
-
-        <v-card-text>
-          <v-tabs-window v-if="editingFaction" v-model="factionDialogTab">
-            <!-- Details Tab -->
-            <v-tabs-window-item value="details">
-              <FactionDetailsForm
-                v-model="factionForm"
-                :npcs="npcs || []"
-                :is-edit-mode="true"
-                :image-url="editingFaction.image_url"
-                :uploading-image="uploadingImage"
-                :generating-image="generatingImage"
-                :deleting-image="deletingImage"
-                :has-api-key="hasApiKey"
-                @preview-image="openImagePreview"
-                @upload-click="triggerImageUpload"
-                @generate-image="generateImage"
-                @download-image="() => downloadImage(`/uploads/${editingFaction?.image_url}`, factionForm.name)"
-                @delete-image="deleteImage"
-              />
-              <input
-                ref="fileInputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                style="display: none"
-                @change="handleImageUpload"
-              />
-            </v-tabs-window-item>
-
-            <!-- Images Tab -->
-            <v-tabs-window-item value="images">
-              <EntityImageGallery
-                v-if="editingFaction"
-                :entity-id="editingFaction.id"
-                entity-type="Faction"
-                :entity-name="editingFaction.name"
-                :entity-description="editingFaction.description || undefined"
-                @preview-image="openImagePreview"
-                @generating="(isGenerating) => (imageGenerating = isGenerating)"
-                @images-updated="handleImagesUpdated"
-              />
-            </v-tabs-window-item>
-
-            <!-- Documents Tab -->
-            <v-tabs-window-item value="documents">
-              <EntityDocuments
-                v-if="editingFaction"
-                :entity-id="editingFaction.id"
-                entity-type="Faction"
-                @changed="handleDocumentsChanged"
-              />
-            </v-tabs-window-item>
-
-            <!-- Members Tab -->
-            <v-tabs-window-item value="members">
-              <FactionMembersTab
-                :members="factionMembers"
-                :npcs="npcs || []"
-                :loading-members="loadingMembers"
-                :adding="addingMember"
-                @add="addNpcMember"
-                @remove="removeMember"
-              />
-            </v-tabs-window-item>
-
-            <!-- Items Tab -->
-            <v-tabs-window-item value="items">
-              <FactionItemsTab
-                :items="linkedItems"
-                :available-items="itemsForSelect"
-                @add="addItemRelation"
-                @remove="removeItemRelation"
-              />
-            </v-tabs-window-item>
-
-            <!-- Locations Tab -->
-            <v-tabs-window-item value="locations">
-              <FactionLocationsTab
-                :locations="factionLocations"
-                :available-locations="locations || []"
-                :loading-locations="loadingLocations"
-                :adding="addingLocation"
-                @add="addLocationLink"
-                @remove="removeLocation"
-              />
-            </v-tabs-window-item>
-
-            <!-- Lore Tab -->
-            <v-tabs-window-item value="lore">
-              <FactionLoreTab
-                :lore="linkedLore"
-                :available-lore="loreForSelect"
-                @add="addLoreRelation"
-                @remove="removeLoreRelation"
-              />
-            </v-tabs-window-item>
-          </v-tabs-window>
-
-          <!-- Form when creating (no tabs) -->
-          <FactionDetailsForm
-            v-if="!editingFaction"
-            v-model="factionForm"
-            :npcs="npcs || []"
-            :is-edit-mode="false"
-          />
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            variant="text"
-            :disabled="saving || uploadingImage || generatingImage"
-            @click="closeDialog"
-          >
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            :loading="saving"
-            :disabled="uploadingImage || generatingImage"
-            @click="saveFaction"
-          >
-            {{ editingFaction ? $t('common.save') : $t('common.create') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Hidden file input for image upload -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+      style="display: none"
+      @change="handleImageUpload"
+    />
 
     <!-- View Faction Dialog -->
     <FactionViewDialog
@@ -298,13 +180,7 @@
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import FactionCard from '~/components/factions/FactionCard.vue'
 import FactionViewDialog from '~/components/factions/FactionViewDialog.vue'
-import FactionDetailsForm from '~/components/factions/FactionDetailsForm.vue'
-import FactionMembersTab from '~/components/factions/FactionMembersTab.vue'
-import FactionLocationsTab from '~/components/factions/FactionLocationsTab.vue'
-import FactionItemsTab from '~/components/factions/FactionItemsTab.vue'
-import FactionLoreTab from '~/components/factions/FactionLoreTab.vue'
-import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
+import FactionEditDialog from '~/components/factions/FactionEditDialog.vue'
 
 interface FactionCounts {
   members: number
@@ -766,7 +642,7 @@ async function loadFactionMembers() {
 
 async function addNpcMember(payload: {
   npcId: number
-  membershipType: string
+  relationType: string
   rank?: string
 }) {
   if (!editingFaction.value) return
@@ -778,7 +654,7 @@ async function addNpcMember(payload: {
       method: 'POST',
       body: {
         npcId: payload.npcId,
-        membershipType: payload.membershipType,
+        membershipType: payload.relationType,
         rank: payload.rank || undefined,
       },
     })
@@ -943,23 +819,16 @@ async function removeItemRelation(relationId: number) {
   }
 }
 
-async function removeLoreRelation(loreId: number) {
+async function removeLoreRelation(relationId: number) {
   if (!editingFaction.value) return
   try {
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: loreId,
-        toEntityId: editingFaction.value.id,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-      await loadLinkedLore()
-      // Reload counts immediately after removing lore
-      await reloadFactionCounts(editingFaction.value)
-    }
+    await loadLinkedLore()
+    // Reload counts immediately after removing lore
+    await reloadFactionCounts(editingFaction.value)
   } catch (error) {
     console.error('Failed to remove Lore relation:', error)
   }

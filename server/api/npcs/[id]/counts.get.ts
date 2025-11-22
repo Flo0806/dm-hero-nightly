@@ -165,6 +165,19 @@ export default defineEventHandler((event) => {
     loreCount = loreResult.count
   }
 
+  // Get notes count (stored as sessions with session_mentions)
+  const notesCount = db
+    .prepare(
+      `
+    SELECT COUNT(*) as count
+    FROM sessions s
+    INNER JOIN session_mentions sm ON s.id = sm.session_id
+    WHERE sm.entity_id = ?
+      AND s.deleted_at IS NULL
+  `,
+    )
+    .get(Number(npcId)) as { count: number }
+
   return {
     relations: relationsCount.count,
     items: itemsCount,
@@ -173,6 +186,7 @@ export default defineEventHandler((event) => {
     images: imagesCount.count,
     memberships: membershipsCount,
     lore: loreCount,
+    notes: notesCount.count,
     factionName,
   }
 })

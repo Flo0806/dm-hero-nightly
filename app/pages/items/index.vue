@@ -87,735 +87,62 @@
     </ClientOnly>
 
     <!-- View Item Dialog -->
-    <v-dialog v-model="showViewDialog" max-width="1200" scrollable>
-      <v-card v-if="viewingItem">
-        <v-card-title class="d-flex align-center">
-          <v-icon icon="mdi-sword" class="mr-2" color="primary" />
-          {{ viewingItem.name }}
-          <v-chip
-            v-if="viewingItem.metadata?.rarity"
-            :color="getRarityColor(viewingItem.metadata.rarity)"
-            size="small"
-            class="ml-2"
-          >
-            {{ $t(`items.rarities.${viewingItem.metadata.rarity}`) }}
-          </v-chip>
-        </v-card-title>
-
-        <v-card-text style="max-height: 70vh">
-          <v-row>
-            <!-- Image -->
-            <v-col v-if="viewingItem.image_url" cols="12" md="4">
-              <div class="position-relative image-container">
-                <v-img
-                  :src="`/uploads/${viewingItem.image_url}`"
-                  aspect-ratio="1"
-                  cover
-                  rounded="lg"
-                />
-                <v-btn
-                  icon="mdi-download"
-                  size="small"
-                  variant="tonal"
-                  class="image-download-btn"
-                  @click="downloadImage(`/uploads/${viewingItem.image_url}`, viewingItem.name)"
-                />
-              </div>
-            </v-col>
-
-            <!-- Content -->
-            <v-col :cols="viewingItem.image_url ? 12 : 12" :md="viewingItem.image_url ? 8 : 12">
-              <!-- Type & Attunement -->
-              <div class="mb-4">
-                <v-chip v-if="viewingItem.metadata?.type" size="small" variant="tonal" class="mr-2">
-                  {{ $t(`items.types.${viewingItem.metadata.type}`) }}
-                </v-chip>
-                <v-chip v-if="viewingItem.metadata?.attunement" size="small" color="purple">
-                  {{ $t('items.requiresAttunement') }}
-                </v-chip>
-              </div>
-
-              <!-- Description -->
-              <div v-if="viewingItem.description" class="text-body-1 mb-4">
-                {{ viewingItem.description }}
-              </div>
-              <div v-else class="text-body-2 text-disabled mb-4">
-                {{ $t('items.noDescription') }}
-              </div>
-
-              <v-divider class="my-4" />
-
-              <!-- Metadata -->
-              <v-row dense>
-                <v-col v-if="viewingItem.metadata?.value" cols="12" sm="6">
-                  <div class="text-caption text-medium-emphasis">
-                    {{ $t('items.value') }}
-                  </div>
-                  <div class="text-body-1">
-                    {{ viewingItem.metadata.value }}
-                  </div>
-                </v-col>
-                <v-col v-if="viewingItem.metadata?.weight" cols="12" sm="6">
-                  <div class="text-caption text-medium-emphasis">
-                    {{ $t('items.weight') }}
-                  </div>
-                  <div class="text-body-1">
-                    {{ viewingItem.metadata.weight }}
-                  </div>
-                </v-col>
-              </v-row>
-
-              <!-- Documents -->
-              <div v-if="viewingItem.id" class="mt-4">
-                <v-divider class="mb-4" />
-                <h3 class="text-h6 mb-2">
-                  {{ $t('items.documents') }}
-                </h3>
-                <EntityDocuments :entity-id="viewingItem.id" />
-              </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn
-            variant="text"
-            prepend-icon="mdi-pencil"
-            @click="editItemAndCloseView(viewingItem)"
-          >
-            {{ $t('common.edit') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn variant="text" @click="showViewDialog = false">
-            {{ $t('common.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ItemViewDialog
+      v-model="showViewDialog"
+      :item="viewingItem"
+      :owners="itemOwners"
+      :locations="itemLocations"
+      :factions="itemFactions"
+      :lore="itemLore"
+      :documents="itemDocuments"
+      :images="itemImages"
+      :counts="viewDialogCounts"
+      :loading="loadingViewData"
+      :loading-owners="loadingOwners"
+      :loading-locations="loadingLocations"
+      :loading-factions="loadingFactions"
+      :loading-lore="loadingLore"
+      @edit="editItemAndCloseView"
+      @preview-image="(image: { image_url: string }) => openImagePreview(`/uploads/${image.image_url}`, viewingItem?.name || '')"
+    />
 
     <!-- Create/Edit Item Dialog -->
-    <v-dialog
-      v-model="showCreateDialog"
-      max-width="1200"
-      scrollable
-      :persistent="imageGenerating"
-    >
-      <v-card>
-        <v-card-title>
-          {{ editingItem ? $t('items.edit') : $t('items.create') }}
-        </v-card-title>
-
-        <v-tabs v-if="editingItem" v-model="itemDialogTab" class="px-4">
-          <v-tab value="details">
-            <v-icon start> mdi-information </v-icon>
-            {{ $t('items.details') }}
-          </v-tab>
-          <v-tab value="images">
-            <v-icon start> mdi-image-multiple </v-icon>
-            {{ $t('common.images') }} ({{ editingItem?._counts?.images ?? 0 }})
-          </v-tab>
-          <v-tab value="documents">
-            <v-icon start> mdi-file-document </v-icon>
-            {{ $t('documents.title') }} ({{ editingItem?._counts?.documents ?? 0 }})
-          </v-tab>
-          <v-tab value="owners">
-            <v-icon start> mdi-account </v-icon>
-            {{ $t('items.owners') }} ({{ itemOwners.length }})
-          </v-tab>
-          <v-tab value="locations">
-            <v-icon start> mdi-map-marker </v-icon>
-            {{ $t('items.locations') }} ({{ itemLocations.length }})
-          </v-tab>
-          <v-tab value="factions">
-            <v-icon start> mdi-shield-account </v-icon>
-            {{ $t('factions.title') }} ({{ linkedFactions.length }})
-          </v-tab>
-          <v-tab value="lore">
-            <v-icon start> mdi-book-open-variant </v-icon>
-            {{ $t('lore.title') }} ({{ linkedLore.length }})
-          </v-tab>
-        </v-tabs>
-
-        <v-card-text style="max-height: 600px">
-          <v-tabs-window v-if="editingItem" v-model="itemDialogTab">
-            <!-- Details Tab -->
-            <v-tabs-window-item value="details">
-              <v-text-field
-                v-model="itemForm.name"
-                :label="$t('items.name')"
-                :rules="[(v: string) => !!v || $t('items.nameRequired')]"
-                variant="outlined"
-                class="mb-4"
-              />
-
-              <v-textarea
-                v-model="itemForm.description"
-                :label="$t('items.description')"
-                variant="outlined"
-                rows="3"
-                class="mb-4"
-              />
-
-              <v-divider class="my-4" />
-
-              <div class="text-h6 mb-4">
-                {{ $t('items.metadata') }}
-              </div>
-
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="itemForm.metadata.type"
-                    :items="ITEM_TYPES"
-                    :label="$t('items.type')"
-                    variant="outlined"
-                    clearable
-                  >
-                    <template #item="{ props, item }">
-                      <v-list-item v-bind="props" :title="$t(`items.types.${item.value}`)" />
-                    </template>
-                    <template #selection="{ item }">
-                      {{ $t(`items.types.${item.value}`) }}
-                    </template>
-                  </v-select>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="itemForm.metadata.rarity"
-                    :items="ITEM_RARITIES"
-                    :label="$t('items.rarity')"
-                    variant="outlined"
-                    clearable
-                  >
-                    <template #item="{ props, item }">
-                      <v-list-item v-bind="props" :title="$t(`items.rarities.${item.value}`)" />
-                    </template>
-                    <template #selection="{ item }">
-                      {{ $t(`items.rarities.${item.value}`) }}
-                    </template>
-                  </v-select>
-                </v-col>
-              </v-row>
-
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="itemForm.metadata.value"
-                    :label="$t('items.value')"
-                    :placeholder="$t('items.valuePlaceholder')"
-                    variant="outlined"
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model="itemForm.metadata.weight"
-                    :label="$t('items.weight')"
-                    :placeholder="$t('items.weightPlaceholder')"
-                    variant="outlined"
-                  />
-                </v-col>
-              </v-row>
-
-              <v-text-field
-                v-model="itemForm.metadata.charges"
-                :label="$t('items.charges')"
-                :placeholder="$t('items.chargesPlaceholder')"
-                variant="outlined"
-                class="mb-4"
-              />
-
-              <v-textarea
-                v-model="itemForm.metadata.properties"
-                :label="$t('items.properties')"
-                :placeholder="$t('items.propertiesPlaceholder')"
-                variant="outlined"
-                rows="3"
-                class="mb-4"
-              />
-
-              <v-switch
-                v-model="itemForm.metadata.attunement"
-                :label="$t('items.requiresAttunement')"
-                color="primary"
-                hide-details
-              />
-            </v-tabs-window-item>
-
-            <!-- Images Tab -->
-            <v-tabs-window-item value="images">
-              <EntityImageGallery
-                v-if="editingItem"
-                :entity-id="editingItem.id"
-                entity-type="Item"
-                :entity-name="editingItem.name"
-                :entity-description="editingItem.description || undefined"
-                @preview-image="openImagePreview"
-                @generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
-                @images-updated="handleImagesUpdated"
-              />
-            </v-tabs-window-item>
-
-            <!-- Owners Tab -->
-            <v-tabs-window-item value="owners">
-              <div class="text-h6 mb-4">
-                {{ $t('items.ownersList') }}
-              </div>
-
-              <v-list v-if="itemOwners.length > 0" class="mb-3">
-                <v-list-item v-for="owner in itemOwners" :key="owner.id" class="mb-2" border>
-                  <template #prepend>
-                    <v-icon icon="mdi-account" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ owner.name }}
-                    <v-chip
-                      v-if="owner.notes?.equipped"
-                      size="x-small"
-                      color="success"
-                      class="ml-2"
-                    >
-                      {{ $t('items.equipped') }}
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1">
-                      {{ $t(`items.ownerRelationTypes.${owner.relation_type}`) }}
-                    </v-chip>
-                    <span v-if="owner.notes?.quantity" class="text-caption">
-                      {{ $t('items.quantity') }}: {{ owner.notes.quantity }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeOwner(owner.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels>
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('items.addOwner') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newOwner.npcId"
-                      :items="npcs || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('items.selectNpc')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-select
-                      v-model="newOwner.relationType"
-                      :items="ownerRelationTypeSuggestions"
-                      item-title="title"
-                      item-value="value"
-                      :label="$t('items.ownerRelationType')"
-                      :placeholder="$t('items.ownerRelationTypePlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model.number="newOwner.quantity"
-                          :label="$t('items.quantity')"
-                          :placeholder="$t('items.quantityPlaceholder')"
-                          variant="outlined"
-                          type="number"
-                          min="1"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6" class="d-flex align-center">
-                        <v-switch
-                          v-model="newOwner.equipped"
-                          :label="$t('items.equipped')"
-                          color="primary"
-                          hide-details
-                        />
-                      </v-col>
-                    </v-row>
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newOwner.npcId || !newOwner.relationType"
-                      :loading="addingOwner"
-                      @click="addOwnerToItem"
-                    >
-                      {{ $t('items.addOwner') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Locations Tab -->
-            <v-tabs-window-item value="locations">
-              <div class="text-h6 mb-4">
-                {{ $t('items.locationsList') }}
-              </div>
-
-              <v-list v-if="itemLocations.length > 0" class="mb-3">
-                <v-list-item
-                  v-for="location in itemLocations"
-                  :key="location.id"
-                  class="mb-2"
-                  border
-                >
-                  <template #prepend>
-                    <v-icon icon="mdi-map-marker" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ location.location_name }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1">
-                      {{ $t(`items.locationRelationTypes.${location.relation_type}`) }}
-                    </v-chip>
-                    <span v-if="location.notes?.quantity" class="text-caption">
-                      {{ $t('items.quantity') }}: {{ location.notes.quantity }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeLocation(location.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels>
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('items.addLocation') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newLocation.locationId"
-                      :items="locations || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('items.selectLocation')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-select
-                      v-model="newLocation.relationType"
-                      :items="locationRelationTypeSuggestions"
-                      item-title="title"
-                      item-value="value"
-                      :label="$t('items.locationRelationType')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-text-field
-                      v-model.number="newLocation.quantity"
-                      :label="$t('items.quantity')"
-                      :placeholder="$t('items.quantityPlaceholder')"
-                      variant="outlined"
-                      type="number"
-                      min="1"
-                      class="mb-3"
-                    />
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newLocation.locationId || !newLocation.relationType"
-                      :loading="addingLocation"
-                      @click="addLocationToItem"
-                    >
-                      {{ $t('items.addLocation') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Lore Tab -->
-            <v-tabs-window-item value="lore">
-              <div v-if="editingItem">
-                <!-- Add Lore Relation -->
-                <v-card variant="outlined" class="mb-4">
-                  <v-card-text>
-                    <v-autocomplete
-                      v-model="selectedLoreId"
-                      :items="loreItems"
-                      :label="$t('lore.selectLore')"
-                      :placeholder="$t('lore.selectLorePlaceholder')"
-                      variant="outlined"
-                      clearable
-                      :loading="loadingLore"
-                      class="mb-2"
-                    />
-                    <v-btn color="primary" :disabled="!selectedLoreId" @click="addLoreRelation">
-                      <v-icon start> mdi-link-plus </v-icon>
-                      {{ $t('lore.addRelation') }}
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-
-                <!-- Linked Lore List -->
-                <v-list v-if="linkedLore.length > 0">
-                  <v-list-item v-for="lore in linkedLore" :key="lore.id" class="mb-2">
-                    <template #prepend>
-                      <v-avatar v-if="lore.image_url" size="56" rounded="lg" class="mr-3">
-                        <v-img :src="`/uploads/${lore.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else size="56" rounded="lg" class="mr-3" color="surface-variant">
-                        <v-icon icon="mdi-book-open-variant" />
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title>{{ lore.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="lore.description">
-                      {{ lore.description.substring(0, 100)
-                      }}{{ lore.description.length > 100 ? '...' : '' }}
-                    </v-list-item-subtitle>
-                    <template #append>
-                      <v-btn
-                        icon="mdi-delete"
-                        variant="text"
-                        color="error"
-                        size="small"
-                        @click="removeLoreRelation(lore.id)"
-                      />
-                    </template>
-                  </v-list-item>
-                </v-list>
-
-                <v-empty-state
-                  v-else
-                  icon="mdi-book-open-variant"
-                  :title="$t('lore.noLinkedLore')"
-                  :text="$t('lore.noLinkedLoreText')"
-                />
-              </div>
-            </v-tabs-window-item>
-
-            <!-- Factions Tab -->
-            <v-tabs-window-item value="factions">
-              <div v-if="editingItem">
-                <!-- Add Faction Relation -->
-                <v-card variant="outlined" class="mb-4">
-                  <v-card-text>
-                    <v-autocomplete
-                      v-model="selectedFactionId"
-                      :items="factionItems"
-                      :label="$t('factions.selectFaction')"
-                      :placeholder="$t('factions.selectFactionPlaceholder')"
-                      variant="outlined"
-                      clearable
-                      :loading="loadingFactions"
-                      class="mb-2"
-                    />
-                    <v-btn color="primary" :disabled="!selectedFactionId" @click="addFactionRelation">
-                      <v-icon start> mdi-link-plus </v-icon>
-                      {{ $t('factions.addRelation') }}
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-
-                <!-- Linked Factions List -->
-                <v-list v-if="linkedFactions.length > 0">
-                  <v-list-item v-for="faction in linkedFactions" :key="faction.id" class="mb-2">
-                    <template #prepend>
-                      <v-avatar v-if="faction.image_url" size="56" rounded="lg" class="mr-3">
-                        <v-img :src="`/uploads/${faction.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else size="56" rounded="lg" class="mr-3" color="surface-variant">
-                        <v-icon icon="mdi-shield-account" />
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title>
-                      {{ faction.name }}
-                      <v-chip
-                        v-if="faction.direction === 'incoming'"
-                        size="x-small"
-                        color="info"
-                        class="ml-2"
-                      >
-                        ←
-                      </v-chip>
-                    </v-list-item-title>
-                    <v-list-item-subtitle v-if="faction.description">
-                      {{ faction.description.substring(0, 100)
-                      }}{{ faction.description.length > 100 ? '...' : '' }}
-                    </v-list-item-subtitle>
-                    <template #append>
-                      <v-btn
-                        v-if="faction.direction === 'outgoing' || !faction.direction"
-                        icon="mdi-delete"
-                        variant="text"
-                        color="error"
-                        size="small"
-                        @click="removeFactionRelation(faction.id)"
-                      />
-                      <v-tooltip v-else location="left">
-                        <template #activator="{ props }">
-                          <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
-                        </template>
-                        {{ $t('items.incomingFactionTooltip') }}
-                      </v-tooltip>
-                    </template>
-                  </v-list-item>
-                </v-list>
-
-                <v-empty-state
-                  v-else
-                  icon="mdi-shield-account"
-                  :title="$t('items.noLinkedFactions')"
-                  :text="$t('items.noLinkedFactionsText')"
-                />
-              </div>
-            </v-tabs-window-item>
-
-            <!-- Documents Tab -->
-            <v-tabs-window-item value="documents">
-              <EntityDocuments
-                v-if="editingItem"
-                :entity-id="editingItem.id"
-                @changed="handleDocumentsChanged"
-              />
-            </v-tabs-window-item>
-          </v-tabs-window>
-
-          <!-- Form for creating new items (no tabs) -->
-          <div v-else>
-            <v-text-field
-              v-model="itemForm.name"
-              :label="$t('items.name')"
-              :rules="[(v: string) => !!v || $t('items.nameRequired')]"
-              variant="outlined"
-              class="mb-4"
-            />
-
-            <v-textarea
-              v-model="itemForm.description"
-              :label="$t('items.description')"
-              variant="outlined"
-              rows="3"
-              class="mb-4"
-            />
-
-            <v-divider class="my-4" />
-
-            <div class="text-h6 mb-4">
-              {{ $t('items.metadata') }}
-            </div>
-
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="itemForm.metadata.type"
-                  :items="ITEM_TYPES"
-                  :label="$t('items.type')"
-                  variant="outlined"
-                  clearable
-                >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props" :title="$t(`items.types.${item.value}`)" />
-                  </template>
-                  <template #selection="{ item }">
-                    {{ $t(`items.types.${item.value}`) }}
-                  </template>
-                </v-select>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="itemForm.metadata.rarity"
-                  :items="ITEM_RARITIES"
-                  :label="$t('items.rarity')"
-                  variant="outlined"
-                  clearable
-                >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props" :title="$t(`items.rarities.${item.value}`)" />
-                  </template>
-                  <template #selection="{ item }">
-                    {{ $t(`items.rarities.${item.value}`) }}
-                  </template>
-                </v-select>
-              </v-col>
-            </v-row>
-
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="itemForm.metadata.value"
-                  :label="$t('items.value')"
-                  :placeholder="$t('items.valuePlaceholder')"
-                  variant="outlined"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="itemForm.metadata.weight"
-                  :label="$t('items.weight')"
-                  :placeholder="$t('items.weightPlaceholder')"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
-
-            <v-text-field
-              v-model="itemForm.metadata.charges"
-              :label="$t('items.charges')"
-              :placeholder="$t('items.chargesPlaceholder')"
-              variant="outlined"
-              class="mb-4"
-            />
-
-            <v-textarea
-              v-model="itemForm.metadata.properties"
-              :label="$t('items.properties')"
-              :placeholder="$t('items.propertiesPlaceholder')"
-              variant="outlined"
-              rows="3"
-              class="mb-4"
-            />
-
-            <v-switch
-              v-model="itemForm.metadata.attunement"
-              :label="$t('items.requiresAttunement')"
-              color="primary"
-              hide-details
-            />
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" :disabled="imageGenerating" @click="closeDialog">
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!itemForm.name || imageGenerating"
-            :loading="saving"
-            @click="saveItem"
-          >
-            {{ editingItem ? $t('common.save') : $t('common.create') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <ItemEditDialog
+      v-model:show="showCreateDialog"
+      v-model:form="itemForm"
+      v-model:active-tab="itemDialogTab"
+      :editing-item="editingItem"
+      :item-owners="editItemOwners"
+      :item-locations="editItemLocations"
+      :linked-factions="linkedFactions"
+      :linked-lore="linkedLore"
+      :available-npcs="npcs || []"
+      :available-locations="locations || []"
+      :available-factions="factions || []"
+      :available-lore="loreForSelect"
+      :saving="saving"
+      :adding-owner="addingOwner"
+      :adding-location="addingLocation"
+      :adding-faction="addingFaction"
+      :adding-lore="addingLore"
+      :removing-owner="removingOwner"
+      :removing-location="removingLocation"
+      :removing-faction="removingFaction"
+      @save="saveItem"
+      @close="closeDialog"
+      @image-changed="handleImageChanged"
+      @images-changed="handleImagesChanged"
+      @documents-changed="handleDocumentsChanged"
+      @open-image-preview="(url: string, name: string) => openImagePreview(url, name)"
+      @add-owner="addOwnerToItem"
+      @remove-owner="removeOwner"
+      @add-location="addLocationToItem"
+      @remove-location="removeLocation"
+      @add-faction="addFactionRelation"
+      @remove-faction="removeFactionRelation"
+      @add-lore="addLoreRelation"
+      @remove-lore="removeLoreRelation"
+    />
 
     <!-- Image Preview Dialog -->
     <ImagePreviewDialog
@@ -839,11 +166,10 @@
 
 <script setup lang="ts">
 import type { Item, ItemMetadata } from '../../../types/item'
-import { ITEM_TYPES, ITEM_RARITIES } from '../../../types/item'
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
-import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import ItemCard from '~/components/items/ItemCard.vue'
+import ItemViewDialog from '~/components/items/ItemViewDialog.vue'
+import ItemEditDialog from '~/components/items/ItemEditDialog.vue'
 
 // Check if OpenAI API key is configured
 const hasApiKey = ref(false)
@@ -864,7 +190,7 @@ const searchQuery = ref('')
 const searchResults = ref<Item[]>([])
 const searching = ref(false)
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const campaignStore = useCampaignStore()
@@ -957,6 +283,7 @@ const items = computed(() => entitiesStore.items)
 const pending = computed(() => entitiesStore.itemsLoading)
 const npcs = computed(() => entitiesStore.npcsForSelect)
 const locations = computed(() => entitiesStore.locationsForSelect)
+const factions = computed(() => entitiesStore.factionsForSelect)
 
 // Debounce search with abort controller
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -1070,28 +397,16 @@ const originalItemData = ref<{
   metadata: ItemMetadata
 } | null>(null)
 
-// Check if form has unsaved changes
-const hasUnsavedChanges = computed(() => {
-  if (!originalItemData.value) return false
-
-  return (
-    itemForm.value.name !== originalItemData.value.name ||
-    itemForm.value.description !== originalItemData.value.description ||
-    JSON.stringify(itemForm.value.metadata) !== JSON.stringify(originalItemData.value.metadata)
-  )
-})
-
 // Dialog tab state
 const itemDialogTab = ref('details')
 
-// Lore linking state
+// Lore linking state (EDIT Dialog)
 const linkedLore = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
-const selectedLoreId = ref<number | null>(null)
-const loadingLore = ref(false)
+const addingLore = ref(false)
 
-// Factions linking state
+// Factions linking state (EDIT Dialog)
 const linkedFactions = ref<
   Array<{
     id: number
@@ -1102,22 +417,71 @@ const linkedFactions = ref<
   }>
 >([])
 const selectedFactionId = ref<number | null>(null)
-const loadingFactions = ref(false)
+const addingFaction = ref(false)
+const removingFaction = ref<number | null>(null)
 
 // Image state
-const imageGenerating = ref(false)
 
 // Use image download composable
 const { downloadImage } = useImageDownload()
 
-// Owners state
+// View Dialog data
+const viewDialogCounts = ref<{
+  owners: number
+  locations: number
+  factions: number
+  lore: number
+  documents: number
+  images: number
+} | null>(null)
+
+const loadingViewData = ref(false)
+const loadingOwners = ref(false)
+const loadingLocations = ref(false)
+const loadingFactions = ref(false)
+const loadingLore = ref(false)
+
+const itemDocuments = ref<Array<{ id: number; title: string; content: string }>>([])
+const itemImages = ref<Array<{ id: number; image_url: string; is_primary: boolean }>>([])
+const itemFactions = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+const itemLore = ref<
+  Array<{
+    id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+  }>
+>([])
+
+// Owners state (for VIEW Dialog, used in template line 93)
 const itemOwners = ref<
   Array<{
     id: number
-    from_entity_id: number
     name: string
-    relation_type: string
-    notes: Record<string, unknown> | null
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+
+// Owners state for EDIT dialog
+const editItemOwners = ref<
+  Array<{
+    id: number
+    relation_id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    quantity?: number | null
+    equipped?: boolean | null
   }>
 >([])
 
@@ -1128,27 +492,30 @@ const newOwner = ref({
   equipped: false,
 })
 const addingOwner = ref(false)
+const removingOwner = ref<number | null>(null)
 
 // Suggested owner relation types (i18n)
-const ownerRelationTypeSuggestions = computed(() => [
-  { title: t('items.ownerRelationTypes.owns'), value: 'owns' },
-  { title: t('items.ownerRelationTypes.carries'), value: 'carries' },
-  { title: t('items.ownerRelationTypes.wields'), value: 'wields' },
-  { title: t('items.ownerRelationTypes.wears'), value: 'wears' },
-  { title: t('items.ownerRelationTypes.seeks'), value: 'seeks' },
-  { title: t('items.ownerRelationTypes.guards'), value: 'guards' },
-  { title: t('items.ownerRelationTypes.stole'), value: 'stole' },
-  { title: t('items.ownerRelationTypes.lost'), value: 'lost' },
-])
 
-// Locations state
+// Locations state (for VIEW Dialog, used in template line 94)
 const itemLocations = ref<
   Array<{
     id: number
-    from_entity_id: number
-    location_name: string
-    relation_type: string
-    notes: Record<string, unknown> | null
+    name: string
+    description?: string | null
+    image_url?: string | null
+    relation_type?: string
+  }>
+>([])
+
+// Locations state for EDIT dialog
+const editItemLocations = ref<
+  Array<{
+    id: number
+    relation_id: number
+    name: string
+    description?: string | null
+    image_url?: string | null
+    quantity?: number | null
   }>
 >([])
 
@@ -1158,33 +525,45 @@ const newLocation = ref({
   quantity: 1,
 })
 const addingLocation = ref(false)
+const removingLocation = ref<number | null>(null)
 
 // Suggested location relation types (i18n)
-const locationRelationTypeSuggestions = computed(() => [
-  { title: t('items.locationRelationTypes.contains'), value: 'contains' },
-  { title: t('items.locationRelationTypes.hidden'), value: 'hidden' },
-  { title: t('items.locationRelationTypes.displayed'), value: 'displayed' },
-  { title: t('items.locationRelationTypes.stored'), value: 'stored' },
-  { title: t('items.locationRelationTypes.lost'), value: 'lost' },
-  { title: t('items.locationRelationTypes.guarded'), value: 'guarded' },
-])
 
-// Helper function for rarity colors (used in View Dialog)
-function getRarityColor(rarity: string) {
-  const colors: Record<string, string> = {
-    common: 'grey',
-    uncommon: 'green',
-    rare: 'blue',
-    very_rare: 'purple',
-    legendary: 'orange',
-    artifact: 'red',
-  }
-  return colors[rarity] || 'grey'
-}
-
-function viewItem(item: Item) {
+async function viewItem(item: Item) {
   viewingItem.value = item
   showViewDialog.value = true
+
+  loadingViewData.value = true
+  loadingOwners.value = true
+  loadingLocations.value = true
+  loadingFactions.value = true
+  loadingLore.value = true
+
+  try {
+    const [owners, locations, factions, lore, documents, images, counts] = await Promise.all([
+      $fetch<typeof itemOwners.value>(`/api/entities/${item.id}/related/npcs`).catch(() => []),
+      $fetch<typeof itemLocations.value>(`/api/entities/${item.id}/related/locations`).catch(() => []),
+      $fetch<typeof itemFactions.value>(`/api/entities/${item.id}/related/factions`).catch(() => []),
+      $fetch<typeof itemLore.value>(`/api/entities/${item.id}/related/lore`).catch(() => []),
+      $fetch<typeof itemDocuments.value>(`/api/entities/${item.id}/documents`).catch(() => []),
+      $fetch<typeof itemImages.value>(`/api/entity-images/${item.id}`).catch(() => []),
+      $fetch<typeof viewDialogCounts.value>(`/api/items/${item.id}/counts`).catch(() => null),
+    ])
+
+    itemOwners.value = owners
+    itemLocations.value = locations
+    itemFactions.value = factions
+    itemLore.value = lore
+    itemDocuments.value = documents
+    itemImages.value = images
+    viewDialogCounts.value = counts
+  } finally {
+    loadingViewData.value = false
+    loadingOwners.value = false
+    loadingLocations.value = false
+    loadingFactions.value = false
+    loadingLore.value = false
+  }
 }
 
 async function editItem(item: Item) {
@@ -1293,12 +672,19 @@ async function handleDocumentsChanged() {
   }
 }
 
-// Handle images updated event (from EntityImageGallery)
-async function handleImagesUpdated() {
+// Handle image changed event (from EntityImageUpload)
+async function handleImageChanged() {
   if (editingItem.value) {
     // Reload the item to get updated image_url
     const updatedItem = await $fetch<Item>(`/api/items/${editingItem.value.id}`)
     editingItem.value = updatedItem
+    await reloadItemCounts(editingItem.value)
+  }
+}
+
+// Handle images changed event (from EntityImageGallery)
+async function handleImagesChanged() {
+  if (editingItem.value) {
     await reloadItemCounts(editingItem.value)
   }
 }
@@ -1311,22 +697,22 @@ function closeDialog() {
     description: '',
     metadata: {},
   }
-  itemOwners.value = []
-  itemLocations.value = []
+  editItemOwners.value = []
+  editItemLocations.value = []
 }
 
-// Owner functions
+// Owner functions (for EDIT dialog)
 async function loadItemOwners() {
   if (!editingItem.value) return
 
   try {
-    const owners = await $fetch<typeof itemOwners.value>(
+    const owners = await $fetch<typeof editItemOwners.value>(
       `/api/entities/${editingItem.value.id}/related/npcs`,
     )
-    itemOwners.value = owners
+    editItemOwners.value = owners
   } catch (error) {
     console.error('Failed to load item owners:', error)
-    itemOwners.value = []
+    editItemOwners.value = []
   }
 }
 
@@ -1383,18 +769,18 @@ async function removeOwner(relationId: number) {
   }
 }
 
-// Location functions
+// Location functions (for EDIT dialog)
 async function loadItemLocations() {
   if (!editingItem.value) return
 
   try {
-    const locs = await $fetch<typeof itemLocations.value>(
+    const locs = await $fetch<typeof editItemLocations.value>(
       `/api/entities/${editingItem.value.id}/related/locations`,
     )
-    itemLocations.value = locs
+    editItemLocations.value = locs
   } catch (error) {
     console.error('Failed to load item locations:', error)
-    itemLocations.value = []
+    editItemLocations.value = []
   }
 }
 
@@ -1449,20 +835,9 @@ async function removeLocation(relationId: number) {
   }
 }
 
-// Lore items for selection
-const loreItems = computed(() => {
-  return entitiesStore.loreForSelect.map((lore: { id: number; name: string }) => ({
-    title: lore.name,
-    value: lore.id,
-  }))
-})
+// Lore for selection (used in EntityLoreTab)
+const loreForSelect = computed(() => entitiesStore.loreForSelect)
 
-const factionItems = computed(() => {
-  return entitiesStore.factionsForSelect.map((faction: { id: number; name: string }) => ({
-    title: faction.name,
-    value: faction.id,
-  }))
-})
 
 // Load linked entities when editing Item
 watch(
@@ -1494,46 +869,39 @@ async function loadLinkedLore(itemId: number) {
 }
 
 // Add lore relation
-async function addLoreRelation() {
-  if (!editingItem.value || !selectedLoreId.value) return
+async function addLoreRelation(loreId: number) {
+  if (!editingItem.value) return
 
+  addingLore.value = true
   try {
     await $fetch('/api/entity-relations', {
       method: 'POST',
       body: {
         fromEntityId: editingItem.value.id,
-        toEntityId: selectedLoreId.value,
+        toEntityId: loreId,
         relationType: 'bezieht sich auf',
       },
     })
 
     await loadLinkedLore(editingItem.value.id)
-    selectedLoreId.value = null
   } catch (error) {
     console.error('Failed to add lore relation:', error)
+  } finally {
+    addingLore.value = false
   }
 }
 
 // Remove lore relation
-async function removeLoreRelation(loreId: number) {
+async function removeLoreRelation(relationId: number) {
   if (!editingItem.value) return
 
   try {
-    // Find the relation ID
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        from_entity_id: editingItem.value.id,
-        to_entity_id: loreId,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation?.id) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-
-      await loadLinkedLore(editingItem.value.id)
-    }
+    await loadLinkedLore(editingItem.value.id)
   } catch (error) {
     console.error('Failed to remove lore relation:', error)
   }
