@@ -144,7 +144,9 @@ const highlightedId = ref<number | null>(null)
 
 // State
 const searchQuery = ref('')
+const searchResults = ref<Player[]>([])
 const searching = ref(false)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const showDialog = ref(false)
 const showDeleteDialog = ref(false)
 const saving = ref(false)
@@ -174,16 +176,42 @@ const loading = computed(() => entitiesStore.playersLoading)
 const players = computed(() => entitiesStore.players)
 
 const filteredPlayers = computed(() => {
-  if (!searchQuery.value) return players.value
+  // If searching, use search results from API
+  if (searchQuery.value && searchQuery.value.trim().length > 0) {
+    return searchResults.value
+  }
+  // Otherwise return cached players
+  return players.value
+})
 
-  const query = searchQuery.value.toLowerCase()
-  return players.value.filter(
-    (player) =>
-      player.name.toLowerCase().includes(query) ||
-      player.description?.toLowerCase().includes(query) ||
-      player.metadata?.email?.toLowerCase().includes(query) ||
-      player.metadata?.discord?.toLowerCase().includes(query),
-  )
+// Watch search query with debounce - API-based search for cross-entity support
+watch(searchQuery, async (query) => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+
+  if (!query || query.trim().length === 0) {
+    searchResults.value = []
+    searching.value = false
+    return
+  }
+
+  searching.value = true
+
+  searchTimeout = setTimeout(async () => {
+    try {
+      const results = await $fetch<Player[]>('/api/players', {
+        query: {
+          campaignId: activeCampaignId.value,
+          search: query.trim(),
+        },
+      })
+      searchResults.value = results
+    } catch (error) {
+      console.error('Player search failed:', error)
+      searchResults.value = []
+    } finally {
+      searching.value = false
+    }
+  }, 300)
 })
 
 // Load data

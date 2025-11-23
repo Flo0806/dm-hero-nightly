@@ -1,5 +1,6 @@
 import { getDb } from '../utils/db'
 import { createLevenshtein } from '../utils/levenshtein'
+import { normalizeText } from '../utils/normalize'
 
 const levenshtein = createLevenshtein()
 
@@ -24,7 +25,7 @@ export default defineEventHandler((event) => {
     return []
   }
 
-  const searchTerm = searchQuery.trim().toLowerCase()
+  const searchTerm = normalizeText(searchQuery.trim())
 
   // Get all entity types
   const entityTypes = db
@@ -228,36 +229,36 @@ export default defineEventHandler((event) => {
 
   const scoredResults = allResults
     .map((result) => {
-      const nameLower = result.name.toLowerCase()
-      const descriptionLower = (result.description || '').toLowerCase()
-      const linkedEntitiesLower = (result.linked_entities || '').toLowerCase()
+      const nameNormalized = normalizeText(result.name)
+      const descriptionNormalized = normalizeText(result.description || '')
+      const linkedEntitiesNormalized = normalizeText(result.linked_entities || '')
 
       let score = 1000 // Start with high score, reduce for better matches
 
       // Check name match
-      if (nameLower === searchTerm) {
+      if (nameNormalized === searchTerm) {
         score -= 500 // Exact match: best
         return { ...result, _score: score }
       }
-      if (nameLower.includes(searchTerm)) {
+      if (nameNormalized.includes(searchTerm)) {
         score -= 200 // Contains match: very good
         return { ...result, _score: score }
       }
 
       // Check description match
-      if (descriptionLower.includes(searchTerm)) {
+      if (descriptionNormalized.includes(searchTerm)) {
         score -= 50
         return { ...result, _score: score }
       }
 
       // Check linked entities match
-      if (linkedEntitiesLower.includes(searchTerm)) {
+      if (linkedEntitiesNormalized.includes(searchTerm)) {
         score -= 100 // Cross-entity match: good
         return { ...result, _score: score }
       }
 
       // Levenshtein on name words
-      const nameWords = nameLower.split(/\s+/)
+      const nameWords = nameNormalized.split(/\s+/)
       for (const word of nameWords) {
         if (word.length === 0) continue
         const dist = levenshtein(searchTerm, word)
@@ -268,7 +269,7 @@ export default defineEventHandler((event) => {
       }
 
       // Levenshtein on description words (skip short words)
-      const descWords = descriptionLower.split(/\s+/)
+      const descWords = descriptionNormalized.split(/\s+/)
       for (const word of descWords) {
         if (word.length < 3) continue
         const dist = levenshtein(searchTerm, word)
@@ -279,8 +280,8 @@ export default defineEventHandler((event) => {
       }
 
       // Levenshtein on linked entity names
-      if (linkedEntitiesLower.length > 0) {
-        const linkedNames = linkedEntitiesLower.split(/[|,]/).map((n) => n.trim())
+      if (linkedEntitiesNormalized.length > 0) {
+        const linkedNames = linkedEntitiesNormalized.split(/[|,]/).map((n) => n.trim())
         for (const linkedName of linkedNames) {
           const linkedWords = linkedName.split(/\s+/)
           for (const word of linkedWords) {
@@ -301,5 +302,21 @@ export default defineEventHandler((event) => {
     .sort((a, b) => a._score - b._score)
     .slice(0, 20)
 
-  return scoredResults.map(({ _score, linked_entities: _linked_entities, ...result }) => result)
+  // Parse linked_entities into clean array and return
+  return scoredResults.map(({ _score, linked_entities, ...result }) => {
+    // Parse linked_entities string into unique, non-empty names
+    const linkedNames: string[] = []
+    if (linked_entities) {
+      const names = linked_entities.split(/[|,]/).map((n) => n.trim())
+      for (const name of names) {
+        if (name && name.length > 0 && !linkedNames.includes(name)) {
+          linkedNames.push(name)
+        }
+      }
+    }
+    return {
+      ...result,
+      linkedEntities: linkedNames.slice(0, 5), // Limit to 5 for UI
+    }
+  })
 })

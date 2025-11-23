@@ -717,6 +717,11 @@ watch(searchQuery, async (query) => {
         },
       })
       searchResults.value = results
+
+      // Load counts for search results in background (non-blocking)
+      if (results.length > 0) {
+        loadLoreCountsBatch(results)
+      }
     } finally {
       searching.value = false
     }

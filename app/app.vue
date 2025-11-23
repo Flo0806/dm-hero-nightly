@@ -54,6 +54,7 @@ const searchResults = ref<
     icon: string
     color: string
     path: string
+    linkedEntities: string[]
   }>
 >([])
 
@@ -171,6 +172,7 @@ watch(searchQuery, async (query) => {
         type: string
         icon: string
         color: string
+        linkedEntities: string[]
       }>
     >('/api/search', {
       query: {
@@ -182,6 +184,7 @@ watch(searchQuery, async (query) => {
     searchResults.value = results.map((r) => ({
       ...r,
       path: getEntityPath(r.type, r.id, r.name),
+      linkedEntities: r.linkedEntities || [],
     }))
   } catch (error) {
     console.error('Search failed:', error)

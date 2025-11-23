@@ -171,6 +171,8 @@ export default defineEventHandler(async (event) => {
     try {
       // Step 1: FTS5 pre-filter (fast, gets ~100 candidates)
       // Note: Cannot use bm25() with GROUP_CONCAT in same query - incompatible aggregations
+      console.log('[NPC Search] Starting FTS5 query...')
+      const ftsStart = Date.now()
       npcs = db
         .prepare(
           `
@@ -208,6 +210,7 @@ export default defineEventHandler(async (event) => {
       `,
         )
         .all(ftsQuery, entityType.id, campaignId) as NpcRow[]
+      console.log(`[NPC Search] FTS5 query done in ${Date.now() - ftsStart}ms, found ${npcs.length} results`)
       // FALLBACK 1: Try prefix wildcard if exact match found nothing (only for simple queries)
       if (npcs.length === 0 && useExactMatch && !parsedQuery.hasOperators) {
         ftsQuery = `${searchTerm}*`
@@ -260,6 +263,8 @@ export default defineEventHandler(async (event) => {
       // This ensures we catch typos in ALL terms
       // ALSO: If FTS5 found 0 results, use full table scan (catches cross-entity searches like Lore names)
       if (parsedQuery.hasOperators || npcs.length === 0) {
+        console.log('[NPC Search] Starting full table scan...')
+        const scanStart = Date.now()
         npcs = db
           .prepare(
             `
@@ -294,9 +299,79 @@ export default defineEventHandler(async (event) => {
         `,
           )
           .all(entityType.id, campaignId) as NpcRow[]
+        console.log(`[NPC Search] Full table scan done in ${Date.now() - scanStart}ms, found ${npcs.length} results`)
+      }
+
+      // Step 1.5: Separate Player lookup (fast, doesn't slow down main query)
+      // Find all Players matching the search term, then get their linked NPC IDs
+      const playerTypeId = db
+        .prepare('SELECT id FROM entity_types WHERE name = ?')
+        .get('Player') as { id: number } | undefined
+      const npcIdsLinkedToMatchingPlayers = new Set<number>()
+
+      if (playerTypeId) {
+        // Find ALL Players, then filter with Levenshtein
+        const allPlayers = db
+          .prepare(
+            `
+          SELECT id, name FROM entities
+          WHERE type_id = ? AND campaign_id = ? AND deleted_at IS NULL
+        `,
+          )
+          .all(playerTypeId.id, campaignId) as Array<{
+          id: number
+          name: string
+        }>
+
+        // Filter with substring match OR Levenshtein distance
+        const maxDist = searchTerm.length <= 3 ? 1 : searchTerm.length <= 6 ? 2 : 3
+        const matchingPlayers = allPlayers.filter((player) => {
+          const playerNameNormalized = normalizeText(player.name)
+          // Substring match
+          if (playerNameNormalized.includes(searchTerm)) return true
+          // Levenshtein on full name
+          if (levenshtein(searchTerm, playerNameNormalized) <= maxDist) return true
+          // Levenshtein on each word of the name
+          const words = playerNameNormalized.split(/\s+/)
+          for (const word of words) {
+            if (word.length < 3) continue
+            if (levenshtein(searchTerm, word) <= maxDist) return true
+          }
+          return false
+        })
+
+        if (matchingPlayers.length > 0) {
+          console.log(
+            `[NPC Search] Found ${matchingPlayers.length} Players matching "${searchTerm}"`,
+          )
+          const playerIds = matchingPlayers.map((p) => p.id)
+
+          // Find NPCs linked to these Players
+          const linkedNpcs = db
+            .prepare(
+              `
+            SELECT DISTINCT
+              CASE
+                WHEN er.from_entity_id IN (${playerIds.join(',')}) THEN er.to_entity_id
+                ELSE er.from_entity_id
+              END as npc_id
+            FROM entity_relations er
+            WHERE (er.from_entity_id IN (${playerIds.join(',')}) OR er.to_entity_id IN (${playerIds.join(',')}))
+          `,
+            )
+            .all() as Array<{ npc_id: number }>
+
+          for (const row of linkedNpcs) {
+            npcIdsLinkedToMatchingPlayers.add(row.npc_id)
+          }
+          console.log(
+            `[NPC Search] Found ${npcIdsLinkedToMatchingPlayers.size} NPCs linked to matching Players`,
+          )
+        }
       }
 
       // Step 2: Apply Levenshtein distance for better ranking
+      console.log('[NPC Search] Starting scoring...')
       let scoredNpcs = npcs.map((npc: NpcRow): ScoredNpc => {
         const nameNormalized = normalizeText(npc.name)
 
@@ -305,7 +380,7 @@ export default defineEventHandler(async (event) => {
         const startsWithQuery = nameNormalized.startsWith(searchTerm)
         const containsQuery = nameNormalized.includes(searchTerm)
 
-        // Check if search term appears in metadata, description, linked factions, linked locations, or linked lore (FTS5 match but not in name)
+        // Check if search term appears in metadata, description, linked factions, linked locations, linked lore, or linked players (FTS5 match but not in name)
         const metadataNormalized = normalizeText(npc.metadata || '')
         const descriptionNormalized = normalizeText(npc.description || '')
         const linkedFactionNamesNormalized = normalizeText(npc.linked_faction_names || '')
@@ -318,13 +393,15 @@ export default defineEventHandler(async (event) => {
         const isLocationMatch = linkedLocationNamesNormalized.includes(searchTerm)
         const isLoreMatch = linkedLoreNamesNormalized.includes(searchTerm)
         const isNpcMatch = linkedNpcNamesNormalized.includes(searchTerm)
+        const isPlayerMatch = npcIdsLinkedToMatchingPlayers.has(npc.id)
         const isNonNameMatch =
           (isMetadataMatch ||
             isDescriptionMatch ||
             isFactionMatch ||
             isLocationMatch ||
             isLoreMatch ||
-            isNpcMatch) &&
+            isNpcMatch ||
+            isPlayerMatch) &&
           !containsQuery
 
         let levDistance: number
@@ -352,6 +429,7 @@ export default defineEventHandler(async (event) => {
         if (isFactionMatch) finalScore -= 30 // Faction matches are very good
         if (isLocationMatch) finalScore -= 30 // Location matches are very good
         if (isLoreMatch) finalScore -= 30 // Lore matches are very good
+        if (isPlayerMatch) finalScore -= 30 // Player matches are very good
         if (isMetadataMatch) finalScore -= 25 // Metadata matches are good
         if (isDescriptionMatch) finalScore -= 10 // Description matches are ok
 
@@ -473,7 +551,7 @@ export default defineEventHandler(async (event) => {
           const linkedLoreNamesNormalized = normalizeText(npc.linked_lore_names || '')
           const linkedNpcNamesNormalized = normalizeText(npc.linked_npc_names || '')
 
-          // Check if EXACT phrase appears in ANY field
+          // Check if EXACT phrase appears in ANY field OR NPC is linked to matching Player
           return (
             nameNormalized.includes(exactPhrase) ||
             descriptionNormalized.includes(exactPhrase) ||
@@ -481,7 +559,8 @@ export default defineEventHandler(async (event) => {
             linkedFactionNamesNormalized.includes(exactPhrase) ||
             linkedLocationNamesNormalized.includes(exactPhrase) ||
             linkedLoreNamesNormalized.includes(exactPhrase) ||
-            linkedNpcNamesNormalized.includes(exactPhrase)
+            linkedNpcNamesNormalized.includes(exactPhrase) ||
+            npcIdsLinkedToMatchingPlayers.has(npc.id)
           )
         })
       } else if (!parsedQuery.hasOperators) {
@@ -574,7 +653,8 @@ export default defineEventHandler(async (event) => {
                   linkedFactionNamesNormalized.includes(variant) ||
                   linkedLocationNamesNormalized.includes(variant) ||
                   linkedLoreNamesNormalized.includes(variant) ||
-                  linkedNpcNamesNormalized.includes(variant)
+                  linkedNpcNamesNormalized.includes(variant) ||
+                  npcIdsLinkedToMatchingPlayers.has(npc.id)
                 ) {
                   shouldInclude = true
                   break
@@ -696,7 +776,8 @@ export default defineEventHandler(async (event) => {
             // Invalid JSON - fallback to string search
           }
 
-          let shouldInclude = false
+          // Check if NPC is linked to a matching Player
+          let shouldInclude = npcIdsLinkedToMatchingPlayers.has(npc.id)
 
           // Check if at least one term (or its variants) matches
           for (let i = 0; i < parsedQuery.terms.length; i++) {
@@ -712,7 +793,7 @@ export default defineEventHandler(async (event) => {
                 linkedFactionNamesNormalized.includes(variant) ||
                 linkedLocationNamesNormalized.includes(variant) ||
                 linkedLoreNamesNormalized.includes(variant) ||
-                  linkedNpcNamesNormalized.includes(variant)
+                linkedNpcNamesNormalized.includes(variant)
               ) {
                 shouldInclude = true
                 break
@@ -866,7 +947,8 @@ export default defineEventHandler(async (event) => {
                 linkedFactionNamesNormalized.includes(variant) ||
                 linkedLocationNamesNormalized.includes(variant) ||
                 linkedLoreNamesNormalized.includes(variant) ||
-                  linkedNpcNamesNormalized.includes(variant)
+                linkedNpcNamesNormalized.includes(variant) ||
+                npcIdsLinkedToMatchingPlayers.has(npc.id)
               ) {
                 termMatches = true
                 break

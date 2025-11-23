@@ -33,7 +33,21 @@
               <v-icon :icon="result.icon" :color="result.color" />
             </template>
             <v-list-item-title>{{ result.name }}</v-list-item-title>
-            <v-list-item-subtitle>{{ result.type }}</v-list-item-subtitle>
+            <v-list-item-subtitle class="d-flex align-center flex-wrap ga-1">
+              <span>{{ result.type }}</span>
+              <template v-if="result.linkedEntities && result.linkedEntities.length > 0">
+                <span class="mx-1">·</span>
+                <v-chip
+                  v-for="linked in result.linkedEntities"
+                  :key="linked"
+                  size="x-small"
+                  variant="tonal"
+                  density="compact"
+                >
+                  {{ linked }}
+                </v-chip>
+              </template>
+            </v-list-item-subtitle>
           </v-list-item>
         </v-list>
         <div v-else-if="searchQuery" class="text-center text-disabled py-8">
@@ -53,6 +67,7 @@ interface SearchResult {
   icon: string
   color: string
   path: string
+  linkedEntities: string[]
 }
 
 interface Props {

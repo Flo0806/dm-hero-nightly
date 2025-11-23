@@ -29,6 +29,12 @@
       </v-col>
     </v-row>
 
+    <!-- Search Loading State (when searching with no previous results) -->
+    <div v-else-if="searching && filteredNpcs.length === 0" class="text-center py-16">
+      <v-progress-circular indeterminate size="64" color="primary" class="mb-4" />
+      <div class="text-h6">{{ $t('common.searching') }}</div>
+    </div>
+
     <!-- NPC Cards with Search Overlay -->
     <div v-else-if="filteredNpcs && filteredNpcs.length > 0" class="position-relative">
       <!-- Search Loading Overlay -->

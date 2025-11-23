@@ -6,6 +6,25 @@ import { normalizeText } from '../../utils/normalize'
 // Initialize Levenshtein function once
 const levenshtein = createLevenshtein()
 
+// Quote FTS5 terms that contain special characters
+function quoteFts5Term(term: string): string {
+  if (typeof term !== 'string') return ''
+
+  // FTS5 special chars that need quoting: - . () [] {}
+  if (
+    term.includes('-') ||
+    term.includes('.') ||
+    term.includes('(') ||
+    term.includes(')') ||
+    term.includes('[') ||
+    term.includes(']')
+  ) {
+    const escaped = term.replace(/"/g, '""')
+    return `"${escaped}"`
+  }
+  return term
+}
+
 export default defineEventHandler((event) => {
   const db = getDb()
   const query = getQuery(event)
@@ -28,16 +47,20 @@ export default defineEventHandler((event) => {
     return []
   }
 
-  // Get NPC and Lore type IDs for cross-entity search (used in JOINs)
+  // Get NPC, Lore, and Player type IDs for cross-entity search
   const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
     | { id: number }
     | undefined
   const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
     | { id: number }
     | undefined
+  const playerType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Player') as
+    | { id: number }
+    | undefined
 
   const npcTypeId = npcType?.id
   const loreTypeId = loreType?.id
+  const playerTypeId = playerType?.id
 
   interface FactionRow {
     id: number
@@ -80,11 +103,11 @@ export default defineEventHandler((event) => {
     // Parse query with operators (AND, OR, NOT)
     const parsedQuery = parseSearchQuery(searchTerm)
 
-    // Build FTS query from parsed terms
+    // Build FTS query from parsed terms (quote special chars)
     let ftsQuery: string
     if (parsedQuery.hasOperators) {
       // Reconstruct query with original operators
-      const expandedTerms = parsedQuery.terms.map((term) => `${term}*`)
+      const expandedTerms = parsedQuery.terms.map((term) => `${quoteFts5Term(term)}*`)
       const fts5QueryUpper = parsedQuery.fts5Query.toUpperCase()
 
       if (fts5QueryUpper.includes(' AND ')) {
@@ -95,8 +118,8 @@ export default defineEventHandler((event) => {
         ftsQuery = expandedTerms.join(' ')
       }
     } else {
-      // Simple query: add all terms as OR
-      ftsQuery = parsedQuery.terms.map((t) => `${t}*`).join(' OR ')
+      // Simple query: add all terms as OR (quote special chars)
+      ftsQuery = parsedQuery.terms.map((t) => `${quoteFts5Term(t)}*`).join(' OR ')
     }
 
     let useExactMatch = parsedQuery.useExactFirst
@@ -136,11 +159,11 @@ export default defineEventHandler((event) => {
         LIMIT 300
       `,
         )
-        .all(ftsQuery, npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
+        .all(npcTypeId, loreTypeId, ftsQuery, entityType.id, campaignId) as FactionRow[]
 
       // FALLBACK 1: Try prefix wildcard if exact match found nothing (only for simple queries)
       if (factions.length === 0 && useExactMatch && !parsedQuery.hasOperators) {
-        ftsQuery = `${searchTerm}*`
+        ftsQuery = `${quoteFts5Term(searchTerm)}*`
         useExactMatch = false
 
         factions = db
@@ -175,7 +198,7 @@ export default defineEventHandler((event) => {
           LIMIT 300
         `,
           )
-          .all(ftsQuery, npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
+          .all(npcTypeId, loreTypeId, ftsQuery, entityType.id, campaignId) as FactionRow[]
       }
 
       // FALLBACK 2: For operator queries or when FTS5 returns nothing, use full table scan with Levenshtein
@@ -215,6 +238,62 @@ export default defineEventHandler((event) => {
           .all(npcTypeId, loreTypeId, entityType.id, campaignId) as FactionRow[]
       }
 
+      // Step 1.5: Separate Player lookup (fast, doesn't slow down main query)
+      const factionIdsLinkedToMatchingPlayers = new Set<number>()
+
+      if (playerTypeId) {
+        // Find ALL Players in this campaign, then filter with Levenshtein
+        const allPlayers = db
+          .prepare(
+            `
+            SELECT id, name FROM entities
+            WHERE type_id = ? AND campaign_id = ? AND deleted_at IS NULL
+          `,
+          )
+          .all(playerTypeId, campaignId) as Array<{ id: number; name: string }>
+
+        // Filter Players with substring match OR Levenshtein distance
+        const maxDist = searchTerm.length <= 3 ? 1 : searchTerm.length <= 6 ? 2 : 3
+        const matchingPlayers = allPlayers.filter((player) => {
+          const playerNameNormalized = normalizeText(player.name)
+
+          // Substring match
+          if (playerNameNormalized.includes(searchTerm)) return true
+
+          // Full name Levenshtein
+          if (levenshtein(searchTerm, playerNameNormalized) <= maxDist) return true
+
+          // Word-level Levenshtein (for multi-word names like "Stephan Müller")
+          const words = playerNameNormalized.split(/\s+/)
+          for (const word of words) {
+            if (word.length < 3) continue
+            if (levenshtein(searchTerm, word) <= maxDist) return true
+          }
+
+          return false
+        })
+
+        // Find Factions linked to matching Players (bidirectional relations)
+        if (matchingPlayers.length > 0) {
+          const playerIds = matchingPlayers.map((p) => p.id)
+          const linkedFactions = db
+            .prepare(
+              `
+              SELECT DISTINCT
+                CASE WHEN er.from_entity_id IN (${playerIds.join(',')}) THEN er.to_entity_id
+                ELSE er.from_entity_id END as faction_id
+              FROM entity_relations er
+              WHERE (er.from_entity_id IN (${playerIds.join(',')}) OR er.to_entity_id IN (${playerIds.join(',')}))
+            `,
+            )
+            .all() as Array<{ faction_id: number }>
+
+          for (const row of linkedFactions) {
+            factionIdsLinkedToMatchingPlayers.add(row.faction_id)
+          }
+        }
+      }
+
       // Step 2: Apply Levenshtein distance for better ranking
       let scoredFactions = factions.map((faction: FactionRow): ScoredFaction => {
         const nameLower = normalizeText(faction.name)
@@ -235,8 +314,10 @@ export default defineEventHandler((event) => {
         const isLeaderMatch = leaderNameLower.includes(searchTerm)
         const isNpcMatch = linkedNpcNamesLower.includes(searchTerm)
         const isLoreMatch = linkedLoreNamesLower.includes(searchTerm)
+        const isPlayerMatch = factionIdsLinkedToMatchingPlayers.has(faction.id)
         const isNonNameMatch =
-          (isMetadataMatch || isDescriptionMatch || isLeaderMatch || isNpcMatch || isLoreMatch) && !containsQuery
+          (isMetadataMatch || isDescriptionMatch || isLeaderMatch || isNpcMatch || isLoreMatch || isPlayerMatch) &&
+          !containsQuery
 
         let levDistance: number
 
@@ -262,6 +343,7 @@ export default defineEventHandler((event) => {
         if (isLoreMatch) finalScore -= 30 // Lore matches are very good
         if (isNpcMatch) finalScore -= 30 // NPC matches are very good
         if (isLeaderMatch) finalScore -= 30 // Leader name matches are very good
+        if (isPlayerMatch) finalScore -= 30 // Player matches are very good
         if (isMetadataMatch) finalScore -= 25 // Metadata matches are good
         if (isDescriptionMatch) finalScore -= 10 // Description matches are ok
 
@@ -281,6 +363,11 @@ export default defineEventHandler((event) => {
         const exactPhrase = parsedQuery.fts5Query.slice(1, -1) // Remove quotes
 
         scoredFactions = scoredFactions.filter((faction) => {
+          // Check if linked to a matching Player
+          if (factionIdsLinkedToMatchingPlayers.has(faction.id)) {
+            return true
+          }
+
           const nameLower = normalizeText(faction.name)
           const metadataLower = normalizeText(faction.metadata || '')
           const descriptionLower = normalizeText(faction.description || '')
@@ -301,6 +388,11 @@ export default defineEventHandler((event) => {
       } else if (!parsedQuery.hasOperators) {
         // Simple query: check if ANY term matches
         scoredFactions = scoredFactions.filter((faction) => {
+          // Check if linked to a matching Player (fast check first)
+          if (factionIdsLinkedToMatchingPlayers.has(faction.id)) {
+            return true
+          }
+
           const nameLower = normalizeText(faction.name)
           const metadataLower = normalizeText(faction.metadata || '')
           const descriptionLower = normalizeText(faction.description || '')
@@ -384,6 +476,11 @@ export default defineEventHandler((event) => {
       } else if (hasOrOperator && !hasAndOperator) {
         // OR query: at least ONE term must match
         scoredFactions = scoredFactions.filter((faction) => {
+          // Check if linked to a matching Player (fast check first)
+          if (factionIdsLinkedToMatchingPlayers.has(faction.id)) {
+            return true
+          }
+
           const nameLower = normalizeText(faction.name)
           const metadataLower = normalizeText(faction.metadata || '')
           const descriptionLower = normalizeText(faction.description || '')
@@ -471,9 +568,12 @@ export default defineEventHandler((event) => {
           const linkedNpcNamesLower = normalizeText(faction.linked_npc_names || '')
           const linkedLoreNamesLower = normalizeText(faction.linked_lore_names || '')
 
+          // Check if linked to a matching Player (can satisfy any term)
+          const isPlayerMatch = factionIdsLinkedToMatchingPlayers.has(faction.id)
+
           // Check if ALL terms match
           for (const term of parsedQuery.terms) {
-            let termMatches = false
+            let termMatches = isPlayerMatch // Player match can satisfy any term
 
             // Check if term appears in any field
             if (

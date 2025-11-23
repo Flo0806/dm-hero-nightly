@@ -53,16 +53,20 @@ export default defineEventHandler(async (event) => {
     return []
   }
 
-  // Get Lore and NPC type IDs for cross-entity search (used in JOINs)
+  // Get Lore, NPC, and Player type IDs for cross-entity search
   const loreType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Lore') as
     | { id: number }
     | undefined
   const npcType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('NPC') as
     | { id: number }
     | undefined
+  const playerType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Player') as
+    | { id: number }
+    | undefined
 
   const loreTypeId = loreType?.id
   const npcTypeId = npcType?.id
+  const playerTypeId = playerType?.id
 
   interface ItemRow {
     id: number
@@ -340,6 +344,62 @@ export default defineEventHandler(async (event) => {
           .all(npcTypeId, loreTypeId, entityType.id, campaignId) as ItemRow[]
       }
 
+      // Step 1.5: Separate Player lookup (fast, doesn't slow down main query)
+      const itemIdsLinkedToMatchingPlayers = new Set<number>()
+
+      if (playerTypeId) {
+        // Find ALL Players in this campaign, then filter with Levenshtein
+        const allPlayers = db
+          .prepare(
+            `
+            SELECT id, name FROM entities
+            WHERE type_id = ? AND campaign_id = ? AND deleted_at IS NULL
+          `,
+          )
+          .all(playerTypeId, campaignId) as Array<{ id: number; name: string }>
+
+        // Filter Players with substring match OR Levenshtein distance
+        const maxDist = searchTerm.length <= 3 ? 1 : searchTerm.length <= 6 ? 2 : 3
+        const matchingPlayers = allPlayers.filter((player) => {
+          const playerNameNormalized = normalizeText(player.name)
+
+          // Substring match
+          if (playerNameNormalized.includes(searchTerm)) return true
+
+          // Full name Levenshtein
+          if (levenshtein(searchTerm, playerNameNormalized) <= maxDist) return true
+
+          // Word-level Levenshtein (for multi-word names like "Stephan Müller")
+          const words = playerNameNormalized.split(/\s+/)
+          for (const word of words) {
+            if (word.length < 3) continue
+            if (levenshtein(searchTerm, word) <= maxDist) return true
+          }
+
+          return false
+        })
+
+        // Find Items linked to matching Players (bidirectional relations)
+        if (matchingPlayers.length > 0) {
+          const playerIds = matchingPlayers.map((p) => p.id)
+          const linkedItems = db
+            .prepare(
+              `
+              SELECT DISTINCT
+                CASE WHEN er.from_entity_id IN (${playerIds.join(',')}) THEN er.to_entity_id
+                ELSE er.from_entity_id END as item_id
+              FROM entity_relations er
+              WHERE (er.from_entity_id IN (${playerIds.join(',')}) OR er.to_entity_id IN (${playerIds.join(',')}))
+            `,
+            )
+            .all() as Array<{ item_id: number }>
+
+          for (const row of linkedItems) {
+            itemIdsLinkedToMatchingPlayers.add(row.item_id)
+          }
+        }
+      }
+
       // Step 2: Apply Levenshtein distance for better ranking
       let scoredItems = items.map((item: ItemRow): ScoredItem => {
         const nameNormalized = normalizeText(item.name)
@@ -358,8 +418,9 @@ export default defineEventHandler(async (event) => {
         const isDescriptionMatch = descriptionNormalized.includes(searchTerm)
         const isOwnerMatch = ownerNamesNormalized.includes(searchTerm)
         const isLoreMatch = loreNamesNormalized.includes(searchTerm)
+        const isPlayerMatch = itemIdsLinkedToMatchingPlayers.has(item.id)
         const isNonNameMatch =
-          (isMetadataMatch || isDescriptionMatch || isOwnerMatch || isLoreMatch) && !containsQuery
+          (isMetadataMatch || isDescriptionMatch || isOwnerMatch || isLoreMatch || isPlayerMatch) && !containsQuery
 
         let levDistance: number
 
@@ -384,6 +445,7 @@ export default defineEventHandler(async (event) => {
         if (containsQuery) finalScore -= 50
         if (isOwnerMatch) finalScore -= 30 // Owner matches are very good
         if (isLoreMatch) finalScore -= 30 // Lore matches are very good
+        if (isPlayerMatch) finalScore -= 30 // Player matches are very good
         if (isMetadataMatch) finalScore -= 25 // Metadata matches are good
         if (isDescriptionMatch) finalScore -= 10 // Description matches are ok
 
@@ -409,6 +471,11 @@ export default defineEventHandler(async (event) => {
           const ownerNamesNormalized = item.owner_names ? normalizeText(item.owner_names) : ''
           const loreNamesNormalized = item.linked_lore_names ? normalizeText(item.linked_lore_names) : ''
 
+          // Check if linked to a matching Player
+          if (itemIdsLinkedToMatchingPlayers.has(item.id)) {
+            return true
+          }
+
           // Check if EXACT phrase appears in ANY field
           return (
             nameNormalized.includes(exactPhrase) ||
@@ -421,6 +488,11 @@ export default defineEventHandler(async (event) => {
       } else if (!parsedQuery.hasOperators) {
         // Simple query: check if ANY expanded term matches
         scoredItems = scoredItems.filter((item) => {
+          // Check if linked to a matching Player (fast check first)
+          if (itemIdsLinkedToMatchingPlayers.has(item.id)) {
+            return true
+          }
+
           const nameNormalized = normalizeText(item.name)
           const metadataNormalized = item.metadata ? normalizeText(item.metadata) : ''
           const descriptionNormalized = item.description ? normalizeText(item.description) : ''
@@ -503,6 +575,11 @@ export default defineEventHandler(async (event) => {
       } else if (hasOrOperator && !hasAndOperator) {
         // OR query: at least ONE term must match
         scoredItems = scoredItems.filter((item) => {
+          // Check if linked to a matching Player (fast check first)
+          if (itemIdsLinkedToMatchingPlayers.has(item.id)) {
+            return true
+          }
+
           const nameNormalized = normalizeText(item.name)
           const metadataNormalized = item.metadata ? normalizeText(item.metadata) : ''
           const descriptionNormalized = item.description ? normalizeText(item.description) : ''
@@ -589,11 +666,14 @@ export default defineEventHandler(async (event) => {
           const ownerNamesNormalized = item.owner_names ? normalizeText(item.owner_names) : ''
           const loreNamesNormalized = item.linked_lore_names ? normalizeText(item.linked_lore_names) : ''
 
+          // Check if linked to a matching Player (can satisfy any term)
+          const isPlayerMatch = itemIdsLinkedToMatchingPlayers.has(item.id)
+
           // Check if ALL terms (or their expanded keys) match
           for (let i = 0; i < parsedQuery.terms.length; i++) {
             const termObj = expandedTerms[i]
             const shouldCheckMetadata = !termObj.blockMetadata
-            let termMatches = false
+            let termMatches = isPlayerMatch // Player match can satisfy any term
 
             // Check if ANY variant of this term matches
             for (const variant of termObj.variants) {
