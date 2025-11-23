@@ -12,6 +12,7 @@
     "items": "Items",
     "factions": "Factions",
     "lore": "Lore",
+    "players": "Players",
     "quests": "Quests",
     "sessions": "Sessions",
     "referenceData": "Reference Data",
@@ -260,7 +261,8 @@
       "items": "Items Owned",
       "locations": "Linked Locations",
       "lore": "Linked Lore",
-      "memberships": "Faction Memberships"
+      "memberships": "Faction Memberships",
+      "players": "Linked Players"
     }
   },
   "factions": {
@@ -323,6 +325,15 @@
       "safehouse": "Safehouse",
       "baseOfOperations": "Base of Operations"
     },
+    "relationTypes": {
+      "member": "Member",
+      "ally": "Ally",
+      "enemy": "Enemy",
+      "leader": "Leader",
+      "founder": "Founder",
+      "supporter": "Supporter",
+      "informant": "Informant"
+    },
     "uploadImage": "Upload Image",
     "changeImage": "Change Image",
     "deleteImage": "Delete Image",
@@ -334,6 +345,7 @@
       "items": "Linked Items",
       "locations": "Linked Locations",
       "lore": "Linked Lore",
+      "players": "Linked Players",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
     },
@@ -479,6 +491,7 @@
       "items": "Linked Items",
       "factions": "Linked Factions",
       "locations": "Linked Locations",
+      "players": "Linked Players",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
     }
@@ -702,6 +715,7 @@
       "locations": "Locations",
       "factions": "Linked Factions",
       "lore": "Linked Lore",
+      "players": "Linked Players",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
     }
@@ -885,7 +899,17 @@
     "noLinkedNpcsText": "Add relevant NPCs to this entity",
     "membershipType": "Membership type",
     "rank": "Rank",
-    "rankPlaceholder": "e.g. Leader, Recruit..."
+    "rankPlaceholder": "e.g. Leader, Recruit...",
+    "selectFaction": "Select Faction",
+    "addFactionLink": "Link Faction",
+    "noLinkedFactions": "No Factions Linked",
+    "noLinkedFactionsText": "Add relevant factions to this entity",
+    "noLinkedPlayers": "No Players Linked",
+    "noLinkedPlayersText": "Add relevant players to this entity",
+    "addPlayerLink": "Link Player",
+    "selectPlayer": "Select Player",
+    "editRelation": "Edit Relation",
+    "relationNotes": "Relation Notes"
   },
   "settings": {
     "title": "Settings",
@@ -911,5 +935,69 @@
     },
     "saved": "Settings saved",
     "saveFailed": "Failed to save settings"
+  },
+  "players": {
+    "title": "Players",
+    "subtitle": "Manage the players in your campaign",
+    "create": "New Player",
+    "edit": "Edit Player",
+    "name": "Name",
+    "namePlaceholder": "Player name",
+    "description": "Description",
+    "descriptionPlaceholder": "Short description or notes",
+    "email": "Email",
+    "emailPlaceholder": "player{'@'}example.com",
+    "phone": "Phone",
+    "phonePlaceholder": "+1 234 567890",
+    "discord": "Discord",
+    "discordPlaceholder": "player#1234",
+    "notes": "Notes",
+    "notesPlaceholder": "Preferences, allergies, availability...",
+    "nameRequired": "Name is required",
+    "empty": "No players yet",
+    "emptyText": "Create your first player to get started",
+    "deleteTitle": "Delete Player",
+    "deleteConfirm": "Are you sure you want to delete '{name}'? The player will be archived and can be restored.",
+    "details": "Details",
+    "characters": "Characters",
+    "charactersTab": "Characters",
+    "noCharacters": "No characters",
+    "noCharactersText": "This player has no characters assigned yet.",
+    "linkedNpcs": "Linked NPCs",
+    "linkedItems": "Linked Items",
+    "linkedLocations": "Linked Locations",
+    "linkedFactions": "Linked Factions",
+    "linkedLore": "Linked Lore",
+    "addCharacter": "Add Character",
+    "uploadImage": "Upload image",
+    "changeImage": "Change image",
+    "generateImage": "Generate image",
+    "deleteImage": "Delete image",
+    "uploadImageError": "Failed to upload image",
+    "deleteImageError": "Failed to delete image",
+    "noItems": "No Items",
+    "noItemsText": "This player has no items yet.",
+    "addItem": "Add Item",
+    "noLore": "No Lore",
+    "noLoreText": "This player has no lore yet.",
+    "addLore": "Add Lore",
+    "badgeTooltips": {
+      "characters": "Player Characters",
+      "items": "Linked Items",
+      "locations": "Known Locations",
+      "factions": "Faction Memberships",
+      "lore": "Known Lore",
+      "sessions": "Attended Sessions",
+      "documents": "Documents & Notes",
+      "images": "Image Gallery"
+    },
+    "relationTypes": {
+      "knows": "Knows",
+      "discovered": "Discovered",
+      "created": "Created",
+      "owns": "Owns",
+      "visited": "Visited",
+      "interested": "Interested in"
+    }
   }
 }

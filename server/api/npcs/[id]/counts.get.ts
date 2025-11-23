@@ -178,6 +178,40 @@ export default defineEventHandler((event) => {
     )
     .get(Number(npcId)) as { count: number }
 
+  // Get players count (bidirectional)
+  const playerTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Player'").get() as
+    | { id: number }
+    | undefined
+
+  let playersCount = 0
+  if (playerTypeId) {
+    const playersResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(npcId), playerTypeId.id, Number(npcId), playerTypeId.id) as { count: number }
+    playersCount = playersResult.count
+  }
+
   return {
     relations: relationsCount.count,
     items: itemsCount,
@@ -187,6 +221,7 @@ export default defineEventHandler((event) => {
     memberships: membershipsCount,
     lore: loreCount,
     notes: notesCount.count,
+    players: playersCount,
     factionName,
   }
 })

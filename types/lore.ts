@@ -20,6 +20,8 @@ export interface LoreCounts {
   npcs: number
   items: number
   factions: number
+  locations: number
+  players: number
   documents: number
   images: number
 }

@@ -11,6 +11,7 @@ export interface FactionCounts {
   items: number
   locations: number
   lore: number
+  players: number
   documents: number
   images: number
 }

@@ -121,6 +121,7 @@
       @image-generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
       @images-changed="handleImagesUpdated"
       @documents-changed="handleDocumentsChanged"
+      @players-changed="handlePlayersChanged"
       @add-member="addNpcMember"
       @remove-member="removeMember"
       @add-location="addLocationLink"
@@ -185,6 +186,7 @@ import FactionEditDialog from '~/components/factions/FactionEditDialog.vue'
 interface FactionCounts {
   members: number
   lore: number
+  players: number
   documents: number
   images: number
   items: number
@@ -292,6 +294,7 @@ onMounted(async () => {
     entitiesStore.fetchNPCs(activeCampaignId.value!),
     entitiesStore.fetchItems(activeCampaignId.value!),
     entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchPlayers(activeCampaignId.value!),
   ])
 
   // Load counts for all factions in background (non-blocking)
@@ -1016,6 +1019,13 @@ async function handleImagesUpdated() {
 
 // Handle documents changed event (from EntityDocuments)
 async function handleDocumentsChanged() {
+  if (editingFaction.value) {
+    await reloadFactionCounts(editingFaction.value)
+  }
+}
+
+// Handle players changed event (from EntityPlayersTab)
+async function handlePlayersChanged() {
   if (editingFaction.value) {
     await reloadFactionCounts(editingFaction.value)
   }

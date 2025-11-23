@@ -165,6 +165,39 @@ export default defineEventHandler((event) => {
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
+    } else if (type.name === 'Player') {
+      // Players: Include linked NPCs (characters), Items, and Lore
+      typeResults = db
+        .prepare(
+          `
+        SELECT
+          e.id,
+          e.name,
+          e.description,
+          ? as type,
+          ? as icon,
+          ? as color,
+          GROUP_CONCAT(DISTINCT npc.name || '|' || item.name || '|' || lore.name) as linked_entities
+        FROM entities e
+        LEFT JOIN entity_relations char_rel ON char_rel.from_entity_id = e.id
+        LEFT JOIN entities npc ON npc.id = char_rel.to_entity_id
+          AND npc.deleted_at IS NULL
+          AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+        LEFT JOIN entity_relations item_rel ON item_rel.from_entity_id = e.id
+        LEFT JOIN entities item ON item.id = item_rel.to_entity_id
+          AND item.deleted_at IS NULL
+          AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+        LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
+        LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
+          AND lore.deleted_at IS NULL
+          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+        WHERE e.type_id = ?
+          AND e.campaign_id = ?
+          AND e.deleted_at IS NULL
+        GROUP BY e.id
+      `,
+        )
+        .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else {
       // Other types (e.g., Lore): Simple query without relations
       typeResults = db

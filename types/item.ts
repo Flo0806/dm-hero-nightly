@@ -43,6 +43,7 @@ export interface ItemCounts {
   locations: number
   factions: number
   lore: number
+  players: number
   documents: number
   images: number
 }

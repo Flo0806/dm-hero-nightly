@@ -288,6 +288,33 @@
           </template>
           <span>{{ $t('npcs.badgeTooltips.memberships') }}</span>
         </v-tooltip>
+
+        <!-- Players Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-account-star"
+              size="small"
+              variant="outlined"
+              :color="(counts.players || 0) > 0 ? 'primary' : undefined"
+            >
+              {{ counts.players || 0 }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-account-star"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('npcs.badgeTooltips.players') }}</span>
+        </v-tooltip>
       </div>
     </v-card-text>
 

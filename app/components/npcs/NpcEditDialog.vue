@@ -45,6 +45,11 @@
           {{ $t('npcs.badgeTooltips.lore') }}
           <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.lore || 0 }}</v-chip>
         </v-tab>
+        <v-tab value="players">
+          <v-icon start>mdi-account-star</v-icon>
+          {{ $t('players.title') }}
+          <v-chip size="x-small" class="ml-2">{{ editingNpc?._counts?.players || 0 }}</v-chip>
+        </v-tab>
       </v-tabs>
 
       <v-card-text style="max-height: 600px">
@@ -234,7 +239,7 @@
 
           <!-- Locations Tab -->
           <v-tabs-window-item value="locations">
-            <EntityLocationsTab v-if="editingNpc" :npc-id="editingNpc.id" />
+            <EntityLocationsTab v-if="editingNpc" :entity-id="editingNpc.id" />
           </v-tabs-window-item>
 
           <!-- Memberships Tab -->
@@ -285,6 +290,15 @@
               :loading="loadingLore"
               @add="$emit('add-lore', $event)"
               @remove="$emit('remove-lore', $event)"
+            />
+          </v-tabs-window-item>
+
+          <!-- Players Tab -->
+          <v-tabs-window-item value="players">
+            <EntityPlayersTab
+              v-if="editingNpc"
+              :entity-id="editingNpc.id"
+              @changed="$emit('players-changed')"
             />
           </v-tabs-window-item>
         </v-tabs-window>
@@ -464,6 +478,7 @@ import EntityLocationsTab from '../shared/EntityLocationsTab.vue'
 import NpcMembershipsTab from './NpcMembershipsTab.vue'
 import EntityItemsTab from '../shared/EntityItemsTab.vue'
 import EntityLoreTab from '../shared/EntityLoreTab.vue'
+import EntityPlayersTab from '../shared/EntityPlayersTab.vue'
 import NpcNotesTab from './NpcNotesTab.vue'
 import EntityDocuments from '../shared/EntityDocuments.vue'
 import EntityImageUpload from '../shared/EntityImageUpload.vue'
@@ -638,6 +653,7 @@ const emit = defineEmits<{
   close: []
   'image-changed': []
   'documents-changed': []
+  'players-changed': []
   'generate-name': []
 }>()
 

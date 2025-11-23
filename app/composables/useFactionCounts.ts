@@ -6,6 +6,7 @@ interface Faction {
 interface FactionCounts {
   members: number
   lore: number
+  players: number
   documents: number
   images: number
   items: number

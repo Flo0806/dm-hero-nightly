@@ -252,6 +252,7 @@ interface Faction {
     items: number
     locations: number
     lore: number
+    players: number
     documents: number
     images: number
   }

@@ -1,24 +1,29 @@
 <template>
   <div>
     <!-- Loading State -->
-    <v-progress-linear v-if="loadingLocations" indeterminate class="mb-3" />
+    <v-progress-linear v-if="loadingFactions" indeterminate class="mb-3" />
 
-    <!-- Locations List -->
-    <v-list v-else-if="locationRelations.length > 0" class="mb-3">
+    <!-- Factions List -->
+    <v-list v-else-if="factionRelations.length > 0" class="mb-3">
       <v-list-item
-        v-for="relation in locationRelations"
+        v-for="relation in factionRelations"
         :key="relation.id"
         class="mb-2"
         border
       >
         <template #prepend>
-          <v-icon icon="mdi-map-marker" color="primary" />
+          <v-avatar v-if="relation.image_url" size="48" rounded="lg" class="mr-3">
+            <v-img :src="`/uploads/${relation.image_url}`" />
+          </v-avatar>
+          <v-avatar v-else size="48" rounded="lg" class="mr-3" color="surface-variant">
+            <v-icon icon="mdi-shield" />
+          </v-avatar>
         </template>
         <v-list-item-title>
           {{ relation.to_entity_name }}
         </v-list-item-title>
         <v-list-item-subtitle>
-          <v-chip size="small" class="mr-1">
+          <v-chip v-if="relation.relation_type" size="small" class="mr-1">
             {{ relation.relation_type }}
           </v-chip>
           <span v-if="relation.notes" class="text-caption">
@@ -45,25 +50,25 @@
 
     <v-empty-state
       v-else
-      icon="mdi-map-marker-outline"
-      :title="$t('npcs.noLinkedLocations')"
-      :text="$t('npcs.noLinkedLocationsText')"
+      icon="mdi-shield-outline"
+      :title="$t('common.noLinkedFactions')"
+      :text="$t('common.noLinkedFactionsText')"
     />
 
-    <!-- Add Location Relation Form -->
+    <!-- Add Faction Relation Form -->
     <v-expansion-panels class="mb-3">
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <v-icon start> mdi-plus </v-icon>
-          {{ $t('npcs.addLocationLink') }}
+          <v-icon start>mdi-plus</v-icon>
+          {{ $t('common.addFactionLink') }}
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <v-select
-            v-model="localLocationId"
-            :items="availableLocations"
+            v-model="localFactionId"
+            :items="availableFactions"
             item-title="name"
             item-value="id"
-            :label="$t('npcs.selectLocation')"
+            :label="$t('common.selectFaction')"
             variant="outlined"
             class="mb-3"
           />
@@ -71,16 +76,14 @@
           <v-select
             v-model="localRelationType"
             :items="relationTypeSuggestions"
-            :label="$t('npcs.relationType')"
-            :placeholder="$t('npcs.relationTypePlaceholder')"
+            :label="$t('common.relationType')"
             variant="outlined"
             class="mb-3"
           />
 
           <v-textarea
             v-model="localNotes"
-            :label="$t('npcs.relationNotes')"
-            :placeholder="$t('npcs.relationNotesPlaceholder')"
+            :label="$t('common.relationNotes')"
             variant="outlined"
             rows="2"
             class="mb-3"
@@ -89,11 +92,11 @@
           <v-btn
             color="primary"
             prepend-icon="mdi-link"
-            :disabled="!localLocationId || !localRelationType"
+            :disabled="!localFactionId || !localRelationType"
             :loading="adding"
             @click="handleAdd"
           >
-            {{ $t('npcs.addLocationLink') }}
+            {{ $t('common.addFactionLink') }}
           </v-btn>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -101,18 +104,18 @@
 
     <v-dialog v-model="showEditDialog" max-width="600">
       <v-card>
-        <v-card-title>{{ $t('npcs.editRelation') }}</v-card-title>
+        <v-card-title>{{ $t('common.editRelation') }}</v-card-title>
         <v-card-text>
           <v-select
             v-model="editForm.relationType"
             :items="relationTypeSuggestions"
-            :label="$t('npcs.relationType')"
+            :label="$t('common.relationType')"
             variant="outlined"
             class="mb-3"
           />
           <v-textarea
             v-model="editForm.notes"
-            :label="$t('npcs.relationNotes')"
+            :label="$t('common.relationNotes')"
             variant="outlined"
             rows="3"
           />
@@ -135,22 +138,14 @@
 const { t } = useI18n()
 const entitiesStore = useEntitiesStore()
 
-interface LocationRelation {
+interface FactionRelation {
   id: number
   to_entity_id: number
   to_entity_name: string
   to_entity_type: string
   relation_type: string
   notes: string | null
-}
-
-interface Relation {
-  id: number
-  to_entity_id: number
-  to_entity_name: string
-  to_entity_type: string
-  relation_type: string
-  notes: string | null
+  image_url: string | null
 }
 
 interface Props {
@@ -159,62 +154,65 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  changed: []
+}>()
+
 // State
-const locationRelations = ref<LocationRelation[]>([])
-const availableLocations = ref<{ id: number; name: string }[]>([])
-const loadingLocations = ref(false)
+const factionRelations = ref<FactionRelation[]>([])
+const availableFactions = ref<{ id: number; name: string }[]>([])
+const loadingFactions = ref(false)
 const adding = ref(false)
 const saving = ref(false)
 
-const localLocationId = ref<number | null>(null)
+const localFactionId = ref<number | null>(null)
 const localRelationType = ref('')
 const localNotes = ref('')
 
 const showEditDialog = ref(false)
-const editingRelation = ref<LocationRelation | null>(null)
+const editingRelation = ref<FactionRelation | null>(null)
 const editForm = ref({
   relationType: '',
   notes: '',
 })
 
 const relationTypeSuggestions = computed(() => [
-  t('npcs.relationTypes.livesIn'),
-  t('npcs.relationTypes.worksAt'),
-  t('npcs.relationTypes.visitsOften'),
-  t('npcs.relationTypes.bornIn'),
-  t('npcs.relationTypes.hidesIn'),
-  t('npcs.relationTypes.owns'),
-  t('npcs.relationTypes.searchesFor'),
-  t('npcs.relationTypes.banishedFrom'),
+  t('factions.relationTypes.member'),
+  t('factions.relationTypes.ally'),
+  t('factions.relationTypes.enemy'),
+  t('factions.relationTypes.leader'),
+  t('factions.relationTypes.founder'),
+  t('factions.relationTypes.supporter'),
+  t('factions.relationTypes.informant'),
 ])
 
-// Load locations on mount and when entityId changes
+// Load factions on mount and when entityId changes
 watch(
   () => props.entityId,
   async () => {
-    await loadLocations()
+    await loadFactions()
   },
   { immediate: true },
 )
 
-// Load available locations from store
+// Load available factions from store
 watch(
-  () => entitiesStore.locations,
-  (locations) => {
-    if (locations) {
-      availableLocations.value = locations.map((loc) => ({
-        id: loc.id,
-        name: loc.name,
+  () => entitiesStore.factions,
+  (factions) => {
+    if (factions) {
+      availableFactions.value = factions.map((f) => ({
+        id: f.id,
+        name: f.name,
       }))
     }
   },
   { immediate: true },
 )
 
-async function loadLocations() {
+async function loadFactions() {
   if (!props.entityId) return
 
-  loadingLocations.value = true
+  loadingFactions.value = true
   try {
     const relations = await $fetch<
       Array<{
@@ -224,28 +222,30 @@ async function loadLocations() {
         name: string
         relation_type: string
         notes: string | null
+        image_url: string | null
         direction: 'outgoing' | 'incoming'
       }>
-    >(`/api/entities/${props.entityId}/related/locations`)
+    >(`/api/entities/${props.entityId}/related/factions`)
 
-    locationRelations.value = relations.map((rel) => ({
-      id: rel.id, // Relation ID
+    factionRelations.value = relations.map((rel) => ({
+      id: rel.id,
       to_entity_id: rel.direction === 'outgoing' ? rel.to_entity_id : rel.from_entity_id,
       to_entity_name: rel.name,
-      to_entity_type: 'Location',
+      to_entity_type: 'Faction',
       relation_type: rel.relation_type,
       notes: rel.notes,
+      image_url: rel.image_url,
     }))
   } catch (error) {
-    console.error('Failed to load location relations:', error)
-    locationRelations.value = []
+    console.error('Failed to load faction relations:', error)
+    factionRelations.value = []
   } finally {
-    loadingLocations.value = false
+    loadingFactions.value = false
   }
 }
 
 async function handleAdd() {
-  if (!localLocationId.value || !localRelationType.value) return
+  if (!localFactionId.value || !localRelationType.value) return
 
   adding.value = true
 
@@ -254,36 +254,38 @@ async function handleAdd() {
       method: 'POST',
       body: {
         fromEntityId: props.entityId,
-        toEntityId: localLocationId.value,
+        toEntityId: localFactionId.value,
         relationType: localRelationType.value,
         notes: localNotes.value || null,
       },
     })
 
-    // Get location name from availableLocations
-    const location = availableLocations.value.find((loc) => loc.id === localLocationId.value)
+    const faction = availableFactions.value.find((f) => f.id === localFactionId.value)
 
-    locationRelations.value.push({
+    factionRelations.value.push({
       id: relation.id,
-      to_entity_id: localLocationId.value,
-      to_entity_name: location?.name || '',
-      to_entity_type: 'Location',
+      to_entity_id: localFactionId.value,
+      to_entity_name: faction?.name || '',
+      to_entity_type: 'Faction',
       relation_type: localRelationType.value,
       notes: localNotes.value || null,
+      image_url: null,
     })
 
     // Reset form
-    localLocationId.value = null
+    localFactionId.value = null
     localRelationType.value = ''
     localNotes.value = ''
+
+    emit('changed')
   } catch (error) {
-    console.error('Failed to add location relation:', error)
+    console.error('Failed to add faction relation:', error)
   } finally {
     adding.value = false
   }
 }
 
-function editRelation(relation: LocationRelation) {
+function editRelation(relation: FactionRelation) {
   editingRelation.value = relation
   editForm.value = {
     relationType: relation.relation_type,
@@ -298,7 +300,7 @@ async function saveRelation() {
   saving.value = true
 
   try {
-    const updated = await $fetch<Relation>(`/api/entity-relations/${editingRelation.value.id}`, {
+    const updated = await $fetch<FactionRelation>(`/api/entity-relations/${editingRelation.value.id}`, {
       method: 'PATCH',
       body: {
         relationType: editForm.value.relationType,
@@ -306,14 +308,14 @@ async function saveRelation() {
       },
     })
 
-    // Update in local array
-    const index = locationRelations.value.findIndex((r) => r.id === editingRelation.value!.id)
-    if (index !== -1 && locationRelations.value[index]) {
-      locationRelations.value[index].relation_type = updated.relation_type
-      locationRelations.value[index].notes = updated.notes
+    const index = factionRelations.value.findIndex((r) => r.id === editingRelation.value!.id)
+    if (index !== -1 && factionRelations.value[index]) {
+      factionRelations.value[index].relation_type = updated.relation_type
+      factionRelations.value[index].notes = updated.notes
     }
 
     closeEditDialog()
+    emit('changed')
   } catch (error) {
     console.error('Failed to update relation:', error)
   } finally {
@@ -327,8 +329,8 @@ async function removeRelation(relationId: number) {
       method: 'DELETE',
     })
 
-    // Remove from local array
-    locationRelations.value = locationRelations.value.filter((r) => r.id !== relationId)
+    factionRelations.value = factionRelations.value.filter((r) => r.id !== relationId)
+    emit('changed')
   } catch (error) {
     console.error('Failed to remove relation:', error)
   }

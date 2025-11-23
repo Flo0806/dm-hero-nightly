@@ -6,9 +6,11 @@ export interface LocationMetadata {
 
 export interface LocationCounts {
   npcs: number
+  items: number
   lore: number
-  images: number
+  players: number
   documents: number
+  images: number
 }
 
 export interface Location {

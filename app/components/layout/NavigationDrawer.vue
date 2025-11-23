@@ -74,6 +74,12 @@
         to="/lore"
       />
       <v-list-item
+        prepend-icon="mdi-account-star"
+        :title="$t('nav.players')"
+        value="players"
+        to="/players"
+      />
+      <v-list-item
         prepend-icon="mdi-book-open-page-variant"
         :title="$t('nav.sessions')"
         value="sessions"

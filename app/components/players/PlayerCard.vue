@@ -1,60 +1,53 @@
 <template>
   <v-card
-    :id="`lore-${lore.id}`"
+    :id="`player-${player.id}`"
     hover
-    :class="['d-flex flex-column lore-card', { 'highlighted-card': isHighlighted }]"
+    :class="['d-flex flex-column player-card', { 'highlighted-card': isHighlighted }]"
     style="height: 100%; cursor: pointer"
-    @click="$emit('view', lore)"
+    @click="$emit('view', player)"
   >
-    <!-- Card Header with Image & Type -->
+    <!-- Card Header with Image -->
     <div class="d-flex align-start pa-4 pb-3">
       <!-- Avatar (clickable if image exists) -->
       <v-avatar
-        :color="lore.image_url ? undefined : 'grey-lighten-2'"
+        :color="player.image_url ? undefined : 'grey-lighten-2'"
         size="80"
         rounded="lg"
         class="mr-3 flex-shrink-0"
-        :style="lore.image_url ? 'cursor: pointer;' : ''"
-        @click.stop="lore.image_url ? openImagePreview() : null"
+        :style="player.image_url ? 'cursor: pointer;' : ''"
+        @click.stop="player.image_url ? openImagePreview() : null"
       >
-        <v-img v-if="lore.image_url" :src="`/uploads/${lore.image_url}`" cover />
-        <v-icon v-else icon="mdi-book-open-variant" size="40" color="grey" />
+        <v-img v-if="player.image_url" :src="`/uploads/${player.image_url}`" cover />
+        <v-icon v-else icon="mdi-account-star" size="40" color="grey" />
       </v-avatar>
 
-      <!-- Name & Metadata -->
+      <!-- Name & Contact Info -->
       <div class="flex-grow-1" style="min-width: 0">
-        <h3 class="text-h6 mb-2" style="line-height: 1.2">{{ lore.name }}</h3>
+        <h3 class="text-h6 mb-2" style="line-height: 1.2">{{ player.name }}</h3>
 
-        <!-- Type Chip -->
-        <div v-if="lore.metadata?.type" class="d-flex flex-wrap gap-1 mb-2">
-          <v-chip
-            :prepend-icon="getLoreTypeIcon(lore.metadata.type)"
-            size="x-small"
-            color="primary"
-            variant="tonal"
-          >
-            {{ $t(`lore.types.${lore.metadata.type}`) }}
-          </v-chip>
-        </div>
-
-        <!-- Date (for events) - always shown, takes same vertical space -->
-        <div
-          class="text-caption text-medium-emphasis"
-          :style="{ minHeight: lore.metadata?.type ? '20px' : '44px' }"
-        >
-          <template v-if="lore.metadata?.date">
-            <v-icon icon="mdi-calendar" size="14" class="mr-1" />
-            {{ lore.metadata.date }}
-          </template>
+        <!-- Contact Info -->
+        <div class="d-flex flex-column" style="gap: 4px">
+          <div v-if="player.metadata?.discord" class="text-caption text-medium-emphasis d-flex align-center">
+            <v-icon size="14" class="mr-1">mdi-discord</v-icon>
+            {{ player.metadata.discord }}
+          </div>
+          <div v-if="player.metadata?.email" class="text-caption text-medium-emphasis d-flex align-center">
+            <v-icon size="14" class="mr-1">mdi-email</v-icon>
+            {{ player.metadata.email }}
+          </div>
+          <div v-if="player.metadata?.phone" class="text-caption text-medium-emphasis d-flex align-center">
+            <v-icon size="14" class="mr-1">mdi-phone</v-icon>
+            {{ player.metadata.phone }}
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Description (Fixed 3 lines) -->
     <v-card-text class="pt-0 pb-3" style="flex-grow: 0">
-      <div class="lore-description">
-        <p v-if="lore.description" class="text-body-2 text-medium-emphasis mb-0">
-          {{ lore.description }}
+      <div class="player-description">
+        <p v-if="player.description" class="text-body-2 text-medium-emphasis mb-0">
+          {{ player.description }}
         </p>
         <p v-else class="text-body-2 text-disabled mb-0 font-italic">
           {{ $t('common.noDescription') }}
@@ -64,25 +57,24 @@
 
     <!-- Info Badges (Bottom) -->
     <v-card-text class="pt-0 pb-3" style="flex-grow: 0; margin-top: auto">
-      <!-- Count Badges (NPCs, Items, Factions, Documents, Images) -->
       <div class="d-flex flex-wrap" style="gap: 6px">
-        <!-- NPCs Count Badge -->
+        <!-- Characters Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">
             <v-chip
               v-if="counts"
               v-bind="tooltipProps"
-              prepend-icon="mdi-account"
+              prepend-icon="mdi-account-group"
               size="small"
               variant="outlined"
-              :color="counts.npcs > 0 ? 'primary' : undefined"
+              :color="counts.characters > 0 ? 'primary' : undefined"
             >
-              {{ counts.npcs }}
+              {{ counts.characters }}
             </v-chip>
             <v-chip
               v-else
               v-bind="tooltipProps"
-              prepend-icon="mdi-account"
+              prepend-icon="mdi-account-group"
               size="small"
               variant="outlined"
               disabled
@@ -90,7 +82,7 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.npcs') }}</span>
+          <span>{{ $t('players.badgeTooltips.characters') }}</span>
         </v-tooltip>
 
         <!-- Items Count Badge -->
@@ -117,34 +109,7 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.items') }}</span>
-        </v-tooltip>
-
-        <!-- Factions Count Badge -->
-        <v-tooltip location="top">
-          <template #activator="{ props: tooltipProps }">
-            <v-chip
-              v-if="counts"
-              v-bind="tooltipProps"
-              prepend-icon="mdi-shield-account"
-              size="small"
-              variant="outlined"
-              :color="counts.factions > 0 ? 'primary' : undefined"
-            >
-              {{ counts.factions }}
-            </v-chip>
-            <v-chip
-              v-else
-              v-bind="tooltipProps"
-              prepend-icon="mdi-shield-account"
-              size="small"
-              variant="outlined"
-              disabled
-            >
-              <v-progress-circular indeterminate size="12" width="2" />
-            </v-chip>
-          </template>
-          <span>{{ $t('lore.badgeTooltips.factions') }}</span>
+          <span>{{ $t('players.badgeTooltips.items') }}</span>
         </v-tooltip>
 
         <!-- Locations Count Badge -->
@@ -171,26 +136,26 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.locations') }}</span>
+          <span>{{ $t('players.badgeTooltips.locations') }}</span>
         </v-tooltip>
 
-        <!-- Players Count Badge -->
+        <!-- Factions Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">
             <v-chip
               v-if="counts"
               v-bind="tooltipProps"
-              prepend-icon="mdi-account-star"
+              prepend-icon="mdi-shield"
               size="small"
               variant="outlined"
-              :color="counts.players > 0 ? 'primary' : undefined"
+              :color="counts.factions > 0 ? 'primary' : undefined"
             >
-              {{ counts.players }}
+              {{ counts.factions }}
             </v-chip>
             <v-chip
               v-else
               v-bind="tooltipProps"
-              prepend-icon="mdi-account-star"
+              prepend-icon="mdi-shield"
               size="small"
               variant="outlined"
               disabled
@@ -198,7 +163,34 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.players') }}</span>
+          <span>{{ $t('players.badgeTooltips.factions') }}</span>
+        </v-tooltip>
+
+        <!-- Lore Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-book-open-variant"
+              size="small"
+              variant="outlined"
+              :color="counts.lore > 0 ? 'primary' : undefined"
+            >
+              {{ counts.lore }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-book-open-variant"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('players.badgeTooltips.lore') }}</span>
         </v-tooltip>
 
         <!-- Documents Count Badge -->
@@ -225,7 +217,7 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.documents') }}</span>
+          <span>{{ $t('players.badgeTooltips.documents') }}</span>
         </v-tooltip>
 
         <!-- Images Count Badge -->
@@ -252,7 +244,7 @@
               <v-progress-circular indeterminate size="12" width="2" />
             </v-chip>
           </template>
-          <span>{{ $t('lore.badgeTooltips.images') }}</span>
+          <span>{{ $t('players.badgeTooltips.images') }}</span>
         </v-tooltip>
       </div>
     </v-card-text>
@@ -260,29 +252,29 @@
     <!-- Actions -->
     <v-divider />
     <v-card-actions class="px-4">
-      <v-btn icon="mdi-eye" size="small" variant="text" @click.stop="$emit('view', lore)">
+      <v-btn icon="mdi-eye" size="small" variant="text" @click.stop="$emit('view', player)">
         <v-icon>mdi-eye</v-icon>
         <v-tooltip activator="parent" location="bottom">
           {{ $t('common.view') }}
         </v-tooltip>
       </v-btn>
-      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', lore)">
-        <v-icon>mdi-pencil</v-icon>
-        <v-tooltip activator="parent" location="bottom">
-          {{ $t('common.edit') }}
-        </v-tooltip>
-      </v-btn>
-      <v-spacer />
       <v-btn
         icon="mdi-download"
         size="small"
         variant="text"
-        :disabled="!lore.image_url"
-        @click.stop="$emit('download', lore)"
+        :disabled="!player.image_url"
+        @click.stop="$emit('download', player)"
       >
         <v-icon>mdi-download</v-icon>
         <v-tooltip activator="parent" location="bottom">
           {{ $t('common.download') }}
+        </v-tooltip>
+      </v-btn>
+      <v-spacer />
+      <v-btn icon="mdi-pencil" size="small" variant="text" @click.stop="$emit('edit', player)">
+        <v-icon>mdi-pencil</v-icon>
+        <v-tooltip activator="parent" location="bottom">
+          {{ $t('common.edit') }}
         </v-tooltip>
       </v-btn>
       <v-btn
@@ -290,7 +282,7 @@
         size="small"
         variant="text"
         color="error"
-        @click.stop="$emit('delete', lore)"
+        @click.stop="$emit('delete', player)"
       >
         <v-icon>mdi-delete</v-icon>
         <v-tooltip activator="parent" location="bottom">
@@ -303,20 +295,20 @@
   <!-- Image Preview Dialog -->
   <ImagePreviewDialog
     v-model="showImagePreview"
-    :image-url="`/uploads/${lore.image_url}`"
-    :title="lore.name"
+    :image-url="`/uploads/${player.image_url}`"
+    :title="player.name"
     :subtitle="previewSubtitle"
-    :chips="previewChips"
-    :download-file-name="lore.name"
+    :download-file-name="player.name"
   />
 </template>
 
 <script setup lang="ts">
-import type { Lore } from '../../../types/lore'
+import type { Player } from '~~/types/player'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
+import { usePlayerCounts } from '~/composables/usePlayerCounts'
 
 interface Props {
-  lore: Lore
+  player: Player
   isHighlighted?: boolean
 }
 
@@ -325,76 +317,44 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  view: [lore: Lore]
-  edit: [lore: Lore]
-  download: [lore: Lore]
-  delete: [lore: Lore]
+  view: [player: Player]
+  edit: [player: Player]
+  download: [player: Player]
+  delete: [player: Player]
 }>()
 
-const { getCounts } = useLoreCounts()
-const { t } = useI18n()
-
 // Get counts reactively from the composable
-const counts = computed(() => getCounts(props.lore.id) || props.lore._counts)
+const { getCounts, loadPlayerCounts } = usePlayerCounts()
+const counts = computed(() => getCounts(props.player.id) || props.player._counts)
+
+// Load counts when card is mounted
+onMounted(() => {
+  loadPlayerCounts(props.player)
+})
 
 // Image Preview State
 const showImagePreview = ref(false)
 
 function openImagePreview() {
-  if (!props.lore.image_url) return
+  if (!props.player.image_url) return
   showImagePreview.value = true
 }
-
-// Build chips for preview dialog
-const previewChips = computed(() => {
-  const chips = []
-
-  if (props.lore.metadata?.type) {
-    chips.push({
-      text: t(`lore.types.${props.lore.metadata.type}`),
-      icon: getLoreTypeIcon(props.lore.metadata.type),
-      color: 'primary',
-      variant: 'tonal' as const,
-    })
-  }
-
-  return chips
-})
 
 // Build subtitle for preview dialog
 const previewSubtitle = computed(() => {
   const parts = []
-  if (props.lore.metadata?.type) {
-    parts.push(t(`lore.types.${props.lore.metadata.type}`))
-  }
-  if (props.lore.metadata?.date) {
-    parts.push(props.lore.metadata.date)
-  }
+  if (props.player.metadata?.discord) parts.push(props.player.metadata.discord)
+  if (props.player.metadata?.email) parts.push(props.player.metadata.email)
   return parts.join(' • ')
 })
-
-// Icon helper for lore types
-function getLoreTypeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    object: 'mdi-cube',
-    plant: 'mdi-flower',
-    place: 'mdi-map-marker',
-    event: 'mdi-calendar-star',
-    creature: 'mdi-dragon',
-    concept: 'mdi-lightbulb',
-    magic: 'mdi-wizard-hat',
-    religion: 'mdi-church',
-  }
-  return icons[type] || 'mdi-book-open-variant'
-}
 </script>
 
 <style scoped>
-.lore-card {
+.player-card {
   transition: all 0.3s ease;
 }
 
-.lore-description {
+.player-description {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

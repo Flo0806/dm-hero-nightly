@@ -917,6 +917,18 @@ export const migrations: Migration[] = [
       console.log('✅ Migration 16: Added PDF support (file_path and file_type columns)')
     },
   },
+  {
+    version: 17,
+    name: 'add_player_entity_type',
+    up: (db) => {
+      // Add Player entity type for real players at the table
+      // Players can be linked to NPCs (their PCs), Items, Locations, Factions, Lore
+      const insertType = db.prepare('INSERT INTO entity_types (name, icon, color) VALUES (?, ?, ?)')
+      insertType.run('Player', 'mdi-account-star', '#4CAF50')
+
+      console.log('✅ Migration 17: Added Player entity type')
+    },
+  },
 ]
 
 export async function runMigrations(db: Database.Database) {

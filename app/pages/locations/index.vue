@@ -216,6 +216,11 @@
             {{ $t('lore.title') }}
             <v-chip size="x-small" class="ml-2">{{ locationCounts?.lore || 0 }}</v-chip>
           </v-tab>
+          <v-tab value="players">
+            <v-icon start>mdi-account-star</v-icon>
+            {{ $t('players.title') }}
+            <v-chip size="x-small" class="ml-2">{{ locationCounts?.players || 0 }}</v-chip>
+          </v-tab>
         </v-tabs>
 
         <v-card-text style="max-height: 600px; overflow-y: auto">
@@ -333,6 +338,15 @@
                 :available-lore="loreForSelect"
                 @add="addLoreRelation"
                 @remove="removeLoreRelation"
+              />
+            </v-tabs-window-item>
+
+            <!-- Players Tab -->
+            <v-tabs-window-item value="players">
+              <EntityPlayersTab
+                v-if="editingLocation"
+                :entity-id="editingLocation.id"
+                @changed="handlePlayersChanged"
               />
             </v-tabs-window-item>
           </v-tabs-window>
@@ -459,6 +473,7 @@ import LocationViewDialog from '~/components/locations/LocationViewDialog.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityPlayersTab from '~/components/shared/EntityPlayersTab.vue'
 
 interface Location {
   id: number
@@ -484,9 +499,11 @@ interface ConnectedNPC {
 
 interface LocationCounts {
   npcs: number
+  items: number
   lore: number
-  images: number
+  players: number
   documents: number
+  images: number
 }
 
 // Debounced FTS5 + Levenshtein Search with AbortController (must be declared early for template)
@@ -574,10 +591,11 @@ onMounted(async () => {
   // Load locations from store (cached)
   await entitiesStore.fetchLocations(activeCampaignId.value!)
 
-  // Load NPCs, Lore, and Items for linking
+  // Load NPCs, Lore, Items and Players for linking
   await entitiesStore.fetchNPCs(activeCampaignId.value!)
   await entitiesStore.fetchLore(activeCampaignId.value!)
   await entitiesStore.fetchItems(activeCampaignId.value!)
+  await entitiesStore.fetchPlayers(activeCampaignId.value!)
 
   // Initialize from query params
   initializeFromQuery()
@@ -1405,6 +1423,13 @@ function handleImagesUpdated() {
 
 // Handler for EntityDocuments changes
 function handleDocumentsChanged() {
+  if (editingLocation.value) {
+    loadLocationCounts()
+  }
+}
+
+// Handler for EntityPlayersTab changes
+function handlePlayersChanged() {
   if (editingLocation.value) {
     loadLocationCounts()
   }

@@ -40,6 +40,10 @@
           <v-icon start>mdi-book-open-variant</v-icon>
           {{ $t('common.lore') }} ({{ editingFaction._counts?.lore ?? 0 }})
         </v-tab>
+        <v-tab value="players">
+          <v-icon start>mdi-account-star</v-icon>
+          {{ $t('players.title') }} ({{ editingFaction._counts?.players ?? 0 }})
+        </v-tab>
       </v-tabs>
 
       <v-card-text>
@@ -135,6 +139,15 @@
               @remove="handleRemoveLore"
             />
           </v-tabs-window-item>
+
+          <!-- Players Tab -->
+          <v-tabs-window-item value="players">
+            <EntityPlayersTab
+              v-if="editingFaction"
+              :entity-id="editingFaction.id"
+              @changed="emit('players-changed')"
+            />
+          </v-tabs-window-item>
         </v-tabs-window>
 
         <!-- Form when creating (no tabs) -->
@@ -178,6 +191,7 @@ import EntityNpcsTab from '~/components/shared/EntityNpcsTab.vue'
 import FactionLocationsTab from './FactionLocationsTab.vue'
 import EntityItemsTab from '~/components/shared/EntityItemsTab.vue'
 import EntityLoreTab from '~/components/shared/EntityLoreTab.vue'
+import EntityPlayersTab from '~/components/shared/EntityPlayersTab.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 
@@ -229,7 +243,7 @@ interface FactionForm {
 
 interface Props {
   show: boolean
-  editingFaction: (Faction & { _counts?: { members: number; items: number; locations: number; lore: number; documents: number; images: number } }) | null
+  editingFaction: (Faction & { _counts?: { members: number; items: number; locations: number; lore: number; players: number; documents: number; images: number } }) | null
   form: FactionForm
   activeTab: string
   factionMembers: FactionMember[]
@@ -279,6 +293,7 @@ const emit = defineEmits<{
   'remove-item': [relationId: number]
   'add-lore': [loreId: number]
   'remove-lore': [loreId: number]
+  'players-changed': []
   save: []
   close: []
 }>()

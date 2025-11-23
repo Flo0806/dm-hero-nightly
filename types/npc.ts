@@ -41,6 +41,7 @@ export interface NpcCounts {
   memberships: number
   lore: number
   notes: number
+  players: number
   factionName: string | null
 }
 

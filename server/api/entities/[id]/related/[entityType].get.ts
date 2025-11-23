@@ -53,6 +53,8 @@ export default defineEventHandler(async (event) => {
     factions: 'Faction',
     faction: 'Faction',
     lore: 'Lore',
+    players: 'Player',
+    player: 'Player',
   }
 
   const normalizedType = entityTypeMap[entityType.toLowerCase()]
@@ -60,7 +62,7 @@ export default defineEventHandler(async (event) => {
   if (!normalizedType) {
     throw createError({
       statusCode: 400,
-      message: `Invalid entity type: ${entityType}. Valid types: items, npcs, locations, factions, lore`,
+      message: `Invalid entity type: ${entityType}. Valid types: items, npcs, locations, factions, lore, players`,
     })
   }
 

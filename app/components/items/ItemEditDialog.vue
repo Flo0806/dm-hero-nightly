@@ -45,6 +45,10 @@
           <v-icon start> mdi-book-open-variant </v-icon>
           {{ $t('lore.title') }} ({{ linkedLore.length }})
         </v-tab>
+        <v-tab value="players">
+          <v-icon start> mdi-account-star </v-icon>
+          {{ $t('players.title') }} ({{ editingItem?._counts?.players ?? 0 }})
+        </v-tab>
       </v-tabs>
 
       <v-card-text style="max-height: 600px">
@@ -421,6 +425,15 @@
               @remove="handleRemoveLore"
             />
           </v-tabs-window-item>
+
+          <!-- Players Tab -->
+          <v-tabs-window-item value="players">
+            <EntityPlayersTab
+              v-if="editingItem"
+              :entity-id="editingItem.id"
+              @changed="emit('players-changed')"
+            />
+          </v-tabs-window-item>
         </v-tabs-window>
 
         <!-- Create Mode (no tabs) -->
@@ -505,6 +518,7 @@ import type { Lore } from '~~/types/lore'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityImageUpload from '~/components/shared/EntityImageUpload.vue'
+import EntityPlayersTab from '~/components/shared/EntityPlayersTab.vue'
 
 // Component-specific types for relations
 interface ItemOwner {
@@ -534,7 +548,7 @@ interface ItemForm {
 
 interface Props {
   show: boolean
-  editingItem: (Item & { _counts?: { images?: number; documents?: number } }) | null
+  editingItem: (Item & { _counts?: { images?: number; documents?: number; players?: number } }) | null
   form: ItemForm
   activeTab: string
   // Relations data
@@ -578,6 +592,7 @@ const emit = defineEmits<{
   'image-changed': []
   'images-changed': []
   'documents-changed': []
+  'players-changed': []
 }>()
 
 // Image management state (same as NPC)

@@ -142,6 +142,7 @@
       @remove-faction="removeFactionRelation"
       @add-lore="addLoreRelation"
       @remove-lore="removeLoreRelation"
+      @players-changed="handlePlayersChanged"
     />
 
     <!-- Image Preview Dialog -->
@@ -233,6 +234,7 @@ onMounted(async () => {
     entitiesStore.fetchLocations(activeCampaignId.value!),
     entitiesStore.fetchFactions(activeCampaignId.value!),
     entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchPlayers(activeCampaignId.value!),
   ])
 
   // Load counts for all items in background (non-blocking)
@@ -684,6 +686,13 @@ async function handleImageChanged() {
 
 // Handle images changed event (from EntityImageGallery)
 async function handleImagesChanged() {
+  if (editingItem.value) {
+    await reloadItemCounts(editingItem.value)
+  }
+}
+
+// Handle players changed event (from EntityPlayersTab)
+async function handlePlayersChanged() {
   if (editingItem.value) {
     await reloadItemCounts(editingItem.value)
   }

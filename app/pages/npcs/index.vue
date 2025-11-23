@@ -141,6 +141,7 @@
       @remove-membership="removeMembership"
       @remove-item="removeItem"
       @documents-changed="handleDocumentsChanged"
+      @players-changed="handlePlayersChanged"
       @add-lore="addLoreRelation"
       @remove-lore="removeLoreRelation"
     />
@@ -249,6 +250,7 @@ onMounted(async () => {
     entitiesStore.fetchFactions(activeCampaignId.value!),
     entitiesStore.fetchItems(activeCampaignId.value!),
     entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchPlayers(activeCampaignId.value!),
   ])
 
   // Load races and classes for dropdowns
@@ -1203,6 +1205,12 @@ async function handleDocumentsChanged() {
   }
 }
 
+// Handle players changed event (from EntityPlayersTab)
+async function handlePlayersChanged() {
+  if (editingNpc.value) {
+    await reloadNpcCounts(editingNpc.value)
+  }
+}
 </script>
 
 <style scoped>

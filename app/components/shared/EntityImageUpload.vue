@@ -110,7 +110,7 @@
 interface Props {
   imageUrl?: string | null
   entityName: string
-  entityType: 'NPC' | 'Faction' | 'Item' | 'Location' | 'Lore'
+  entityType: 'NPC' | 'Faction' | 'Item' | 'Location' | 'Lore' | 'Player'
   uploading?: boolean
   generating?: boolean
   deleting?: boolean
@@ -147,6 +147,7 @@ const uploadImageKey = computed(() => {
     Item: 'items.uploadImage',
     Location: 'locations.uploadImage',
     Lore: 'lore.uploadImage',
+    Player: 'players.uploadImage',
   }
   return typeMap[props.entityType]
 })
@@ -158,6 +159,7 @@ const changeImageKey = computed(() => {
     Item: 'items.changeImage',
     Location: 'locations.changeImage',
     Lore: 'lore.changeImage',
+    Player: 'players.changeImage',
   }
   return typeMap[props.entityType]
 })
@@ -169,6 +171,7 @@ const generateImageKey = computed(() => {
     Item: 'items.generateImage',
     Location: 'locations.generateImage',
     Lore: 'lore.generateImage',
+    Player: 'players.generateImage',
   }
   return typeMap[props.entityType]
 })
@@ -180,6 +183,7 @@ const deleteImageKey = computed(() => {
     Item: 'items.deleteImage',
     Location: 'locations.deleteImage',
     Lore: 'lore.deleteImage',
+    Player: 'players.deleteImage',
   }
   return typeMap[props.entityType]
 })

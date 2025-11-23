@@ -12,6 +12,7 @@
     "items": "Items",
     "factions": "Fraktionen",
     "lore": "Wissen",
+    "players": "Spieler",
     "quests": "Quests",
     "sessions": "Sessions",
     "referenceData": "Referenzdaten",
@@ -264,7 +265,8 @@
       "items": "Items im Besitz",
       "locations": "Verknüpfte Orte",
       "lore": "Verknüpftes Wissen",
-      "memberships": "Fraktionsmitgliedschaften"
+      "memberships": "Fraktionsmitgliedschaften",
+      "players": "Verknüpfte Spieler"
     },
     "noLore": "Kein verknüpftes Wissen vorhanden"
   },
@@ -328,6 +330,15 @@
       "safehouse": "Unterschlupf",
       "baseOfOperations": "Operationsbasis"
     },
+    "relationTypes": {
+      "member": "Mitglied",
+      "ally": "Verbündeter",
+      "enemy": "Feind",
+      "leader": "Anführer",
+      "founder": "Gründer",
+      "supporter": "Unterstützer",
+      "informant": "Informant"
+    },
     "uploadImage": "Bild hochladen",
     "changeImage": "Bild ändern",
     "deleteImage": "Bild löschen",
@@ -339,6 +350,7 @@
       "items": "Verknüpfte Items",
       "locations": "Verknüpfte Orte",
       "lore": "Verknüpftes Wissen",
+      "players": "Verknüpfte Spieler",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
     },
@@ -478,6 +490,7 @@
       "items": "Verknüpfte Items",
       "factions": "Verknüpfte Fraktionen",
       "locations": "Verknüpfte Orte",
+      "players": "Verknüpfte Spieler",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
     }
@@ -723,6 +736,7 @@
       "locations": "Orte",
       "factions": "Verknüpfte Fraktionen",
       "lore": "Verknüpftes Wissen",
+      "players": "Verknüpfte Spieler",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
     }
@@ -906,7 +920,17 @@
     "noLinkedNpcsText": "Füge relevante NPCs zu dieser Entität hinzu",
     "membershipType": "Mitgliedschaftstyp",
     "rank": "Rang",
-    "rankPlaceholder": "z.B. Anführer, Rekrut..."
+    "rankPlaceholder": "z.B. Anführer, Rekrut...",
+    "selectFaction": "Fraktion auswählen",
+    "addFactionLink": "Fraktion verknüpfen",
+    "noLinkedFactions": "Keine Fraktionen verknüpft",
+    "noLinkedFactionsText": "Füge relevante Fraktionen zu dieser Entität hinzu",
+    "noLinkedPlayers": "Keine Spieler verknüpft",
+    "noLinkedPlayersText": "Füge relevante Spieler zu dieser Entität hinzu",
+    "addPlayerLink": "Spieler verknüpfen",
+    "selectPlayer": "Spieler auswählen",
+    "editRelation": "Beziehung bearbeiten",
+    "relationNotes": "Notizen zur Beziehung"
   },
   "settings": {
     "title": "Einstellungen",
@@ -932,5 +956,69 @@
     },
     "saved": "Einstellungen gespeichert",
     "saveFailed": "Fehler beim Speichern"
+  },
+  "players": {
+    "title": "Spieler",
+    "subtitle": "Verwalte die Spieler deiner Kampagne",
+    "create": "Neuer Spieler",
+    "edit": "Spieler bearbeiten",
+    "name": "Name",
+    "namePlaceholder": "Name des Spielers",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Kurze Beschreibung oder Notizen",
+    "email": "E-Mail",
+    "emailPlaceholder": "spieler{'@'}beispiel.de",
+    "phone": "Telefon",
+    "phonePlaceholder": "+49 123 456789",
+    "discord": "Discord",
+    "discordPlaceholder": "spieler#1234",
+    "notes": "Notizen",
+    "notesPlaceholder": "Präferenzen, Allergien, Verfügbarkeit...",
+    "nameRequired": "Name ist erforderlich",
+    "empty": "Keine Spieler vorhanden",
+    "emptyText": "Erstelle deinen ersten Spieler um loszulegen",
+    "deleteTitle": "Spieler löschen",
+    "deleteConfirm": "Möchtest du '{name}' wirklich löschen? Der Spieler wird archiviert und kann wiederhergestellt werden.",
+    "details": "Details",
+    "characters": "Charaktere",
+    "charactersTab": "Charaktere",
+    "noCharacters": "Keine Charaktere",
+    "noCharactersText": "Dieser Spieler hat noch keine Charaktere zugewiesen.",
+    "linkedNpcs": "Verknüpfte NPCs",
+    "linkedItems": "Verknüpfte Items",
+    "linkedLocations": "Verknüpfte Orte",
+    "linkedFactions": "Verknüpfte Fraktionen",
+    "linkedLore": "Verknüpftes Wissen",
+    "addCharacter": "Charakter hinzufügen",
+    "uploadImage": "Bild hochladen",
+    "changeImage": "Bild ändern",
+    "generateImage": "Bild generieren",
+    "deleteImage": "Bild löschen",
+    "uploadImageError": "Fehler beim Hochladen des Bildes",
+    "deleteImageError": "Fehler beim Löschen des Bildes",
+    "noItems": "Keine Items",
+    "noItemsText": "Dieser Spieler hat noch keine Items.",
+    "addItem": "Item hinzufügen",
+    "noLore": "Kein Wissen",
+    "noLoreText": "Dieser Spieler hat noch kein Wissen.",
+    "addLore": "Wissen hinzufügen",
+    "badgeTooltips": {
+      "characters": "Spielercharaktere",
+      "items": "Verknüpfte Items",
+      "locations": "Bekannte Orte",
+      "factions": "Fraktionszugehörigkeiten",
+      "lore": "Bekanntes Wissen",
+      "sessions": "Besuchte Sessions",
+      "documents": "Dokumente & Notizen",
+      "images": "Bildergalerie"
+    },
+    "relationTypes": {
+      "knows": "Kennt",
+      "discovered": "Entdeckt",
+      "created": "Erschaffen",
+      "owns": "Besitzt",
+      "visited": "Besucht",
+      "interested": "Interessiert an"
+    }
   }
 }

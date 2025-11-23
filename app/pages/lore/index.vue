@@ -115,6 +115,10 @@
             <v-icon start> mdi-map-marker </v-icon>
             {{ $t('locations.title') }} ({{ linkedLocations.length }})
           </v-tab>
+          <v-tab value="players">
+            <v-icon start> mdi-account-star </v-icon>
+            {{ $t('players.title') }} ({{ editingLore._counts?.players ?? 0 }})
+          </v-tab>
         </v-tabs>
 
         <v-card-text style="max-height: 600px">
@@ -434,6 +438,15 @@
                 class="mt-4"
               />
             </v-tabs-window-item>
+
+            <!-- Players Tab -->
+            <v-tabs-window-item value="players">
+              <EntityPlayersTab
+                v-if="editingLore"
+                :entity-id="editingLore.id"
+                @changed="handlePlayersChanged"
+              />
+            </v-tabs-window-item>
           </v-tabs-window>
 
           <!-- Create Form (no tabs) -->
@@ -520,6 +533,7 @@ import LoreCard from '~/components/lore/LoreCard.vue'
 import LoreViewDialog from '~/components/lore/LoreViewDialog.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityPlayersTab from '~/components/shared/EntityPlayersTab.vue'
 import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 
@@ -640,13 +654,14 @@ const npcsForSelect = computed(() => {
 
 // Check for active campaign and handle highlighting
 onMounted(async () => {
-  // Load Lore, NPCs, Factions, Items and Locations
+  // Load Lore, NPCs, Factions, Items, Locations and Players
   await Promise.all([
     entitiesStore.fetchLore(activeCampaignId.value!),
     entitiesStore.fetchNPCs(activeCampaignId.value!),
     entitiesStore.fetchFactions(activeCampaignId.value!),
     entitiesStore.fetchItems(activeCampaignId.value!),
     entitiesStore.fetchLocations(activeCampaignId.value!),
+    entitiesStore.fetchPlayers(activeCampaignId.value!),
   ])
 
   // Load counts for all lore entries in background
@@ -1138,6 +1153,13 @@ async function handleImagesUpdated() {
 
 // Handle documents changed event (from EntityDocuments)
 async function handleDocumentsChanged() {
+  if (editingLore.value) {
+    await reloadLoreCounts(editingLore.value)
+  }
+}
+
+// Handle players changed event (from EntityPlayersTab)
+async function handlePlayersChanged() {
   if (editingLore.value) {
     await reloadLoreCounts(editingLore.value)
   }
