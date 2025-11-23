@@ -929,6 +929,108 @@ export const migrations: Migration[] = [
       console.log('✅ Migration 17: Added Player entity type')
     },
   },
+  {
+    version: 18,
+    name: 'calendar_system',
+    up: (db) => {
+      // Calendar configuration per campaign
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_config (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL UNIQUE,
+          current_year INTEGER DEFAULT 1,
+          current_month INTEGER DEFAULT 1,
+          current_day INTEGER DEFAULT 1,
+          year_zero_name TEXT DEFAULT 'Jahr 0',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Months definition per campaign
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_months (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          days INTEGER NOT NULL DEFAULT 30,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Weekdays definition per campaign
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_weekdays (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Moons/celestial bodies per campaign (optional)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_moons (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          cycle_days INTEGER NOT NULL DEFAULT 30,
+          full_moon_duration INTEGER DEFAULT 1,
+          new_moon_duration INTEGER DEFAULT 1,
+          phase_offset INTEGER DEFAULT 0,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Calendar events (birthdays, holidays, deaths, custom)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS calendar_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          event_type TEXT NOT NULL DEFAULT 'custom',
+          year INTEGER,
+          month INTEGER NOT NULL,
+          day INTEGER NOT NULL,
+          is_recurring INTEGER DEFAULT 0,
+          entity_id INTEGER,
+          color TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+          FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE SET NULL
+        )
+      `)
+
+      // Create indexes for performance
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_calendar_months_campaign ON calendar_months(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_calendar_weekdays_campaign ON calendar_weekdays(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_calendar_moons_campaign ON calendar_moons(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_calendar_events_campaign ON calendar_events(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(campaign_id, year, month, day);
+      `)
+
+      console.log('✅ Migration 18: Added calendar system tables')
+    },
+  },
+  {
+    version: 19,
+    name: 'calendar_enhancements',
+    up: (db) => {
+      // Add era name and leap year support to calendar_config
+      db.exec('ALTER TABLE calendar_config ADD COLUMN era_name TEXT DEFAULT \'\'')
+      db.exec('ALTER TABLE calendar_config ADD COLUMN leap_year_interval INTEGER DEFAULT 0')
+      db.exec('ALTER TABLE calendar_config ADD COLUMN leap_year_month INTEGER DEFAULT 1')
+      db.exec('ALTER TABLE calendar_config ADD COLUMN leap_year_extra_days INTEGER DEFAULT 1')
+
+      console.log('✅ Migration 19: Added era name and leap year support to calendar')
+    },
+  },
 ]
 
 export async function runMigrations(db: Database.Database) {

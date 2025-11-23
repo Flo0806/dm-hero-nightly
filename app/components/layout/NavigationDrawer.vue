@@ -85,6 +85,12 @@
         value="sessions"
         to="/sessions"
       />
+      <v-list-item
+        prepend-icon="mdi-calendar"
+        :title="$t('calendar.title')"
+        value="calendar"
+        to="/calendar"
+      />
     </v-list>
 
     <template #append>
