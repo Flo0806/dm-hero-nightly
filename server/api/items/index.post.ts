@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Convert localized type/rarity names to keys (e.g., "waffe" → "weapon")
-  const convertedMetadata = metadata ? convertMetadataToKeys(metadata, 'item') : null
+  const convertedMetadata = metadata ? await convertMetadataToKeys(metadata, 'item') : null
 
   const result = db
     .prepare(

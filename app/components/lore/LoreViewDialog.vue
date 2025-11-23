@@ -166,7 +166,7 @@
               :images="images"
               :loading="loading"
               :empty-message="$t('common.noImages')"
-              @preview="(image: Image) => $emit('preview-image', `/uploads/${image.image_url}`, lore.name)"
+              @preview="(image: Image) => $emit('preview-image', `/uploads/${image.image_url}`, lore?.name ?? '')"
             />
           </v-window-item>
         </v-window>
@@ -188,22 +188,10 @@
 </template>
 
 <script setup lang="ts">
+import type { Lore } from '../../../types/lore'
 import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
 import EntityDocumentsView from '~/components/shared/EntityDocumentsView.vue'
 import EntityImageGalleryView from '~/components/shared/EntityImageGalleryView.vue'
-
-interface Lore {
-  id: number
-  name: string
-  description: string | null
-  image_url?: string | null
-  metadata: {
-    type?: string
-    date?: string
-  } | null
-  created_at: string
-  updated_at: string
-}
 
 interface Entity {
   id: number

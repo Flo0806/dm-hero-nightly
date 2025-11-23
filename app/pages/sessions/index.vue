@@ -20,7 +20,7 @@
       </v-col>
     </v-row>
 
-    <v-timeline v-else-if="sessions && sessions.length > 0" side="end" align="start">
+    <v-timeline v-else-if="sessions && sessions.length > 0" side="end" align="start" class="sessions-timeline">
       <v-timeline-item
         v-for="session in sessions"
         :key="session.id"
@@ -28,27 +28,65 @@
         size="small"
       >
         <template #opposite>
-          <div class="text-caption text-medium-emphasis">
-            {{ formatDate(session.date) }}
+          <div class="timeline-date-section text-right">
+            <!-- Real Date -->
+            <div class="text-body-2 font-weight-medium">
+              {{ formatDate(session.date) }}
+            </div>
+            <!-- In-Game Date -->
+            <div v-if="session.in_game_day_start" class="text-caption text-primary mt-1">
+              <v-icon size="x-small" class="mr-1">mdi-sword-cross</v-icon>
+              {{ formatAbsoluteDay(session.in_game_day_start) }}
+              <span v-if="session.in_game_day_end && session.in_game_day_end !== session.in_game_day_start">
+                <br>→ {{ formatAbsoluteDay(session.in_game_day_end) }}
+              </span>
+            </div>
           </div>
         </template>
 
-        <v-card hover>
-          <v-card-title class="d-flex align-center">
+        <v-card hover class="session-card">
+          <v-card-title class="d-flex align-center pb-1">
             <v-icon icon="mdi-book-open-page-variant" class="mr-2" color="primary" />
             <span v-if="session.session_number" class="text-medium-emphasis mr-2">
               #{{ session.session_number }}
             </span>
             {{ session.title }}
           </v-card-title>
-          <v-card-text>
+
+          <v-card-text class="pt-2">
+            <!-- Summary -->
             <div v-if="session.summary" class="text-body-2 mb-3">
-              {{ truncateText(session.summary, 150) }}
+              {{ truncateText(session.summary, 200) }}
             </div>
             <div v-else class="text-body-2 text-disabled mb-3">
               {{ $t('sessions.noSummary') }}
             </div>
+
+            <!-- Info Chips -->
+            <div class="d-flex flex-wrap gap-2">
+              <!-- Duration -->
+              <v-chip
+                v-if="session.duration_minutes"
+                size="small"
+                variant="tonal"
+                prepend-icon="mdi-timer-outline"
+              >
+                {{ session.duration_minutes }} min
+              </v-chip>
+
+              <!-- Mentions Count (from notes) -->
+              <v-chip
+                v-if="countMentionsInNotes(session.notes)"
+                size="small"
+                variant="tonal"
+                color="primary"
+                prepend-icon="mdi-link-variant"
+              >
+                {{ countMentionsInNotes(session.notes) }} {{ $t('sessions.mentions') }}
+              </v-chip>
+            </div>
           </v-card-text>
+
           <v-card-actions>
             <v-btn icon="mdi-eye" variant="text" @click="viewSession(session)" />
             <v-btn icon="mdi-pencil" variant="text" @click="editSession(session)" />
@@ -73,7 +111,7 @@
     </v-empty-state>
 
     <!-- Create/Edit Session Dialog -->
-    <v-dialog v-model="showCreateDialog" max-width="1000" scrollable>
+    <v-dialog v-model="showCreateDialog" max-width="1000" scrollable :persistent="saving">
       <v-card>
         <v-card-title>
           {{ editingSession ? $t('sessions.edit') : $t('sessions.create') }}
@@ -83,6 +121,10 @@
           <v-tab value="details">
             <v-icon start> mdi-information </v-icon>
             {{ $t('sessions.details') }}
+          </v-tab>
+          <v-tab value="attendance">
+            <v-icon start> mdi-account-check </v-icon>
+            {{ $t('sessions.attendance') }} ({{ attendanceCount }})
           </v-tab>
           <v-tab value="mentions">
             <v-icon start> mdi-link-variant </v-icon>
@@ -122,6 +164,54 @@
                 variant="outlined"
                 class="mb-4"
               />
+
+              <!-- In-Game Timeline Section -->
+              <v-expansion-panels variant="accordion" class="mb-4">
+                <v-expansion-panel>
+                  <v-expansion-panel-title>
+                    <v-icon start>mdi-clock-outline</v-icon>
+                    {{ $t('sessions.inGameTimeline') }}
+                    <template v-if="sessionForm.in_game_day_start">
+                      <v-chip size="small" class="ml-2" color="primary" variant="tonal">
+                        {{ formatAbsoluteDay(sessionForm.in_game_day_start) }}
+                        <span v-if="sessionForm.in_game_day_end && sessionForm.in_game_day_end !== sessionForm.in_game_day_start">
+                          → {{ formatAbsoluteDay(sessionForm.in_game_day_end) }}
+                        </span>
+                      </v-chip>
+                    </template>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <v-row>
+                      <v-col cols="12" md="5">
+                        <v-label class="text-subtitle-2 mb-2">{{ $t('sessions.inGameDateStart') }}</v-label>
+                        <CalendarInGameDatePicker
+                          v-model="sessionForm.in_game_day_start"
+                          :calendar-data="calendarData"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="5">
+                        <v-label class="text-subtitle-2 mb-2">{{ $t('sessions.inGameDateEnd') }}</v-label>
+                        <CalendarInGameDatePicker
+                          v-model="sessionForm.in_game_day_end"
+                          :calendar-data="calendarData"
+                        />
+                        <p class="text-caption text-medium-emphasis mt-1">
+                          {{ $t('sessions.inGameDateEndHint') }}
+                        </p>
+                      </v-col>
+                      <v-col cols="12" md="2">
+                        <v-text-field
+                          v-model.number="sessionForm.duration_minutes"
+                          :label="$t('sessions.durationMinutes')"
+                          type="number"
+                          variant="outlined"
+                          prepend-inner-icon="mdi-timer-outline"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
 
               <v-textarea
                 v-model="sessionForm.summary"
@@ -234,6 +324,19 @@
                         </template>
                       </NormalToolbar>
                       <NormalToolbar
+                        :title="$t('sessions.linkPlayer')"
+                        @on-click="showLinkEntityDialog('player')"
+                      >
+                        <template #trigger>
+                          <svg class="md-editor-icon" aria-hidden="true" viewBox="0 0 24 24">
+                            <path
+                              fill="currentColor"
+                              d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6M12,13C14.67,13 20,14.33 20,17V20H4V17C4,14.33 9.33,13 12,13M12,14.9C9.03,14.9 5.9,16.36 5.9,17V18.1H18.1V17C18.1,16.36 14.97,14.9 12,14.9M18,9V12H15V13H18V16H19V13H22V12H19V9H18Z"
+                            />
+                          </svg>
+                        </template>
+                      </NormalToolbar>
+                      <NormalToolbar
                         :title="$t('documents.imageGallery')"
                         @on-click="openImageGallery"
                       >
@@ -250,6 +353,56 @@
                   </MdEditor>
                 </ClientOnly>
               </div>
+            </v-tabs-window-item>
+
+            <!-- Attendance Tab -->
+            <v-tabs-window-item value="attendance">
+              <div class="text-h6 mb-4">
+                {{ $t('sessions.playerAttendance') }}
+              </div>
+
+              <div v-if="loadingAttendance" class="text-center py-4">
+                <v-progress-circular indeterminate />
+              </div>
+
+              <div v-else-if="allPlayers.length === 0" class="text-body-2 text-disabled">
+                {{ $t('sessions.noPlayers') }}
+              </div>
+
+              <v-list v-else>
+                <v-list-item v-for="player in allPlayers" :key="player.id">
+                  <template #prepend>
+                    <v-checkbox
+                      v-model="sessionAttendance[player.id]"
+                      hide-details
+                      density="compact"
+                      color="success"
+                    />
+                  </template>
+                  <template #default>
+                    <div class="d-flex align-center">
+                      <v-avatar size="40" class="mr-3">
+                        <v-img
+                          v-if="player.image_url"
+                          :src="`/uploads/${player.image_url}`"
+                        />
+                        <v-icon v-else>mdi-account</v-icon>
+                      </v-avatar>
+                      <div>
+                        <!-- Spielername (echter Mensch) im Vordergrund -->
+                        <v-list-item-title class="font-weight-medium">
+                          {{ player.metadata?.player_name || player.name }}
+                        </v-list-item-title>
+                        <!-- Charaktername als Zusatzinfo wenn Spielername vorhanden -->
+                        <v-list-item-subtitle v-if="player.metadata?.player_name" class="text-medium-emphasis">
+                          <v-icon size="x-small" class="mr-1">mdi-sword-cross</v-icon>
+                          {{ player.name }}
+                        </v-list-item-subtitle>
+                      </div>
+                    </div>
+                  </template>
+                </v-list-item>
+              </v-list>
             </v-tabs-window-item>
 
             <!-- Mentions Tab -->
@@ -407,6 +560,32 @@
                       </template>
                     </NormalToolbar>
                     <NormalToolbar
+                      :title="$t('sessions.linkLore')"
+                      @on-click="showLinkEntityDialog('lore')"
+                    >
+                      <template #trigger>
+                        <svg class="md-editor-icon" aria-hidden="true" viewBox="0 0 24 24">
+                          <path
+                            fill="currentColor"
+                            d="M21,4H7A2,2 0 0,0 5,6V17H21V16L23,14V6C23,4.89 22.1,4 21,4M21,14H7V6H21M3,19V8H1V19A2,2 0 0,0 3,21H19V19"
+                          />
+                        </svg>
+                      </template>
+                    </NormalToolbar>
+                    <NormalToolbar
+                      :title="$t('sessions.linkPlayer')"
+                      @on-click="showLinkEntityDialog('player')"
+                    >
+                      <template #trigger>
+                        <svg class="md-editor-icon" aria-hidden="true" viewBox="0 0 24 24">
+                          <path
+                            fill="currentColor"
+                            d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6M12,13C14.67,13 20,14.33 20,17V20H4V17C4,14.33 9.33,13 12,13M12,14.9C9.03,14.9 5.9,16.36 5.9,17V18.1H18.1V17C18.1,16.36 14.97,14.9 12,14.9M18,9V12H15V13H18V16H19V13H22V12H19V9H18Z"
+                          />
+                        </svg>
+                      </template>
+                    </NormalToolbar>
+                    <NormalToolbar
                       :title="$t('documents.imageGallery')"
                       @on-click="openImageGallery"
                     >
@@ -471,7 +650,12 @@
               <template #prepend>
                 <v-icon :icon="getEntityIcon(linkEntityType)" color="primary" />
               </template>
-              <v-list-item-title>{{ entity.name }}</v-list-item-title>
+              <v-list-item-title>
+                {{ entity.displayName || entity.name }}
+                <span v-if="entity.subtitle" class="text-caption text-medium-emphasis ml-2">
+                  ({{ entity.subtitle }})
+                </span>
+              </v-list-item-title>
             </v-list-item>
           </v-list>
 
@@ -580,182 +764,11 @@
     </v-dialog>
 
     <!-- Entity Quick View Dialog -->
-    <v-dialog v-model="showEntityDialog" max-width="700" scrollable>
-      <v-card v-if="viewingEntity">
-        <v-card-title class="d-flex align-center">
-          <v-icon
-            :icon="getEntityIcon(viewingEntityType)"
-            :color="getEntityColor(viewingEntityType)"
-            class="mr-2"
-          />
-          {{ viewingEntity.name }}
-        </v-card-title>
-
-        <v-card-text style="max-height: 60vh">
-          <!-- NPC Details -->
-          <template v-if="viewingEntityType === 'npc'">
-            <v-img
-              v-if="viewingEntity.image_url"
-              :src="`/pictures/${viewingEntity.image_url}`"
-              :alt="viewingEntity.name"
-              max-height="300"
-              class="mb-4"
-              cover
-            />
-            <div v-if="viewingEntity.description" class="text-body-1 mb-4">
-              {{ viewingEntity.description }}
-            </div>
-            <v-divider class="my-4" />
-            <div class="text-body-2">
-              <div v-if="(viewingEntity as NPCEntity).race" class="mb-2">
-                <strong>{{ $t('npcs.race') }}:</strong> {{ (viewingEntity as NPCEntity).race }}
-              </div>
-              <div v-if="(viewingEntity as NPCEntity).class" class="mb-2">
-                <strong>{{ $t('npcs.class') }}:</strong> {{ (viewingEntity as NPCEntity).class }}
-              </div>
-              <div v-if="(viewingEntity as NPCEntity).faction" class="mb-2">
-                <strong>{{ $t('npcs.faction') }}:</strong>
-                {{ (viewingEntity as NPCEntity).faction }}
-              </div>
-            </div>
-            <div v-if="viewingEntity.notes" class="mt-4">
-              <strong>{{ $t('common.notes') }}:</strong>
-              <div class="text-body-2 mt-2">
-                {{ viewingEntity.notes }}
-              </div>
-            </div>
-          </template>
-
-          <!-- Location Details -->
-          <template v-if="viewingEntityType === 'location'">
-            <v-img
-              v-if="viewingEntity.image_url"
-              :src="`/pictures/${viewingEntity.image_url}`"
-              :alt="viewingEntity.name"
-              max-height="300"
-              class="mb-4"
-              cover
-            />
-            <div v-if="viewingEntity.description" class="text-body-1 mb-4">
-              {{ viewingEntity.description }}
-            </div>
-            <v-divider class="my-4" />
-            <div class="text-body-2">
-              <div v-if="(viewingEntity as LocationEntity).type" class="mb-2">
-                <strong>{{ $t('locations.type') }}:</strong>
-                {{ (viewingEntity as LocationEntity).type }}
-              </div>
-              <div v-if="(viewingEntity as LocationEntity).parent_location" class="mb-2">
-                <strong>{{ $t('locations.parentLocation') }}:</strong>
-                {{ (viewingEntity as LocationEntity).parent_location }}
-              </div>
-            </div>
-            <div v-if="viewingEntity.notes" class="mt-4">
-              <strong>{{ $t('common.notes') }}:</strong>
-              <div class="text-body-2 mt-2">
-                {{ viewingEntity.notes }}
-              </div>
-            </div>
-          </template>
-
-          <!-- Item Details -->
-          <template v-if="viewingEntityType === 'item'">
-            <div class="position-relative">
-              <v-img
-                v-if="viewingEntity.image_url"
-                :src="`/pictures/${viewingEntity.image_url}`"
-                :alt="viewingEntity.name"
-                max-height="300"
-                class="mb-4"
-                cover
-              />
-              <v-chip
-                v-if="(viewingEntity as ItemEntity).rarity"
-                :color="getRarityColor((viewingEntity as ItemEntity).rarity!)"
-                class="position-absolute"
-                style="top: 8px; right: 8px"
-              >
-                {{ $t(`items.rarities.${(viewingEntity as ItemEntity).rarity}`) }}
-              </v-chip>
-            </div>
-            <div v-if="viewingEntity.description" class="text-body-1 mb-4">
-              {{ viewingEntity.description }}
-            </div>
-            <v-divider class="my-4" />
-
-            <div class="d-flex flex-wrap gap-2 mb-3">
-              <v-chip v-if="(viewingEntity as ItemEntity).type" variant="tonal">
-                <v-icon start>mdi-tag</v-icon>
-                {{ $t(`items.types.${(viewingEntity as ItemEntity).type}`) }}
-              </v-chip>
-              <v-chip
-                v-if="(viewingEntity as ItemEntity).attunement"
-                color="purple"
-                variant="tonal"
-              >
-                <v-icon start>mdi-auto-fix</v-icon>
-                {{ $t('items.requiresAttunement') }}
-              </v-chip>
-            </div>
-
-            <div v-if="viewingEntity.notes" class="mt-4">
-              <strong>{{ $t('common.notes') }}:</strong>
-              <div class="text-body-2 mt-2">
-                {{ viewingEntity.notes }}
-              </div>
-            </div>
-          </template>
-
-          <!-- Faction Details -->
-          <template v-if="viewingEntityType === 'faction'">
-            <v-img
-              v-if="viewingEntity.image_url"
-              :src="`/pictures/${viewingEntity.image_url}`"
-              :alt="viewingEntity.name"
-              max-height="300"
-              class="mb-4"
-              cover
-            />
-            <div v-if="viewingEntity.description" class="text-body-1 mb-4">
-              {{ viewingEntity.description }}
-            </div>
-            <v-divider class="my-4" />
-            <div class="text-body-2">
-              <div v-if="(viewingEntity as FactionEntity).leader" class="mb-2">
-                <strong>{{ $t('factions.leader') }}:</strong>
-                {{ (viewingEntity as FactionEntity).leader }}
-              </div>
-              <div v-if="(viewingEntity as FactionEntity).alignment" class="mb-2">
-                <strong>{{ $t('factions.alignment') }}:</strong>
-                {{ (viewingEntity as FactionEntity).alignment }}
-              </div>
-            </div>
-            <div v-if="(viewingEntity as FactionEntity).goals" class="mt-4">
-              <strong>{{ $t('factions.goals') }}:</strong>
-              <div class="text-body-2 mt-2">
-                {{ (viewingEntity as FactionEntity).goals }}
-              </div>
-            </div>
-            <div v-if="viewingEntity.notes" class="mt-4">
-              <strong>{{ $t('common.notes') }}:</strong>
-              <div class="text-body-2 mt-2">
-                {{ viewingEntity.notes }}
-              </div>
-            </div>
-          </template>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-btn variant="text" prepend-icon="mdi-open-in-new" @click="goToEntityPage">
-            {{ $t('sessions.goToPage') }}
-          </v-btn>
-          <v-spacer />
-          <v-btn variant="text" @click="showEntityDialog = false">
-            {{ $t('common.close') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <SharedEntityPreviewDialog
+      v-model="showEntityDialog"
+      :entity-type="viewingEntityType"
+      :entity-id="previewEntityId"
+    />
   </v-container>
 </template>
 
@@ -772,12 +785,17 @@ interface Session {
   date: string | null
   summary: string | null
   notes: string | null
+  in_game_date_start: string | null
+  in_game_date_end: string | null
+  in_game_day_start: number | null
+  in_game_day_end: number | null
+  duration_minutes: number | null
   created_at: string
   updated_at: string
 }
 
 interface EntityMention {
-  type: 'npc' | 'location' | 'item' | 'faction' | 'lore'
+  type: 'npc' | 'location' | 'item' | 'faction' | 'lore' | 'player'
   id: number
   name: string
 }
@@ -788,6 +806,13 @@ const entitiesStore = useEntitiesStore()
 const theme = useTheme()
 const { locale } = useI18n()
 
+// Calendar integration
+const {
+  calendarData,
+  loadCalendar,
+  formatAbsoluteDay,
+} = useInGameCalendar()
+
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
 const currentLocale = computed(() => (locale.value === 'de' ? 'de-DE' : 'en-US'))
 const editorTheme = computed<'light' | 'dark'>(() =>
@@ -797,11 +822,13 @@ const editorTheme = computed<'light' | 'dark'>(() =>
 onMounted(async () => {
   await Promise.all([
     loadSessions(),
+    loadCalendar(),
     entitiesStore.fetchNPCs(activeCampaignId.value!),
     entitiesStore.fetchLocations(activeCampaignId.value!),
     entitiesStore.fetchItems(activeCampaignId.value!),
     entitiesStore.fetchFactions(activeCampaignId.value!),
     entitiesStore.fetchLore(activeCampaignId.value!),
+    entitiesStore.fetchPlayers(activeCampaignId.value!),
   ])
 })
 
@@ -809,40 +836,6 @@ const sessions = ref<Session[]>([])
 const pending = ref(false)
 
 // Form state
-// Entity types for the quick-view dialog
-interface EntityBase {
-  id: number
-  name: string
-  description?: string
-  image_url?: string | null
-  notes?: string
-}
-
-interface NPCEntity extends EntityBase {
-  race?: string
-  class?: string
-  faction?: string
-}
-
-interface LocationEntity extends EntityBase {
-  type?: string
-  parent_location?: string
-}
-
-interface ItemEntity extends EntityBase {
-  type?: string
-  rarity?: string
-  attunement?: boolean
-}
-
-interface FactionEntity extends EntityBase {
-  leader?: string
-  alignment?: string
-  goals?: string
-}
-
-type ViewingEntity = NPCEntity | LocationEntity | ItemEntity | FactionEntity
-
 const showCreateDialog = ref(false)
 const showViewDialog = ref(false)
 const showDeleteDialog = ref(false)
@@ -853,12 +846,24 @@ const galleryImages = ref<string[]>([])
 const editingSession = ref<Session | null>(null)
 const viewingSession = ref<Session | null>(null)
 const deletingSession = ref<Session | null>(null)
-const viewingEntity = ref<ViewingEntity | null>(null)
-const viewingEntityType = ref<'npc' | 'location' | 'item' | 'faction'>('npc')
+const viewingEntityType = ref<'npc' | 'location' | 'item' | 'faction' | 'lore' | 'player'>('npc')
+const previewEntityId = ref<number | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
 const uploadingImage = ref(false)
 const sessionDialogTab = ref('details')
+
+// Attendance tracking
+interface PlayerEntity {
+  id: number
+  name: string
+  image_url?: string | null
+  metadata?: { player_name?: string | null } | null
+}
+const sessionAttendance = ref<Record<number, boolean>>({})
+const loadingAttendance = ref(false)
+const allPlayers = computed<PlayerEntity[]>(() => entitiesStore.players || [])
+const attendanceCount = computed(() => Object.values(sessionAttendance.value).filter(Boolean).length)
 
 const sessionForm = ref({
   title: '',
@@ -866,10 +871,44 @@ const sessionForm = ref({
   date: '',
   summary: '',
   notes: '',
+  in_game_date_start: '',
+  in_game_date_end: '',
+  in_game_day_start: null as number | null,
+  in_game_day_end: null as number | null,
+  duration_minutes: null as number | null,
 })
 
+// Validate in-game dates: start should never be after end
+watch(
+  () => sessionForm.value.in_game_day_start,
+  (newStart) => {
+    if (
+      newStart !== null &&
+      sessionForm.value.in_game_day_end !== null &&
+      newStart > sessionForm.value.in_game_day_end
+    ) {
+      // Start is after end - adjust end to match start
+      sessionForm.value.in_game_day_end = newStart
+    }
+  },
+)
+
+watch(
+  () => sessionForm.value.in_game_day_end,
+  (newEnd) => {
+    if (
+      newEnd !== null &&
+      sessionForm.value.in_game_day_start !== null &&
+      newEnd < sessionForm.value.in_game_day_start
+    ) {
+      // End is before start - adjust start to match end
+      sessionForm.value.in_game_day_start = newEnd
+    }
+  },
+)
+
 // Entity linking
-const linkEntityType = ref<'npc' | 'location' | 'item' | 'faction' | 'lore'>('npc')
+const linkEntityType = ref<'npc' | 'location' | 'item' | 'faction' | 'lore' | 'player'>('npc')
 const entitySearch = ref('')
 const notesTextarea = ref<{ $el: HTMLElement } | null>(null)
 
@@ -884,8 +923,8 @@ interface MdEditorExpose {
 }
 const editorRef = ref<MdEditorExpose | null>(null)
 
-// md-editor Toolbars: 0-4 = Placeholders for custom buttons
-type ToolbarOrSlot = ToolbarNames | 0 | 1 | 2 | 3 | 4
+// md-editor Toolbars: 0-6 = Placeholders for custom buttons
+type ToolbarOrSlot = ToolbarNames | 0 | 1 | 2 | 3 | 4 | 5 | 6
 const toolbars: ToolbarOrSlot[] = [
   'bold',
   'italic',
@@ -903,7 +942,9 @@ const toolbars: ToolbarOrSlot[] = [
   1, // Location
   2, // Item
   3, // Faction
-  4, // Gallery
+  4, // Lore
+  5, // Player
+  6, // Gallery
   'table',
   '-',
   'revoke',
@@ -916,7 +957,7 @@ const toolbars: ToolbarOrSlot[] = [
 
 const filteredEntities = computed(() => {
   const query = entitySearch.value?.toLowerCase() || ''
-  let entities: Array<{ id: number; name: string }> = []
+  let entities: Array<{ id: number; name: string; displayName?: string; subtitle?: string }> = []
 
   switch (linkEntityType.value) {
   case 'npc':
@@ -934,28 +975,94 @@ const filteredEntities = computed(() => {
   case 'lore':
     entities = entitiesStore.loreForSelect || []
     break
+  case 'player':
+    // For players: displayName = human name (Spielername), subtitle = character name
+    entities = (entitiesStore.players || []).map((p) => ({
+      id: p.id,
+      name: p.name, // Character name (used for linking)
+      displayName: p.metadata?.player_name || p.name, // Human player name shown first
+      subtitle: p.metadata?.player_name ? p.name : undefined, // Character name as subtitle if player_name exists
+    }))
+    break
   }
 
   if (!query) return entities
 
-  return entities.filter((e) => e.name.toLowerCase().includes(query))
+  // For players, also search in displayName
+  return entities.filter((e) => {
+    const nameMatch = e.name.toLowerCase().includes(query)
+    const displayMatch = e.displayName?.toLowerCase().includes(query)
+    return nameMatch || displayMatch
+  })
 })
+
+// Helper to resolve entity name from stores
+function resolveEntityName(type: string, id: number): string {
+  switch (type) {
+  case 'npc':
+    return entitiesStore.npcs?.find((e) => e.id === id)?.name || `NPC #${id}`
+  case 'location':
+    return entitiesStore.locations?.find((e) => e.id === id)?.name || `Location #${id}`
+  case 'item':
+    return entitiesStore.items?.find((e) => e.id === id)?.name || `Item #${id}`
+  case 'faction':
+    return entitiesStore.factions?.find((e) => e.id === id)?.name || `Faction #${id}`
+  case 'lore':
+    return entitiesStore.lore?.find((e) => e.id === id)?.name || `Lore #${id}`
+  case 'player': {
+    const player = entitiesStore.players?.find((e) => e.id === id)
+    // Return character name (name field), human name is shown separately
+    return player?.name || `Player #${id}`
+  }
+  default:
+    return `Entity #${id}`
+  }
+}
+
+// Helper to get player's human name (for display alongside character name)
+function resolvePlayerHumanName(id: number): string | null {
+  const player = entitiesStore.players?.find((e) => e.id === id)
+  return player?.metadata?.player_name || null
+}
 
 const extractedMentions = computed(() => {
   const mentions: EntityMention[] = []
   const text = sessionForm.value.notes || ''
+  const seen = new Set<number>()
 
-  // Parse markdown links like [Entity Name](type:id)
-  const linkRegex = /\[([^\]]+)\]\((\w+):(\d+)\)/g
+  // Parse new format {{type:id}}
+  const newFormatRegex = /\{\{(\w+):(\d+)\}\}/g
   let match
 
-  while ((match = linkRegex.exec(text)) !== null) {
-    const [, name, type, id] = match
-    mentions.push({
-      type: type as 'npc' | 'location' | 'item' | 'faction' | 'lore',
-      id: Number.parseInt(id!),
-      name: name!,
-    })
+  while ((match = newFormatRegex.exec(text)) !== null) {
+    const type = match[1] as EntityMention['type']
+    const id = Number.parseInt(match[2]!, 10)
+
+    if (!seen.has(id)) {
+      seen.add(id)
+      mentions.push({
+        type,
+        id,
+        name: resolveEntityName(type, id),
+      })
+    }
+  }
+
+  // Also parse legacy format [Name](type:id) for backwards compatibility
+  const legacyRegex = /\[([^\]]+)\]\((\w+):(\d+)\)/g
+  while ((match = legacyRegex.exec(text)) !== null) {
+    const type = match[2] as EntityMention['type']
+    const id = Number.parseInt(match[3]!, 10)
+
+    if (!seen.has(id)) {
+      seen.add(id)
+      // For legacy format, still resolve dynamically (ignore stored name)
+      mentions.push({
+        type,
+        id,
+        name: resolveEntityName(type, id),
+      })
+    }
   }
 
   return mentions
@@ -1000,14 +1107,54 @@ function truncateText(text: string, maxLength: number): string {
   return `${text.substring(0, maxLength)}...`
 }
 
+function countMentionsInNotes(notes: string | null): number {
+  if (!notes) return 0
+  // Count {{type:id}} format
+  const newFormat = (notes.match(/\{\{(\w+):(\d+)\}\}/g) || []).length
+  // Count legacy [Name](type:id) format
+  const legacyFormat = (notes.match(/\[([^\]]+)\]\((\w+):(\d+)\)/g) || []).length
+  return newFormat + legacyFormat
+}
+
 function sanitizeHtml(html: string): string {
   // This is called by md-editor-v3 to sanitize/transform the HTML
-  // Replace entity link <a> tags with styled badges
-  return html.replace(/<a[^>]*href="(\w+):(\d+)"[^>]*>([^<]+)<\/a>/g, (_match, type, id, name) => {
+
+  // Helper to build entity badge HTML
+  const buildBadge = (type: string, id: string, entityId: number) => {
+    const name = resolveEntityName(type, entityId)
     const icon = getEntityIcon(type)
     const color = getEntityColor(type)
-    return `<span class="entity-badge" data-type="${type}" data-id="${id}" style="background-color: ${color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"><i class="mdi ${icon}"></i>${name}</span>`
+
+    // For players: Show Spielername (human name) big, character name small
+    // If no Spielername set, show character name in italics
+    let displayHtml = name
+    if (type === 'player') {
+      const humanName = resolvePlayerHumanName(entityId)
+      if (humanName) {
+        // Spielername groß, Character-Name klein in Klammern
+        displayHtml = `${humanName} <span style="font-size: 0.75rem; opacity: 0.8;">(${name})</span>`
+      } else {
+        // Kein Spielername - Character name kursiv
+        displayHtml = `<em>${name}</em>`
+      }
+    }
+
+    return `<span class="entity-badge" data-type="${type}" data-id="${id}" style="background-color: ${color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"><i class="mdi ${icon}"></i>${displayHtml}</span>`
+  }
+
+  // First: Handle new format {{type:id}} - resolve name dynamically
+  let result = html.replace(/\{\{(\w+):(\d+)\}\}/g, (_match, type, id) => {
+    const entityId = parseInt(id, 10)
+    return buildBadge(type, id, entityId)
   })
+
+  // Second: Handle legacy format [Name](type:id) - keep for backwards compatibility
+  result = result.replace(/<a[^>]*href="(\w+):(\d+)"[^>]*>([^<]+)<\/a>/g, (_match, type, id, _name) => {
+    const entityId = parseInt(id, 10)
+    return buildBadge(type, id, entityId)
+  })
+
+  return result
 }
 
 function getEntityIcon(type: string): string {
@@ -1017,6 +1164,7 @@ function getEntityIcon(type: string): string {
     item: 'mdi-sword',
     faction: 'mdi-shield',
     lore: 'mdi-book-open-variant',
+    player: 'mdi-account-star',
   }
   return icons[type] || 'mdi-link'
 }
@@ -1028,30 +1176,20 @@ function getEntityColor(type: string): string {
     item: '#CC8844',
     faction: '#7B92AB',
     lore: '#9C6B98',
+    player: '#4CAF50',
   }
   return colors[type] || '#888888'
 }
 
-function getRarityColor(rarity: string): string {
-  const colors: Record<string, string> = {
-    common: 'grey',
-    uncommon: 'green',
-    rare: 'blue',
-    very_rare: 'purple',
-    legendary: 'orange',
-    artifact: 'red',
-  }
-  return colors[rarity] || 'grey'
-}
-
-function showLinkEntityDialog(type: 'npc' | 'location' | 'item' | 'faction' | 'lore') {
+function showLinkEntityDialog(type: 'npc' | 'location' | 'item' | 'faction' | 'lore' | 'player') {
   linkEntityType.value = type
   entitySearch.value = ''
   showEntityLinkDialog.value = true
 }
 
 function insertEntityLink(entity: { id: number; name: string }) {
-  const link = `[${entity.name}](${linkEntityType.value}:${entity.id})`
+  // New format: {{type:id}} - name is resolved dynamically when rendering
+  const link = `{{${linkEntityType.value}:${entity.id}}}`
 
   // Use md-editor's insert API if available, fallback to textarea method
   if (editorRef.value) {
@@ -1089,8 +1227,16 @@ function insertMarkdown(before: string, after: string) {
 }
 
 function removeMention(mention: EntityMention) {
-  const linkText = `[${mention.name}](${mention.type}:${mention.id})`
-  sessionForm.value.notes = sessionForm.value.notes?.replace(linkText, mention.name) || ''
+  // Try new format first {{type:id}}
+  const newFormatLink = `{{${mention.type}:${mention.id}}}`
+  if (sessionForm.value.notes?.includes(newFormatLink)) {
+    sessionForm.value.notes = sessionForm.value.notes.replace(newFormatLink, mention.name)
+    return
+  }
+
+  // Fallback to legacy format [Name](type:id)
+  const legacyPattern = new RegExp(`\\[([^\\]]+)\\]\\(${mention.type}:${mention.id}\\)`, 'g')
+  sessionForm.value.notes = sessionForm.value.notes?.replace(legacyPattern, mention.name) || ''
 }
 
 function navigateToEntity(mention: EntityMention) {
@@ -1099,6 +1245,8 @@ function navigateToEntity(mention: EntityMention) {
     location: '/locations',
     item: '/items',
     faction: '/factions',
+    lore: '/lore',
+    player: '/players',
   }
   router.push(`${paths[mention.type]}?id=${mention.id}`)
 }
@@ -1112,43 +1260,21 @@ async function handleEditorClick(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
 
-    const type = badge.getAttribute('data-type') as 'npc' | 'location' | 'item' | 'faction'
+    const type = badge.getAttribute('data-type') as
+      | 'npc'
+      | 'location'
+      | 'item'
+      | 'faction'
+      | 'lore'
+      | 'player'
     const id = badge.getAttribute('data-id')
 
     if (type && id) {
-      await loadEntityDetails(type, Number.parseInt(id))
+      previewEntityId.value = Number.parseInt(id)
+      viewingEntityType.value = type
+      showEntityDialog.value = true
     }
   }
-}
-
-async function loadEntityDetails(type: 'npc' | 'location' | 'item' | 'faction', id: number) {
-  try {
-    viewingEntityType.value = type
-
-    // Fetch entity details from API
-    const endpoints: Record<string, string> = {
-      npc: '/api/npcs',
-      location: '/api/locations',
-      item: '/api/items',
-      faction: '/api/factions',
-    }
-
-    viewingEntity.value = await $fetch<ViewingEntity>(`${endpoints[type]}/${id}`)
-    showEntityDialog.value = true
-  } catch (error) {
-    console.error('Failed to load entity details:', error)
-  }
-}
-
-function goToEntityPage() {
-  if (!viewingEntity.value) return
-
-  navigateToEntity({
-    type: viewingEntityType.value,
-    id: viewingEntity.value.id,
-    name: viewingEntity.value.name,
-  })
-  showEntityDialog.value = false
 }
 
 function viewSession(session: Session) {
@@ -1156,7 +1282,7 @@ function viewSession(session: Session) {
   showViewDialog.value = true
 }
 
-function editSession(session: Session) {
+async function editSession(session: Session) {
   editingSession.value = session
   sessionForm.value = {
     title: session.title,
@@ -1164,9 +1290,32 @@ function editSession(session: Session) {
     date: session.date || '',
     summary: session.summary || '',
     notes: session.notes || '',
+    in_game_date_start: session.in_game_date_start || '',
+    in_game_date_end: session.in_game_date_end || '',
+    in_game_day_start: session.in_game_day_start,
+    in_game_day_end: session.in_game_day_end,
+    duration_minutes: session.duration_minutes,
   }
   showCreateDialog.value = true
   sessionDialogTab.value = 'details'
+
+  // Load attendance data
+  loadingAttendance.value = true
+  sessionAttendance.value = {}
+  try {
+    interface AttendanceRecord {
+      player_id: number
+      attended: number
+    }
+    const attendance = await $fetch<AttendanceRecord[]>(`/api/sessions/${session.id}/attendance`)
+    for (const record of attendance) {
+      sessionAttendance.value[record.player_id] = record.attended === 1
+    }
+  } catch (error) {
+    console.error('Failed to load attendance:', error)
+  } finally {
+    loadingAttendance.value = false
+  }
 }
 
 function editSessionAndCloseView(session: Session) {
@@ -1189,6 +1338,16 @@ async function saveSession() {
       await $fetch(`/api/sessions/${editingSession.value.id}`, {
         method: 'PATCH',
         body: sessionForm.value,
+      })
+
+      // Save attendance
+      const attendanceData = Object.entries(sessionAttendance.value).map(([playerId, attended]) => ({
+        player_id: Number(playerId),
+        attended,
+      }))
+      await $fetch(`/api/sessions/${editingSession.value.id}/attendance`, {
+        method: 'POST',
+        body: { attendance: attendanceData },
       })
     } else {
       await $fetch('/api/sessions', {
@@ -1292,12 +1451,42 @@ function closeDialog() {
     date: '',
     summary: '',
     notes: '',
+    in_game_date_start: '',
+    in_game_date_end: '',
+    in_game_day_start: null,
+    in_game_day_end: null,
+    duration_minutes: null,
   }
+  sessionAttendance.value = {}
   sessionDialogTab.value = 'details'
 }
 </script>
 
 <style scoped>
+/* Sessions Timeline Layout - give more space to cards */
+.sessions-timeline {
+  padding-left: 0;
+}
+
+.sessions-timeline :deep(.v-timeline-item__opposite) {
+  flex: 0 0 180px;
+  max-width: 180px;
+  min-width: 180px;
+}
+
+.sessions-timeline :deep(.v-timeline-item__body) {
+  flex: 1;
+  max-width: calc(100% - 220px);
+}
+
+.timeline-date-section {
+  padding-right: 8px;
+}
+
+.session-card {
+  width: 100%;
+}
+
 .markdown-content {
   line-height: 1.6;
 }

@@ -1031,6 +1031,82 @@ export const migrations: Migration[] = [
       console.log('✅ Migration 19: Added era name and leap year support to calendar')
     },
   },
+  {
+    version: 20,
+    name: 'enhanced_sessions',
+    up: (db) => {
+      // 1. Add in-game date fields to sessions
+      db.exec('ALTER TABLE sessions ADD COLUMN in_game_date_start TEXT')
+      db.exec('ALTER TABLE sessions ADD COLUMN in_game_date_end TEXT')
+      db.exec('ALTER TABLE sessions ADD COLUMN duration_minutes INTEGER')
+      db.exec(
+        'ALTER TABLE sessions ADD COLUMN calendar_event_id INTEGER REFERENCES calendar_events(id) ON DELETE SET NULL',
+      )
+
+      // 2. Create session_attendance table for player attendance tracking
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS session_attendance (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          player_id INTEGER NOT NULL,
+          character_id INTEGER,
+          attended INTEGER NOT NULL DEFAULT 1,
+          notes TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+          FOREIGN KEY (player_id) REFERENCES entities(id) ON DELETE CASCADE,
+          FOREIGN KEY (character_id) REFERENCES entities(id) ON DELETE SET NULL,
+          UNIQUE(session_id, player_id)
+        )
+      `)
+
+      // 3. Add unique constraint to session_mentions (prevent duplicate mentions)
+      // SQLite doesn't support ADD CONSTRAINT, so we recreate the table
+      db.exec(`
+        CREATE TABLE session_mentions_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          entity_id INTEGER NOT NULL,
+          context TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+          FOREIGN KEY (entity_id) REFERENCES entities(id) ON DELETE CASCADE,
+          UNIQUE(session_id, entity_id)
+        )
+      `)
+
+      // Copy existing data (if any)
+      db.exec(`
+        INSERT OR IGNORE INTO session_mentions_new (id, session_id, entity_id, context)
+        SELECT id, session_id, entity_id, context FROM session_mentions
+      `)
+
+      db.exec('DROP TABLE session_mentions')
+      db.exec('ALTER TABLE session_mentions_new RENAME TO session_mentions')
+
+      // 4. Create indexes for performance
+      db.exec('CREATE INDEX IF NOT EXISTS idx_session_attendance_session ON session_attendance(session_id)')
+      db.exec('CREATE INDEX IF NOT EXISTS idx_session_attendance_player ON session_attendance(player_id)')
+      db.exec('CREATE INDEX IF NOT EXISTS idx_session_mentions_session ON session_mentions(session_id)')
+      db.exec('CREATE INDEX IF NOT EXISTS idx_session_mentions_entity ON session_mentions(entity_id)')
+      db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_calendar_event ON sessions(calendar_event_id)')
+
+      console.log('✅ Migration 20: Enhanced sessions with attendance, in-game dates, and improved mentions')
+    },
+  },
+  {
+    version: 21,
+    name: 'session_absolute_day',
+    up: (db) => {
+      // Add absolute day number fields for proper calendar integration
+      // These store the total day count from Year 1, Day 1
+      // The TEXT fields (in_game_date_start/end) remain for backwards compatibility
+      db.exec('ALTER TABLE sessions ADD COLUMN in_game_day_start INTEGER')
+      db.exec('ALTER TABLE sessions ADD COLUMN in_game_day_end INTEGER')
+
+      console.log('✅ Migration 21: Added absolute day fields to sessions for calendar integration')
+    },
+  },
 ]
 
 export async function runMigrations(db: Database.Database) {

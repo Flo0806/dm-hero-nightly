@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import { syncSessionMentions } from '../../utils/extract-mentions'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -12,7 +13,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { title, session_number, summary, date, notes } = body
+  const {
+    title,
+    session_number,
+    summary,
+    date,
+    notes,
+    in_game_date_start,
+    in_game_date_end,
+    in_game_day_start,
+    in_game_day_end,
+    duration_minutes,
+  } = body
 
   db.prepare(
     `
@@ -23,10 +35,30 @@ export default defineEventHandler(async (event) => {
       summary = ?,
       date = ?,
       notes = ?,
+      in_game_date_start = ?,
+      in_game_date_end = ?,
+      in_game_day_start = ?,
+      in_game_day_end = ?,
+      duration_minutes = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND deleted_at IS NULL
   `,
-  ).run(title, session_number, summary, date, notes, id)
+  ).run(
+    title,
+    session_number,
+    summary,
+    date,
+    notes,
+    in_game_date_start,
+    in_game_date_end,
+    in_game_day_start,
+    in_game_day_end,
+    duration_minutes,
+    id,
+  )
+
+  // Sync session_mentions from markdown links in notes
+  syncSessionMentions(db, parseInt(id, 10), notes)
 
   const session = db
     .prepare(

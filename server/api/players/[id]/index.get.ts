@@ -1,5 +1,5 @@
-import { getDb } from '../../utils/db'
-import type { EntityTypeRow, EntityRow } from '../../types/database'
+import { getDb } from '../../../utils/db'
+import type { EntityTypeRow, EntityRow } from '../../../types/database'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -8,24 +8,24 @@ export default defineEventHandler((event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Lore ID is required',
+      message: 'Player ID is required',
     })
   }
 
-  // Get Lore entity type ID
+  // Get Player entity type ID
   const entityType = db
     .prepare<[string], EntityTypeRow>('SELECT id FROM entity_types WHERE name = ?')
-    .get('Lore')
+    .get('Player')
 
   if (!entityType) {
     throw createError({
       statusCode: 404,
-      message: 'Lore entity type not found',
+      message: 'Player entity type not found',
     })
   }
 
-  // Get the lore entry
-  const lore = db
+  // Get the Player
+  const player = db
     .prepare<[string, number], EntityRow>(
       `
     SELECT
@@ -44,22 +44,22 @@ export default defineEventHandler((event) => {
     )
     .get(id, entityType.id)
 
-  if (!lore) {
+  if (!player) {
     throw createError({
       statusCode: 404,
-      message: 'Lore entry not found',
+      message: 'Player not found',
     })
   }
 
-  const metadata = lore.metadata ? JSON.parse(lore.metadata as string) : {}
+  const metadata = player.metadata ? JSON.parse(player.metadata as string) : {}
 
   return {
-    id: lore.id,
-    name: lore.name,
-    description: lore.description,
-    image_url: lore.image_url,
-    created_at: lore.created_at,
-    updated_at: lore.updated_at,
+    id: player.id,
+    name: player.name,
+    description: player.description,
+    image_url: player.image_url,
+    created_at: player.created_at,
+    updated_at: player.updated_at,
     ...metadata,
   }
 })

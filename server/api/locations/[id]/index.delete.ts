@@ -1,4 +1,4 @@
-import { getDb } from '../../utils/db'
+import { getDb } from '../../../utils/db'
 
 /**
  * Recursively soft-delete a location and all its children

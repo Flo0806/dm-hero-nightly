@@ -164,6 +164,8 @@ const form = ref({
   name: '',
   description: '',
   metadata: {
+    player_name: '',
+    inspiration: 0,
     email: '',
     discord: '',
     phone: '',
@@ -236,6 +238,8 @@ function openCreateDialog() {
     name: '',
     description: '',
     metadata: {
+      player_name: '',
+      inspiration: 0,
       email: '',
       discord: '',
       phone: '',
@@ -256,6 +260,8 @@ async function editPlayer(player: Player) {
     name: player.name,
     description: player.description || '',
     metadata: {
+      player_name: player.metadata?.player_name || '',
+      inspiration: player.metadata?.inspiration || 0,
       email: player.metadata?.email || '',
       discord: player.metadata?.discord || '',
       phone: player.metadata?.phone || '',

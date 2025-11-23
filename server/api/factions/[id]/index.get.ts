@@ -1,5 +1,5 @@
-import { getDb } from '../../utils/db'
-import type { EntityTypeRow, EntityRow } from '../../types/database'
+import { getDb } from '../../../utils/db'
+import type { EntityTypeRow, EntityRow } from '../../../types/database'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -8,24 +8,24 @@ export default defineEventHandler((event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'NPC ID is required',
+      message: 'Faction ID is required',
     })
   }
 
-  // Get NPC entity type ID
+  // Get Faction entity type ID
   const entityType = db
     .prepare<[string], EntityTypeRow>('SELECT id FROM entity_types WHERE name = ?')
-    .get('NPC')
+    .get('Faction')
 
   if (!entityType) {
     throw createError({
       statusCode: 404,
-      message: 'NPC entity type not found',
+      message: 'Faction entity type not found',
     })
   }
 
-  // Get the NPC
-  const npc = db
+  // Get the faction
+  const faction = db
     .prepare<[string, number], EntityRow>(
       `
     SELECT
@@ -44,22 +44,22 @@ export default defineEventHandler((event) => {
     )
     .get(id, entityType.id)
 
-  if (!npc) {
+  if (!faction) {
     throw createError({
       statusCode: 404,
-      message: 'NPC not found',
+      message: 'Faction not found',
     })
   }
 
-  const metadata = npc.metadata ? JSON.parse(npc.metadata as string) : {}
+  const metadata = faction.metadata ? JSON.parse(faction.metadata as string) : {}
 
   return {
-    id: npc.id,
-    name: npc.name,
-    description: npc.description,
-    image_url: npc.image_url,
-    created_at: npc.created_at,
-    updated_at: npc.updated_at,
+    id: faction.id,
+    name: faction.name,
+    description: faction.description,
+    image_url: faction.image_url,
+    created_at: faction.created_at,
+    updated_at: faction.updated_at,
     ...metadata,
   }
 })

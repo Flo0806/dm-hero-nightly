@@ -1,5 +1,5 @@
-import { getDb } from '../../utils/db'
-import type { EntityTypeRow, EntityRow } from '../../types/database'
+import { getDb } from '../../../utils/db'
+import type { EntityTypeRow, EntityRow } from '../../../types/database'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -8,24 +8,24 @@ export default defineEventHandler((event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Location ID is required',
+      message: 'Item ID is required',
     })
   }
 
-  // Get Location entity type ID
+  // Get Item entity type ID
   const entityType = db
     .prepare<[string], EntityTypeRow>('SELECT id FROM entity_types WHERE name = ?')
-    .get('Location')
+    .get('Item')
 
   if (!entityType) {
     throw createError({
       statusCode: 404,
-      message: 'Location entity type not found',
+      message: 'Item entity type not found',
     })
   }
 
-  // Get the location
-  const location = db
+  // Get the item
+  const item = db
     .prepare<[string, number], EntityRow>(
       `
     SELECT
@@ -44,22 +44,22 @@ export default defineEventHandler((event) => {
     )
     .get(id, entityType.id)
 
-  if (!location) {
+  if (!item) {
     throw createError({
       statusCode: 404,
-      message: 'Location not found',
+      message: 'Item not found',
     })
   }
 
-  const metadata = location.metadata ? JSON.parse(location.metadata as string) : {}
+  const metadata = item.metadata ? JSON.parse(item.metadata as string) : {}
 
   return {
-    id: location.id,
-    name: location.name,
-    description: location.description,
-    image_url: location.image_url,
-    created_at: location.created_at,
-    updated_at: location.updated_at,
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    image_url: item.image_url,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
     ...metadata,
   }
 })

@@ -1,4 +1,6 @@
 export interface PlayerMetadata {
+  player_name?: string | null // Real name of the player (Spielername)
+  inspiration?: number // DM inspiration counter
   email?: string | null
   phone?: string | null
   discord?: string | null

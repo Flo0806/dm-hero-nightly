@@ -1,7 +1,4 @@
-import { getDb } from '../../utils/db'
-import { convertMetadataToKeys } from '../../utils/i18n-lookup'
-import type { ItemMetadata } from '../../../types/item'
-import type { EntityRow } from '../../types/database'
+import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -11,18 +8,15 @@ export default defineEventHandler(async (event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Item ID is required',
+      message: 'Faction ID is required',
     })
   }
 
   const { name, description, metadata } = body as {
     name?: string
     description?: string
-    metadata?: ItemMetadata
+    metadata?: Record<string, string | number | boolean | null>
   }
-
-  // Convert localized type/rarity names to keys (e.g., "waffe" → "weapon")
-  const convertedMetadata = metadata ? convertMetadataToKeys(metadata, 'item') : null
 
   db.prepare(
     `
@@ -34,25 +28,37 @@ export default defineEventHandler(async (event) => {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND deleted_at IS NULL
   `,
-  ).run(name, description, convertedMetadata ? JSON.stringify(convertedMetadata) : null, id)
+  ).run(name, description, metadata ? JSON.stringify(metadata) : null, id)
 
-  const item = db
-    .prepare<[string], EntityRow>(
+  interface DbEntity {
+    id: number
+    type_id: number
+    campaign_id: number
+    name: string
+    description: string | null
+    metadata: string | null
+    created_at: string
+    updated_at: string
+    deleted_at: string | null
+  }
+
+  const faction = db
+    .prepare<unknown[], DbEntity>(
       `
     SELECT * FROM entities WHERE id = ? AND deleted_at IS NULL
   `,
     )
     .get(id)
 
-  if (!item) {
+  if (!faction) {
     throw createError({
       statusCode: 404,
-      message: 'Item not found',
+      message: 'Faction not found',
     })
   }
 
   return {
-    ...item,
-    metadata: item.metadata ? JSON.parse(item.metadata as string) : null,
+    ...faction,
+    metadata: faction.metadata ? JSON.parse(faction.metadata) : null,
   }
 })

@@ -1,10 +1,23 @@
 import { getDb } from '../../utils/db'
+import { syncSessionMentions } from '../../utils/extract-mentions'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
   const body = await readBody(event)
 
-  const { campaignId, title, session_number, date, summary, notes } = body
+  const {
+    campaignId,
+    title,
+    session_number,
+    date,
+    summary,
+    notes,
+    in_game_date_start,
+    in_game_date_end,
+    in_game_day_start,
+    in_game_day_end,
+    duration_minutes,
+  } = body
 
   if (!campaignId || !title) {
     throw createError({
@@ -16,11 +29,31 @@ export default defineEventHandler(async (event) => {
   const result = db
     .prepare(
       `
-    INSERT INTO sessions (campaign_id, session_number, title, date, summary, notes)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO sessions (
+      campaign_id, session_number, title, date, summary, notes,
+      in_game_date_start, in_game_date_end, in_game_day_start, in_game_day_end, duration_minutes
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
     )
-    .run(campaignId, session_number || null, title, date || null, summary || null, notes || null)
+    .run(
+      campaignId,
+      session_number || null,
+      title,
+      date || null,
+      summary || null,
+      notes || null,
+      in_game_date_start || null,
+      in_game_date_end || null,
+      in_game_day_start || null,
+      in_game_day_end || null,
+      duration_minutes || null,
+    )
+
+  const sessionId = result.lastInsertRowid as number
+
+  // Sync session_mentions from markdown links in notes
+  syncSessionMentions(db, sessionId, notes)
 
   const session = db
     .prepare(
@@ -32,13 +65,18 @@ export default defineEventHandler(async (event) => {
       date,
       summary,
       notes,
+      in_game_date_start,
+      in_game_date_end,
+      in_game_day_start,
+      in_game_day_end,
+      duration_minutes,
       created_at,
       updated_at
     FROM sessions
     WHERE id = ?
   `,
     )
-    .get(result.lastInsertRowid)
+    .get(sessionId)
 
   return session
 })

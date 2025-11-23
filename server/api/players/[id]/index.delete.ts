@@ -1,22 +1,22 @@
-import { getDb } from '../../utils/db'
+import { getDb } from '../../../utils/db'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const db = getDb()
   const id = getRouterParam(event, 'id')
 
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Item ID is required',
+      message: 'Player ID is required',
     })
   }
 
-  // Soft-delete: set deleted_at timestamp
+  // Soft delete
   db.prepare(
     `
     UPDATE entities
     SET deleted_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND deleted_at IS NULL
+    WHERE id = ?
   `,
   ).run(id)
 

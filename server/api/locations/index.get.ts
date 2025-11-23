@@ -151,7 +151,7 @@ export default defineEventHandler((event) => {
         LIMIT 300
       `,
         )
-        .all(ftsQuery, npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
+        .all(npcTypeId, itemTypeId, loreTypeId, ftsQuery, entityType.id, campaignId) as LocationRow[]
 
       // FALLBACK 1: Try prefix wildcard if exact match found nothing (only for simple queries)
       if (locations.length === 0 && useExactMatch && !parsedQuery.hasOperators) {
@@ -192,7 +192,7 @@ export default defineEventHandler((event) => {
           LIMIT 300
         `,
           )
-          .all(ftsQuery, npcTypeId, itemTypeId, loreTypeId, entityType.id, campaignId) as LocationRow[]
+          .all(npcTypeId, itemTypeId, loreTypeId, ftsQuery, entityType.id, campaignId) as LocationRow[]
       }
 
       // Step 1.5: Always load all locations with linked entities for cross-entity search

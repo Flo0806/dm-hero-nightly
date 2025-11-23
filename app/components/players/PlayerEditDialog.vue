@@ -101,6 +101,16 @@
               @update:model-value="$emit('update:form', { ...form, name: $event })"
             />
 
+            <v-text-field
+              :model-value="form.metadata.player_name"
+              :label="$t('players.playerName')"
+              :placeholder="$t('players.playerNamePlaceholder')"
+              :rules="[(v: string) => !!v || $t('players.playerNameRequired')]"
+              variant="outlined"
+              class="mb-3"
+              @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, player_name: $event } })"
+            />
+
             <v-textarea
               :model-value="form.description"
               :label="$t('players.description')"
@@ -110,6 +120,27 @@
               class="mb-3"
               @update:model-value="$emit('update:form', { ...form, description: $event })"
             />
+
+            <!-- Inspiration Counter -->
+            <div class="d-flex align-center mb-3">
+              <span class="text-body-1 mr-4">{{ $t('players.inspiration') }}</span>
+              <v-btn
+                icon="mdi-minus"
+                size="small"
+                variant="outlined"
+                :disabled="(form.metadata.inspiration || 0) <= 0"
+                @click="$emit('update:form', { ...form, metadata: { ...form.metadata, inspiration: Math.max(0, (form.metadata.inspiration || 0) - 1) } })"
+              />
+              <v-chip size="large" class="mx-2 text-h6" variant="tonal" color="primary">
+                {{ form.metadata.inspiration || 0 }}
+              </v-chip>
+              <v-btn
+                icon="mdi-plus"
+                size="small"
+                variant="outlined"
+                @click="$emit('update:form', { ...form, metadata: { ...form.metadata, inspiration: (form.metadata.inspiration || 0) + 1 } })"
+              />
+            </div>
 
             <v-text-field
               :model-value="form.metadata.email"
@@ -236,6 +267,37 @@
           />
 
           <v-text-field
+            :model-value="form.metadata.player_name"
+            :label="$t('players.playerName')"
+            :placeholder="$t('players.playerNamePlaceholder')"
+            :rules="[(v: string) => !!v || $t('players.playerNameRequired')]"
+            variant="outlined"
+            class="mb-3"
+            @update:model-value="$emit('update:form', { ...form, metadata: { ...form.metadata, player_name: $event } })"
+          />
+
+          <!-- Inspiration Counter -->
+          <div class="d-flex align-center mb-3">
+            <span class="text-body-1 mr-4">{{ $t('players.inspiration') }}</span>
+            <v-btn
+              icon="mdi-minus"
+              size="small"
+              variant="outlined"
+              :disabled="(form.metadata.inspiration || 0) <= 0"
+              @click="$emit('update:form', { ...form, metadata: { ...form.metadata, inspiration: Math.max(0, (form.metadata.inspiration || 0) - 1) } })"
+            />
+            <v-chip size="large" class="mx-2 text-h6" variant="tonal" color="primary">
+              {{ form.metadata.inspiration || 0 }}
+            </v-chip>
+            <v-btn
+              icon="mdi-plus"
+              size="small"
+              variant="outlined"
+              @click="$emit('update:form', { ...form, metadata: { ...form.metadata, inspiration: (form.metadata.inspiration || 0) + 1 } })"
+            />
+          </div>
+
+          <v-text-field
             :model-value="form.metadata.email"
             :label="$t('players.email')"
             :placeholder="$t('players.emailPlaceholder')"
@@ -285,7 +347,7 @@
         </v-btn>
         <v-btn
           color="primary"
-          :disabled="!form.name || uploadingImage || deletingImage || generatingImage"
+          :disabled="!form.name || !form.metadata.player_name || uploadingImage || deletingImage || generatingImage"
           :loading="saving"
           @click="$emit('save')"
         >

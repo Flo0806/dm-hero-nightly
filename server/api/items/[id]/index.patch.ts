@@ -1,4 +1,7 @@
-import { getDb } from '../../utils/db'
+import { getDb } from '../../../utils/db'
+import { convertMetadataToKeys } from '../../../utils/i18n-lookup'
+import type { ItemMetadata } from '../../../types/item'
+import type { EntityRow } from '../../../types/database'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -8,15 +11,18 @@ export default defineEventHandler(async (event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Faction ID is required',
+      message: 'Item ID is required',
     })
   }
 
   const { name, description, metadata } = body as {
     name?: string
     description?: string
-    metadata?: Record<string, string | number | boolean | null>
+    metadata?: ItemMetadata
   }
+
+  // Convert localized type/rarity names to keys (e.g., "waffe" → "weapon")
+  const convertedMetadata = metadata ? await convertMetadataToKeys(metadata, 'item') : null
 
   db.prepare(
     `
@@ -28,37 +34,25 @@ export default defineEventHandler(async (event) => {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND deleted_at IS NULL
   `,
-  ).run(name, description, metadata ? JSON.stringify(metadata) : null, id)
+  ).run(name, description, convertedMetadata ? JSON.stringify(convertedMetadata) : null, id)
 
-  interface DbEntity {
-    id: number
-    type_id: number
-    campaign_id: number
-    name: string
-    description: string | null
-    metadata: string | null
-    created_at: string
-    updated_at: string
-    deleted_at: string | null
-  }
-
-  const faction = db
-    .prepare<unknown[], DbEntity>(
+  const item = db
+    .prepare<[string], EntityRow>(
       `
     SELECT * FROM entities WHERE id = ? AND deleted_at IS NULL
   `,
     )
     .get(id)
 
-  if (!faction) {
+  if (!item) {
     throw createError({
       statusCode: 404,
-      message: 'Faction not found',
+      message: 'Item not found',
     })
   }
 
   return {
-    ...faction,
-    metadata: faction.metadata ? JSON.parse(faction.metadata) : null,
+    ...item,
+    metadata: item.metadata ? JSON.parse(item.metadata as string) : null,
   }
 })

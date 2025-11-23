@@ -1,27 +1,27 @@
-import { getDb } from '../../utils/db'
-import type { PlayerMetadata } from '../../../types/player'
+import { getDb } from '../../../utils/db'
+import type { LoreMetadata } from '../../../types/lore'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
-  const { name, description, metadata } = body as {
-    name?: string
-    description?: string | null
-    metadata?: PlayerMetadata
-  }
-
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Player ID is required',
+      message: 'Lore ID is required',
     })
   }
 
-  // Build update query dynamically
+  const { name, description, metadata } = body as {
+    name?: string
+    description?: string
+    metadata?: LoreMetadata
+  }
+
+  // Build dynamic SQL based on provided fields
   const updates: string[] = []
-  const values: (string | null)[] = []
+  const values: (string | null | number)[] = []
 
   if (name !== undefined) {
     updates.push('name = ?')
@@ -33,16 +33,10 @@ export default defineEventHandler(async (event) => {
     values.push(description)
   }
 
+  // Lore metadata doesn't need conversion (type and date are already keys)
   if (metadata !== undefined) {
     updates.push('metadata = ?')
-    values.push(JSON.stringify(metadata))
-  }
-
-  if (updates.length === 0) {
-    throw createError({
-      statusCode: 400,
-      message: 'No fields to update',
-    })
+    values.push(metadata ? JSON.stringify(metadata) : null)
   }
 
   updates.push('updated_at = CURRENT_TIMESTAMP')
@@ -52,7 +46,7 @@ export default defineEventHandler(async (event) => {
     `
     UPDATE entities
     SET ${updates.join(', ')}
-    WHERE id = ?
+    WHERE id = ? AND deleted_at IS NULL
   `,
   ).run(...values)
 
@@ -62,37 +56,29 @@ export default defineEventHandler(async (event) => {
     campaign_id: number
     name: string
     description: string | null
-    image_url: string | null
     metadata: string | null
     created_at: string
     updated_at: string
     deleted_at: string | null
   }
 
-  const player = db
+  const lore = db
     .prepare<unknown[], DbEntity>(
       `
-    SELECT e.*, ei.image_url
-    FROM entities e
-    LEFT JOIN (
-      SELECT entity_id, image_url
-      FROM entity_images
-      WHERE is_primary = 1
-    ) ei ON ei.entity_id = e.id
-    WHERE e.id = ?
+    SELECT * FROM entities WHERE id = ? AND deleted_at IS NULL
   `,
     )
     .get(id)
 
-  if (!player) {
+  if (!lore) {
     throw createError({
       statusCode: 404,
-      message: 'Player not found',
+      message: 'Lore entry not found',
     })
   }
 
   return {
-    ...player,
-    metadata: player.metadata ? (JSON.parse(player.metadata) as PlayerMetadata) : null,
+    ...lore,
+    metadata: lore.metadata ? JSON.parse(lore.metadata) : null,
   }
 })

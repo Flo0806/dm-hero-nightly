@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Convert localized race/class names to keys before saving
-  const metadataWithKeys = convertMetadataToKeys(metadata)
+  const metadataWithKeys = await convertMetadataToKeys(metadata, 'npc')
 
   const result = db
     .prepare(

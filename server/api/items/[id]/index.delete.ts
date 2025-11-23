@@ -1,4 +1,4 @@
-import { getDb } from '../../utils/db'
+import { getDb } from '../../../utils/db'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -7,7 +7,7 @@ export default defineEventHandler((event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'NPC ID is required',
+      message: 'Item ID is required',
     })
   }
 

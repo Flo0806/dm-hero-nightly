@@ -1,5 +1,5 @@
-import { getDb } from '../../utils/db'
-import type { EntityTypeRow, EntityRow } from '../../types/database'
+import { getDb } from '../../../utils/db'
+import type { EntityTypeRow, EntityRow } from '../../../types/database'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -8,24 +8,24 @@ export default defineEventHandler((event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Faction ID is required',
+      message: 'Lore ID is required',
     })
   }
 
-  // Get Faction entity type ID
+  // Get Lore entity type ID
   const entityType = db
     .prepare<[string], EntityTypeRow>('SELECT id FROM entity_types WHERE name = ?')
-    .get('Faction')
+    .get('Lore')
 
   if (!entityType) {
     throw createError({
       statusCode: 404,
-      message: 'Faction entity type not found',
+      message: 'Lore entity type not found',
     })
   }
 
-  // Get the faction
-  const faction = db
+  // Get the lore entry
+  const lore = db
     .prepare<[string, number], EntityRow>(
       `
     SELECT
@@ -44,22 +44,22 @@ export default defineEventHandler((event) => {
     )
     .get(id, entityType.id)
 
-  if (!faction) {
+  if (!lore) {
     throw createError({
       statusCode: 404,
-      message: 'Faction not found',
+      message: 'Lore entry not found',
     })
   }
 
-  const metadata = faction.metadata ? JSON.parse(faction.metadata as string) : {}
+  const metadata = lore.metadata ? JSON.parse(lore.metadata as string) : {}
 
   return {
-    id: faction.id,
-    name: faction.name,
-    description: faction.description,
-    image_url: faction.image_url,
-    created_at: faction.created_at,
-    updated_at: faction.updated_at,
+    id: lore.id,
+    name: lore.name,
+    description: lore.description,
+    image_url: lore.image_url,
+    created_at: lore.created_at,
+    updated_at: lore.updated_at,
     ...metadata,
   }
 })

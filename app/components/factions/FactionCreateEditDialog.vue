@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Faction } from '~/types/faction'
+import type { Faction } from '../../../types/faction'
 
 interface FactionForm {
   name: string

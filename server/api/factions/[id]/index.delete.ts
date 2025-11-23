@@ -1,4 +1,4 @@
-import { getDb } from '../../utils/db'
+import { getDb } from '../../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -7,11 +7,11 @@ export default defineEventHandler(async (event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      message: 'Player ID is required',
+      message: 'Faction ID is required',
     })
   }
 
-  // Soft delete
+  // Soft-delete the faction
   db.prepare(
     `
     UPDATE entities
