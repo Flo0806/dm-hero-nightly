@@ -150,6 +150,22 @@ export const useEntitiesStore = defineStore('entities', {
       this.npcs = this.npcs.filter((n) => n.id !== id)
     },
 
+    async refreshNPC(id: number) {
+      console.log('[Store] refreshNPC called for id:', id)
+      const npc = await $fetch<NPC>(`/api/npcs/${id}`)
+      console.log('[Store] Fetched NPC:', npc.name, 'image_url:', npc.image_url)
+      const index = this.npcs.findIndex((n) => n.id === id)
+      if (index !== -1) {
+        console.log('[Store] Updating NPC at index:', index, 'old image:', this.npcs[index]?.image_url)
+        // Preserve _counts from the old NPC (not returned by API)
+        this.npcs[index] = { ...this.npcs[index], ...npc }
+        console.log('[Store] Updated NPC image_url:', this.npcs[index]?.image_url)
+      } else {
+        console.log('[Store] NPC not found in store!')
+      }
+      return npc
+    },
+
     // ==================== Factions ====================
 
     async fetchFactions(campaignId: string | number, force = false) {
@@ -199,6 +215,16 @@ export const useEntitiesStore = defineStore('entities', {
         method: 'DELETE',
       })
       this.factions = this.factions.filter((f) => f.id !== id)
+    },
+
+    async refreshFaction(id: number) {
+      const faction = await $fetch<Faction>(`/api/factions/${id}`)
+      const index = this.factions.findIndex((f) => f.id === id)
+      if (index !== -1) {
+        // Preserve _counts from the old entity (not returned by API)
+        this.factions[index] = { ...this.factions[index], ...faction }
+      }
+      return faction
     },
 
     // ==================== Locations ====================
@@ -252,6 +278,16 @@ export const useEntitiesStore = defineStore('entities', {
       this.locations = this.locations.filter((l) => l.id !== id)
     },
 
+    async refreshLocation(id: number) {
+      const location = await $fetch<Location>(`/api/locations/${id}`)
+      const index = this.locations.findIndex((l) => l.id === id)
+      if (index !== -1) {
+        // Preserve _counts from the old entity (not returned by API)
+        this.locations[index] = { ...this.locations[index], ...location }
+      }
+      return location
+    },
+
     // ==================== Items ====================
 
     async fetchItems(campaignId: string | number, force = false) {
@@ -301,6 +337,16 @@ export const useEntitiesStore = defineStore('entities', {
         method: 'DELETE',
       })
       this.items = this.items.filter((i) => i.id !== id)
+    },
+
+    async refreshItem(id: number) {
+      const item = await $fetch<Item>(`/api/items/${id}`)
+      const index = this.items.findIndex((i) => i.id === id)
+      if (index !== -1) {
+        // Preserve _counts from the old entity (not returned by API)
+        this.items[index] = { ...this.items[index], ...item }
+      }
+      return item
     },
 
     // ==================== Lore ====================
@@ -354,6 +400,16 @@ export const useEntitiesStore = defineStore('entities', {
       this.lore = this.lore.filter((l) => l.id !== id)
     },
 
+    async refreshLore(id: number) {
+      const lore = await $fetch<Lore>(`/api/lore/${id}`)
+      const index = this.lore.findIndex((l) => l.id === id)
+      if (index !== -1) {
+        // Preserve _counts from the old entity (not returned by API)
+        this.lore[index] = { ...this.lore[index], ...lore }
+      }
+      return lore
+    },
+
     // ==================== Players ====================
 
     async fetchPlayers(campaignId: string | number, force = false) {
@@ -403,6 +459,16 @@ export const useEntitiesStore = defineStore('entities', {
         method: 'DELETE',
       })
       this.players = this.players.filter((p) => p.id !== id)
+    },
+
+    async refreshPlayer(id: number) {
+      const player = await $fetch<Player>(`/api/players/${id}`)
+      const index = this.players.findIndex((p) => p.id === id)
+      if (index !== -1) {
+        // Preserve _counts from the old entity (not returned by API)
+        this.players[index] = { ...this.players[index], ...player }
+      }
+      return player
     },
 
     // ==================== Utility ====================

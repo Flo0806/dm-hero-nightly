@@ -369,9 +369,11 @@ import PlayerCharactersTab from './PlayerCharactersTab.vue'
 import PlayerItemsTab from './PlayerItemsTab.vue'
 import PlayerLoreTab from './PlayerLoreTab.vue'
 import { useImageDownload } from '~/composables/useImageDownload'
+import { useEntitiesStore } from '~/stores/entities'
 
 const { t } = useI18n()
 const { downloadImage: downloadImageFile } = useImageDownload()
+const entitiesStore = useEntitiesStore()
 
 // Interfaces
 interface PlayerForm {
@@ -446,6 +448,9 @@ async function handleImageUpload(event: Event) {
     }
 
     await response.json()
+
+    // Refresh the player in the store to update the image reactively
+    await entitiesStore.refreshPlayer(props.editingPlayer.id)
     emit('image-changed')
   } catch (error) {
     console.error('Failed to upload image:', error)
@@ -496,6 +501,8 @@ async function generateImage() {
       )
 
       if (response.success) {
+        // Refresh the player in the store to update the image reactively
+        await entitiesStore.refreshPlayer(props.editingPlayer.id)
         emit('image-changed')
       }
     }
