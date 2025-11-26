@@ -483,8 +483,10 @@ import NpcNotesTab from './NpcNotesTab.vue'
 import EntityDocuments from '../shared/EntityDocuments.vue'
 import EntityImageUpload from '../shared/EntityImageUpload.vue'
 import { useImageDownload } from '~/composables/useImageDownload'
+import { useEntitiesStore } from '~/stores/entities'
 
 const { locale, t } = useI18n()
+const entitiesStore = useEntitiesStore()
 const { downloadImage: downloadImageFile } = useImageDownload()
 
 // NPC Type Icons
@@ -687,7 +689,8 @@ async function handleImageUpload(event: Event) {
 
     await response.json()
 
-    // Emit event to parent to update the NPC
+    // Refresh the NPC in the store to update the image reactively
+    await entitiesStore.refreshNPC(props.editingNpc.id)
     emit('image-changed')
   } catch (error) {
     console.error('Failed to upload image:', error)
@@ -787,7 +790,8 @@ async function generateImage() {
       )
 
       if (response.success) {
-        // Emit event to parent to update the NPC
+        // Refresh the NPC in the store to update the image reactively
+        await entitiesStore.refreshNPC(props.editingNpc.id)
         emit('image-changed')
       }
     }

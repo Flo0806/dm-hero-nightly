@@ -677,9 +677,12 @@ async function handleDocumentsChanged() {
 // Handle image changed event (from EntityImageUpload)
 async function handleImageChanged() {
   if (editingItem.value) {
-    // Reload the item to get updated image_url
-    const updatedItem = await $fetch<Item>(`/api/items/${editingItem.value.id}`)
-    editingItem.value = updatedItem
+    // Get the updated item from the store (already refreshed by the dialog)
+    const updatedItem = entitiesStore.getItemById(editingItem.value.id)
+    if (updatedItem) {
+      // Update the local editingItem to reflect the new image
+      editingItem.value = { ...editingItem.value, image_url: updatedItem.image_url }
+    }
     await reloadItemCounts(editingItem.value)
   }
 }

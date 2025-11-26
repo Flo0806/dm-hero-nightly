@@ -93,7 +93,7 @@
       @update:active-tab="activeTab = $event"
       @save="savePlayer"
       @close="closeDialog"
-      @image-changed="reloadPlayerCounts"
+      @image-changed="handleImageChanged"
       @counts-changed="reloadPlayerCounts"
       @open-image-preview="openImagePreview"
     />
@@ -318,6 +318,18 @@ async function reloadPlayerCounts() {
     editingPlayer.value = { ...editingPlayer.value }
   } catch (error) {
     console.error('Failed to reload player counts:', error)
+  }
+}
+
+async function handleImageChanged() {
+  if (editingPlayer.value) {
+    // Get the updated player from the store (already refreshed by the dialog)
+    const updatedPlayer = entitiesStore.getPlayerById(editingPlayer.value.id)
+    if (updatedPlayer) {
+      // Update the local editingPlayer to reflect the new image
+      editingPlayer.value = { ...editingPlayer.value, image_url: updatedPlayer.image_url }
+    }
+    await reloadPlayerCounts()
   }
 }
 

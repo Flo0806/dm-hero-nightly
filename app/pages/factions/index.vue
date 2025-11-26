@@ -929,13 +929,11 @@ async function generateImage() {
         },
       })
 
-      // Update local state
-      editingFaction.value.image_url = filename
+      // Refresh the faction in the store to update the image reactively
+      await entitiesStore.refreshFaction(editingFaction.value.id)
 
-      // Reload factions from server to get updated data
-      if (activeCampaignId.value!) {
-        await entitiesStore.fetchFactions(activeCampaignId.value!)
-      }
+      // Update local state for the dialog
+      editingFaction.value.image_url = filename
     }
   } catch (error: unknown) {
     console.error('[Faction] Failed to generate image:', error)

@@ -138,7 +138,7 @@
       :npc-relation-count="npcRelationCount"
       @save="saveNpc"
       @close="closeDialog"
-      @image-changed="handleDocumentsChanged"
+      @image-changed="handleImageChanged"
       @open-image-preview="(url: string, name: string) => openImagePreview(url, name)"
       @add-npc-relation="addNpcRelation"
       @add-membership="addFactionMembership"
@@ -1207,6 +1207,18 @@ async function removeLoreRelation(relationId: number) {
 // Handle documents changed event (from EntityDocuments)
 async function handleDocumentsChanged() {
   if (editingNpc.value) {
+    await reloadNpcCounts(editingNpc.value)
+  }
+}
+
+async function handleImageChanged() {
+  if (editingNpc.value) {
+    // Get the updated NPC from the store (already refreshed by the dialog)
+    const updatedNpc = entitiesStore.getNpcById(editingNpc.value.id)
+    if (updatedNpc) {
+      // Update the local editingNpc to reflect the new image
+      editingNpc.value = { ...editingNpc.value, image_url: updatedNpc.image_url }
+    }
     await reloadNpcCounts(editingNpc.value)
   }
 }

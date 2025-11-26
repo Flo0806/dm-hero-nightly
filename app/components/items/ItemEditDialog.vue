@@ -519,6 +519,9 @@ import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityImageUpload from '~/components/shared/EntityImageUpload.vue'
 import EntityPlayersTab from '~/components/shared/EntityPlayersTab.vue'
+import { useEntitiesStore } from '~/stores/entities'
+
+const entitiesStore = useEntitiesStore()
 
 // Component-specific types for relations
 interface ItemOwner {
@@ -690,6 +693,9 @@ async function handleImageUpload(event: Event) {
     }
 
     await response.json()
+
+    // Refresh the item in the store to update the image reactively
+    await entitiesStore.refreshItem(props.editingItem.id)
     emit('image-changed')
   } catch (error) {
     console.error('Failed to upload image:', error)
@@ -751,6 +757,8 @@ async function generateImage() {
         },
       })
 
+      // Refresh the item in the store to update the image reactively
+      await entitiesStore.refreshItem(props.editingItem.id)
       emit('image-changed')
     }
   } catch (error) {
