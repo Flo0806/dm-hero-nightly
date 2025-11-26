@@ -966,7 +966,20 @@
       "howToGetKey": "Gehe zu platform.openai.com, erstelle einen Account und generiere einen API-Key"
     },
     "saved": "Einstellungen gespeichert",
-    "saveFailed": "Fehler beim Speichern"
+    "saveFailed": "Fehler beim Speichern",
+    "dataManagement": {
+      "title": "Datenverwaltung",
+      "subtitle": "Nur in der Desktop-App verfügbar",
+      "exportDatabase": "Datenbank exportieren",
+      "exportDatabaseHint": "Erstelle ein Backup deiner gesamten Kampagnen-Datenbank",
+      "openUploadsFolder": "Bilder-Ordner öffnen",
+      "openUploadsFolderHint": "Öffne den Ordner mit allen hochgeladenen Bildern",
+      "storagePath": "Speicherort",
+      "exportSuccess": "Datenbank erfolgreich exportiert",
+      "exportCanceled": "Export abgebrochen",
+      "exportFailed": "Export fehlgeschlagen",
+      "openFolderFailed": "Ordner konnte nicht geöffnet werden"
+    }
   },
   "players": {
     "title": "Spieler",

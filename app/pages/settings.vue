@@ -116,6 +116,57 @@
       </v-card-actions>
     </v-card>
 
+    <!-- Data Management Section (Electron only) -->
+    <v-card v-if="isElectron" class="mt-6">
+      <v-card-text>
+        <div class="mb-6">
+          <h2 class="text-h6 mb-2">
+            {{ $t('settings.dataManagement.title') }}
+          </h2>
+          <p class="text-medium-emphasis text-body-2">
+            {{ $t('settings.dataManagement.subtitle') }}
+          </p>
+        </div>
+
+        <!-- Storage Path Info -->
+        <v-alert v-if="dataPaths" type="info" variant="tonal" density="compact" class="mb-4">
+          <div class="text-caption">
+            <strong>{{ $t('settings.dataManagement.storagePath') }}:</strong><br />
+            {{ dataPaths.databasePath }}
+          </div>
+        </v-alert>
+
+        <!-- Export Database Button -->
+        <div class="d-flex flex-column flex-sm-row">
+          <v-btn
+            :loading="exporting"
+            color="secondary"
+            variant="outlined"
+            @click="exportDatabase"
+          >
+            <v-icon start>mdi-database-export</v-icon>
+            {{ $t('settings.dataManagement.exportDatabase') }}
+          </v-btn>
+
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            class="ml-sm-4 mt-3 mt-sm-0"
+            @click="openUploadsFolder"
+          >
+            <v-icon start>mdi-folder-image</v-icon>
+            {{ $t('settings.dataManagement.openUploadsFolder') }}
+          </v-btn>
+        </div>
+
+        <!-- Hints -->
+        <div class="mt-3 text-caption text-medium-emphasis">
+          <p>{{ $t('settings.dataManagement.exportDatabaseHint') }}</p>
+          <p>{{ $t('settings.dataManagement.openUploadsFolderHint') }}</p>
+        </div>
+      </v-card-text>
+    </v-card>
+
     <!-- Success/Error Snackbar -->
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">
       {{ snackbar.message }}
@@ -124,7 +175,26 @@
 </template>
 
 <script setup lang="ts">
+// Type declaration for Electron API exposed via preload
+interface ElectronAPI {
+  isElectron: boolean
+  exportDatabase: () => Promise<{ success: boolean; canceled?: boolean; filePath?: string; error?: string }>
+  openUploadsFolder: () => Promise<{ success: boolean; error?: string }>
+  getDataPaths: () => Promise<{ databasePath: string; uploadPath: string }>
+}
+
+declare global {
+  interface Window {
+    electronAPI?: ElectronAPI
+  }
+}
+
 const { t } = useI18n()
+
+// Electron API detection
+const isElectron = ref(false)
+const dataPaths = ref<{ databasePath: string; uploadPath: string } | null>(null)
+const exporting = ref(false)
 
 // Settings state
 const apiKey = ref('')
@@ -150,7 +220,83 @@ const snackbar = ref({
 // Load settings on mount
 onMounted(() => {
   loadSettings()
+  checkElectron()
 })
+
+// Check if running in Electron and load data paths
+async function checkElectron() {
+  if (typeof window !== 'undefined' && window.electronAPI) {
+    isElectron.value = true
+    try {
+      dataPaths.value = await window.electronAPI.getDataPaths()
+    } catch (error) {
+      console.error('[Settings] Failed to get data paths:', error)
+    }
+  }
+}
+
+// Export database (Electron only)
+async function exportDatabase() {
+  if (!isElectron.value || !window.electronAPI) return
+
+  exporting.value = true
+  try {
+    const result = await window.electronAPI.exportDatabase()
+
+    if (result.success) {
+      snackbar.value = {
+        show: true,
+        message: t('settings.dataManagement.exportSuccess'),
+        color: 'success',
+      }
+    } else if (result.canceled) {
+      snackbar.value = {
+        show: true,
+        message: t('settings.dataManagement.exportCanceled'),
+        color: 'info',
+      }
+    } else {
+      snackbar.value = {
+        show: true,
+        message: `${t('settings.dataManagement.exportFailed')}: ${result.error}`,
+        color: 'error',
+      }
+    }
+  } catch (error) {
+    console.error('[Settings] Export failed:', error)
+    snackbar.value = {
+      show: true,
+      message: t('settings.dataManagement.exportFailed'),
+      color: 'error',
+    }
+  } finally {
+    exporting.value = false
+  }
+}
+
+// Open uploads folder (Electron only)
+async function openUploadsFolder() {
+  if (!isElectron.value || !window.electronAPI) return
+
+  try {
+    const result = await window.electronAPI.openUploadsFolder()
+
+    if (!result.success) {
+      snackbar.value = {
+        show: true,
+        message: `${t('settings.dataManagement.openFolderFailed')}: ${result.error}`,
+        color: 'error',
+      }
+    }
+  } catch (error) {
+    console.error('[Settings] Open folder failed:', error)
+    snackbar.value = {
+      show: true,
+      message: t('settings.dataManagement.openFolderFailed'),
+      color: 'error',
+    }
+  }
+}
 
 // Load settings from backend
 async function loadSettings() {

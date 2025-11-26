@@ -1,6 +1,6 @@
-import { app, BrowserWindow, utilityProcess } from 'electron'
+import { app, BrowserWindow, utilityProcess, ipcMain, dialog, shell } from 'electron'
 import path from 'path'
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync, mkdirSync, copyFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -163,6 +163,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
     },
   })
 
@@ -198,6 +199,66 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
   }
 }
+
+// IPC Handlers for data management
+ipcMain.handle('get-data-paths', () => {
+  if (isDev) {
+    // Dev mode uses project-local paths
+    return {
+      databasePath: path.join(process.cwd(), 'data', 'dm-hero.db'),
+      uploadPath: path.join(process.cwd(), 'uploads'),
+    }
+  }
+  return getDataPaths()
+})
+
+ipcMain.handle('export-database', async () => {
+  const paths = isDev
+    ? { databasePath: path.join(process.cwd(), 'data', 'dm-hero.db') }
+    : getDataPaths()
+
+  if (!existsSync(paths.databasePath)) {
+    return { success: false, error: 'Database file not found' }
+  }
+
+  // Generate default filename with timestamp
+  const timestamp = new Date().toISOString().split('T')[0]
+  const defaultFilename = `dm-hero-backup-${timestamp}.db`
+
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Database',
+    defaultPath: defaultFilename,
+    filters: [{ name: 'SQLite Database', extensions: ['db'] }],
+  })
+
+  if (result.canceled || !result.filePath) {
+    return { success: false, canceled: true }
+  }
+
+  try {
+    copyFileSync(paths.databasePath, result.filePath)
+    return { success: true, filePath: result.filePath }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
+ipcMain.handle('open-uploads-folder', async () => {
+  const paths = isDev
+    ? { uploadPath: path.join(process.cwd(), 'uploads') }
+    : getDataPaths()
+
+  if (!existsSync(paths.uploadPath)) {
+    mkdirSync(paths.uploadPath, { recursive: true })
+  }
+
+  try {
+    await shell.openPath(paths.uploadPath)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
 
 // App lifecycle
 app.whenReady().then(async () => {
