@@ -18,10 +18,12 @@
       @search-click="showSearch = true"
     />
 
-    <v-main>
-      <v-container fluid>
-        <NuxtPage />
-      </v-container>
+    <v-main class="main-no-scroll">
+      <div class="content-scrollable">
+        <v-container fluid>
+          <NuxtPage />
+        </v-container>
+      </div>
     </v-main>
 
     <GlobalSearch
@@ -192,3 +194,28 @@ watch(searchQuery, async (query) => {
   }
 })
 </script>
+
+<style>
+/* Prevent body/html scrolling */
+html {
+  overflow: hidden !important;
+}
+
+.v-application {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* v-main should not scroll itself */
+.main-no-scroll {
+  overflow: hidden !important;
+  height: calc(100vh - 64px); /* 64px = AppBar height */
+}
+
+/* Inner container scrolls - scrollbar starts below AppBar */
+.content-scrollable {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+</style>

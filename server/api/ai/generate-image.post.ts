@@ -2,6 +2,7 @@ import { getDb } from '../../utils/db'
 import { decrypt } from '../../utils/encryption'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { getUploadPath } from '../../utils/paths'
 import { randomUUID } from 'node:crypto'
 
 interface GenerateImageRequest {
@@ -238,9 +239,9 @@ Output ONLY the optimized prompt.`
 
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer())
 
-    // Save to public/uploads with UUID filename
+    // Save to uploads directory with UUID filename
     const filename = `${randomUUID()}.png`
-    const uploadsDir = join(process.cwd(), 'public', 'uploads')
+    const uploadsDir = getUploadPath()
     const filePath = join(uploadsDir, filename)
 
     // Ensure uploads directory exists

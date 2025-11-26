@@ -1,6 +1,8 @@
-import { extname } from 'node:path'
+import { extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { writeFile, mkdir } from 'node:fs/promises'
 import { getDb } from '../../utils/db'
+import { getUploadPath } from '../../utils/paths'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -51,7 +53,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const uploadedImages: Array<{ id: number; imageUrl: string }> = []
-  const storage = useStorage('pictures')
+  const uploadsDir = getUploadPath()
+  // Ensure uploads directory exists
+  await mkdir(uploadsDir, { recursive: true })
 
   // Get current max display_order for this entity
   const maxDisplayOrder = db
@@ -86,8 +90,9 @@ export default defineEventHandler(async (event) => {
     // Generate unique filename
     const uniqueName = `${Date.now()}-${randomUUID()}${ext}`
 
-    // Save to storage
-    await storage.setItemRaw(uniqueName, file.data)
+    // Save to uploads directory
+    const filePath = join(uploadsDir, uniqueName)
+    await writeFile(filePath, file.data)
 
     // Check if this is the first image for this entity
     const imageCount = db

@@ -1,6 +1,8 @@
-import { extname } from 'node:path'
+import { extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { writeFile, mkdir } from 'node:fs/promises'
 import { getDb } from '../../../utils/db'
+import { getUploadPath } from '../../../utils/paths'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -39,7 +41,9 @@ export default defineEventHandler(async (event) => {
   const maxSize = 8 * 1024 * 1024 // 8MB
   const uploadedImages: Array<{ id: number; imageUrl: string; isPrimary: boolean }> = []
 
-  const storage = useStorage('pictures')
+  const uploadsDir = getUploadPath()
+  // Ensure uploads directory exists
+  await mkdir(uploadsDir, { recursive: true })
 
   // Check if this is the first image - if so, make it primary
   const existingImages = db
@@ -74,8 +78,9 @@ export default defineEventHandler(async (event) => {
     // Generate unique filename (UUID only, no timestamp prefix)
     const uniqueName = `${randomUUID()}${ext}`
 
-    // Save to storage
-    await storage.setItemRaw(uniqueName, file.data)
+    // Save to uploads directory
+    const filePath = join(uploadsDir, uniqueName)
+    await writeFile(filePath, file.data)
 
     // Insert into database
     const result = db

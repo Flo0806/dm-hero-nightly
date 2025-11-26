@@ -1,5 +1,7 @@
-import { extname } from 'node:path'
+import { extname, join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { writeFile, mkdir } from 'node:fs/promises'
+import { getUploadPath } from '../../utils/paths'
 
 export default defineEventHandler(async (event) => {
   // Read multipart form data
@@ -45,9 +47,11 @@ export default defineEventHandler(async (event) => {
   // Generate unique filename
   const uniqueName = `doc-${Date.now()}-${randomUUID()}${ext}`
 
-  // Save to storage
-  const storage = useStorage('pictures')
-  await storage.setItemRaw(uniqueName, file.data)
+  // Save to uploads directory
+  const uploadsDir = getUploadPath()
+  await mkdir(uploadsDir, { recursive: true })
+  const filePath = join(uploadsDir, uniqueName)
+  await writeFile(filePath, file.data)
 
   return {
     image_url: uniqueName,

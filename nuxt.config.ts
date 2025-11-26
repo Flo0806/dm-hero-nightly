@@ -16,7 +16,7 @@ export default defineNuxtConfig({
       { code: 'en', name: 'English', file: 'en.json' },
       { code: 'de', name: 'Deutsch', file: 'de.json' },
     ],
-    defaultLocale: 'uk',
+    defaultLocale: 'de',
     langDir: 'locales',
     strategy: 'no_prefix',
   },
@@ -35,7 +35,7 @@ export default defineNuxtConfig({
     storage: {
       pictures: {
         driver: 'fs',
-        base: './public/uploads',
+        base: './uploads',
       },
     },
     // Mark better-sqlite3 as external to preserve native bindings

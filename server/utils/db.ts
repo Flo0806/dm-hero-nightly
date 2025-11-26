@@ -1,9 +1,10 @@
 import Database from 'better-sqlite3'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { existsSync, mkdirSync, copyFileSync } from 'fs'
+import { getDatabasePath } from './paths'
 
-const DB_DIR = join(process.cwd(), 'data')
-const DB_PATH = join(DB_DIR, 'dm-hero.db')
+const DB_PATH = getDatabasePath()
+const DB_DIR = dirname(DB_PATH)
 const BACKUP_DIR = join(DB_DIR, 'backups')
 
 // Ensure directories exist

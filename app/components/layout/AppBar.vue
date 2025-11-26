@@ -1,9 +1,9 @@
 <template>
-  <v-app-bar border>
+  <v-app-bar border class="app-bar-draggable">
     <v-app-bar-title>
       <v-icon icon="mdi-dice-d20" class="mr-2" />
       DM Hero
-      <v-chip size="x-small" variant="outlined" class="ml-2">
+      <v-chip size="x-small" variant="outlined" class="ml-2 version-badge-inline">
         v{{ version }}
       </v-chip>
     </v-app-bar-title>
@@ -34,7 +34,12 @@
       </v-list>
     </v-menu>
 
-    <v-btn icon="mdi-magnify" @click="$emit('search-click')" />
+    <v-btn icon="mdi-magnify" class="search-btn" @click="$emit('search-click')" />
+
+    <!-- Version badge in Electron (next to window controls) -->
+    <v-chip size="x-small" variant="outlined" class="version-badge-electron">
+      v{{ version }}
+    </v-chip>
   </v-app-bar>
 </template>
 
@@ -64,3 +69,35 @@ const currentLocaleData = computed(() => {
   return locales.find((l) => l.value === props.currentLocale) ?? locales[0]
 })
 </script>
+
+<style scoped>
+/* Make app bar draggable in Electron (allows window dragging) */
+.app-bar-draggable {
+  -webkit-app-region: drag;
+}
+
+/* Make interactive elements clickable (not draggable) */
+.app-bar-draggable :deep(button),
+.app-bar-draggable :deep(.v-btn),
+.app-bar-draggable :deep(.v-chip),
+.app-bar-draggable :deep(.v-menu) {
+  -webkit-app-region: no-drag;
+}
+
+/* Version badge: show inline in Web, hide in Electron */
+.version-badge-inline {
+  display: var(--electron-hide-inline, inline-flex);
+}
+
+/* Version badge: hide in Web, show in Electron (next to window controls) */
+.version-badge-electron {
+  display: var(--electron-show-badge, none);
+  margin-right: 8px;
+  margin-top: var(--electron-badge-offset, 0px);
+}
+
+/* Extra margin for search button in Electron (Windows/Linux) */
+.search-btn {
+  margin-right: var(--electron-btn-margin, 0px);
+}
+</style>

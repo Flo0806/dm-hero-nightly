@@ -1,5 +1,8 @@
-import { getDb } from '../../utils/db'
+import { join } from 'node:path'
+import { writeFile, mkdir } from 'node:fs/promises'
 import { randomUUID } from 'crypto'
+import { getDb } from '../../utils/db'
+import { getUploadPath } from '../../utils/paths'
 
 /**
  * POST /api/entity-documents/upload-pdf
@@ -70,9 +73,11 @@ export default defineEventHandler(async (event) => {
     // Generate unique filename with UUID
     const uniqueFilename = `${randomUUID()}.pdf`
 
-    // Save file to storage (same location as uploaded images)
-    const storage = useStorage('pictures')
-    await storage.setItemRaw(uniqueFilename, file.data)
+    // Save file to uploads directory
+    const uploadsDir = getUploadPath()
+    await mkdir(uploadsDir, { recursive: true })
+    const filePath = join(uploadsDir, uniqueFilename)
+    await writeFile(filePath, file.data)
 
     // Get current max sort_order for this entity
     const maxOrderResult = db
