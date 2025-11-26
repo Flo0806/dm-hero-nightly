@@ -1114,7 +1114,7 @@ export async function runMigrations(db: Database.Database) {
   const pendingMigrations = migrations.filter((m) => m.version > currentVersion)
 
   if (pendingMigrations.length === 0) {
-    console.log('✅ Database is up to date (version:', currentVersion, ')')
+    console.log(`✅ Database is up to date (version: ${currentVersion})`)
     return
   }
 
