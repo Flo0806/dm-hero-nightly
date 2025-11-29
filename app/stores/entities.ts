@@ -3,25 +3,7 @@ import type { NPC } from '../../types/npc'
 import type { Item } from '../../types/item'
 import type { Lore } from '../../types/lore'
 import type { Player } from '../../types/player'
-
-interface Faction {
-  id: number
-  name: string
-  description: string | null
-  image_url?: string | null
-  metadata: {
-    type?: string
-    leader?: string
-    alignment?: string
-    headquarters?: string
-    goals?: string
-    notes?: string
-  } | null
-  leader_id?: number | null
-  leader_name?: string | null
-  created_at: string
-  updated_at: string
-}
+import type { Faction } from '../../types/faction'
 
 interface Location {
   id: number
@@ -128,7 +110,9 @@ export const useEntitiesStore = defineStore('entities', {
         },
       })
       this.npcs.push(npc)
-      return npc
+      // Load counts for new NPC
+      await this.loadNpcCounts(npc.id)
+      return this.npcs.find((n) => n.id === npc.id) || npc
     },
 
     async updateNPC(id: number, data: Partial<NPC>) {
@@ -138,9 +122,13 @@ export const useEntitiesStore = defineStore('entities', {
       })
       const index = this.npcs.findIndex((n) => n.id === id)
       if (index !== -1) {
-        this.npcs[index] = npc
+        // Preserve _counts from old NPC and merge with new data
+        const oldNpc = this.npcs[index]
+        this.npcs[index] = { ...oldNpc, ...npc }
+        // Reload counts after update
+        await this.loadNpcCounts(id)
       }
-      return npc
+      return this.npcs[index] || npc
     },
 
     async deleteNPC(id: number) {
@@ -151,19 +139,49 @@ export const useEntitiesStore = defineStore('entities', {
     },
 
     async refreshNPC(id: number) {
-      console.log('[Store] refreshNPC called for id:', id)
       const npc = await $fetch<NPC>(`/api/npcs/${id}`)
-      console.log('[Store] Fetched NPC:', npc.name, 'image_url:', npc.image_url)
       const index = this.npcs.findIndex((n) => n.id === id)
       if (index !== -1) {
-        console.log('[Store] Updating NPC at index:', index, 'old image:', this.npcs[index]?.image_url)
         // Preserve _counts from the old NPC (not returned by API)
         this.npcs[index] = { ...this.npcs[index], ...npc }
-        console.log('[Store] Updated NPC image_url:', this.npcs[index]?.image_url)
-      } else {
-        console.log('[Store] NPC not found in store!')
       }
       return npc
+    },
+
+    // Load counts for a single NPC and update it in the store
+    async loadNpcCounts(id: number) {
+      const index = this.npcs.findIndex((n) => n.id === id)
+      if (index === -1) return
+
+      try {
+        const counts = await $fetch<{
+          relations: number
+          items: number
+          locations: number
+          documents: number
+          images: number
+          memberships: number
+          lore: number
+          notes: number
+          players: number
+          factionName: string | null
+        }>(`/api/npcs/${id}/counts`)
+
+        // Update NPC in store with new counts
+        if (this.npcs[index]) {
+          this.npcs[index] = {
+            ...this.npcs[index],
+            _counts: counts,
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load counts for NPC ${id}:`, error)
+      }
+    },
+
+    // Load counts for all NPCs in the store
+    async loadAllNpcCounts() {
+      await Promise.all(this.npcs.map((npc) => this.loadNpcCounts(npc.id)))
     },
 
     // ==================== Factions ====================
@@ -225,6 +243,33 @@ export const useEntitiesStore = defineStore('entities', {
         this.factions[index] = { ...this.factions[index], ...faction }
       }
       return faction
+    },
+
+    async loadFactionCounts(id: number) {
+      const index = this.factions.findIndex((f) => f.id === id)
+      if (index === -1) return
+
+      try {
+        const counts = await $fetch<{
+          members: number
+          items: number
+          locations: number
+          lore: number
+          players: number
+          documents: number
+          images: number
+        }>(`/api/factions/${id}/counts`)
+
+        const faction = this.factions[index]
+        if (faction) {
+          this.factions[index] = {
+            ...faction,
+            _counts: counts,
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load counts for faction ${id}:`, error)
+      }
     },
 
     // ==================== Locations ====================
@@ -349,6 +394,39 @@ export const useEntitiesStore = defineStore('entities', {
       return item
     },
 
+    // Load counts for a single Item and update it in the store
+    async loadItemCounts(id: number) {
+      const index = this.items.findIndex((i) => i.id === id)
+      if (index === -1) return
+
+      try {
+        const counts = await $fetch<{
+          owners: number
+          locations: number
+          factions: number
+          lore: number
+          players: number
+          documents: number
+          images: number
+        }>(`/api/items/${id}/counts`)
+
+        // Update Item in store with new counts
+        if (this.items[index]) {
+          this.items[index] = {
+            ...this.items[index],
+            _counts: counts,
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load counts for Item ${id}:`, error)
+      }
+    },
+
+    // Load counts for all Items in the store
+    async loadAllItemCounts() {
+      await Promise.all(this.items.map((item) => this.loadItemCounts(item.id)))
+    },
+
     // ==================== Lore ====================
 
     async fetchLore(campaignId: string | number, force = false) {
@@ -356,9 +434,26 @@ export const useEntitiesStore = defineStore('entities', {
 
       this.loreLoading = true
       try {
+        // Save existing _counts before fetching
+        const existingCounts = new Map<number, Lore['_counts']>()
+        this.lore.forEach((l) => {
+          if (l._counts) {
+            existingCounts.set(l.id, l._counts)
+          }
+        })
+
         const lore = await $fetch<Lore[]>('/api/lore', {
           query: { campaignId },
         })
+
+        // Restore _counts from previous data
+        lore.forEach((l) => {
+          const savedCounts = existingCounts.get(l.id)
+          if (savedCounts) {
+            l._counts = savedCounts
+          }
+        })
+
         this.lore = lore
         this.loreLoaded = true
       } catch (error) {
@@ -388,9 +483,13 @@ export const useEntitiesStore = defineStore('entities', {
       })
       const index = this.lore.findIndex((l) => l.id === id)
       if (index !== -1) {
-        this.lore[index] = lore
+        // Preserve _counts from old Lore and merge with new data
+        const oldLore = this.lore[index]
+        this.lore[index] = { ...oldLore, ...lore }
+        // Reload counts after update
+        await this.loadLoreCounts(id)
       }
-      return lore
+      return this.lore[index] || lore
     },
 
     async deleteLore(id: number) {
@@ -410,6 +509,53 @@ export const useEntitiesStore = defineStore('entities', {
       return lore
     },
 
+    // Load counts for a single Lore and update it in the store
+    async loadLoreCounts(id: number) {
+      const index = this.lore.findIndex((l) => l.id === id)
+      if (index === -1) return
+
+      try {
+        const counts = await $fetch<{
+          npcs: number
+          items: number
+          factions: number
+          locations: number
+          players: number
+          documents: number
+          images: number
+        }>(`/api/lore/${id}/counts`)
+
+        // Update Lore in store with new counts
+        if (this.lore[index]) {
+          this.lore[index] = {
+            ...this.lore[index],
+            _counts: counts,
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load counts for Lore ${id}:`, error)
+      }
+    },
+
+    // Load counts for all Lore entries in the store
+    async loadAllLoreCounts() {
+      await Promise.all(this.lore.map((l) => this.loadLoreCounts(l.id)))
+    },
+
+    // Set counts directly (without fetching) - used when we already have the data
+    setLoreCounts(id: number, counts: Lore['_counts']) {
+      const index = this.lore.findIndex((l) => l.id === id)
+      if (index === -1) return
+
+      const loreItem = this.lore[index]
+      if (loreItem) {
+        this.lore[index] = {
+          ...loreItem,
+          _counts: counts,
+        }
+      }
+    },
+
     // ==================== Players ====================
 
     async fetchPlayers(campaignId: string | number, force = false) {
@@ -417,9 +563,26 @@ export const useEntitiesStore = defineStore('entities', {
 
       this.playersLoading = true
       try {
+        // Save existing _counts before fetching
+        const existingCounts = new Map<number, Player['_counts']>()
+        this.players.forEach((p) => {
+          if (p._counts) {
+            existingCounts.set(p.id, p._counts)
+          }
+        })
+
         const players = await $fetch<Player[]>('/api/players', {
           query: { campaignId },
         })
+
+        // Restore _counts from previous data
+        players.forEach((p) => {
+          const savedCounts = existingCounts.get(p.id)
+          if (savedCounts) {
+            p._counts = savedCounts
+          }
+        })
+
         this.players = players
         this.playersLoaded = true
       } catch (error) {
@@ -439,7 +602,9 @@ export const useEntitiesStore = defineStore('entities', {
         },
       })
       this.players.push(player)
-      return player
+      // Load counts for new Player
+      await this.loadPlayerCounts(player.id)
+      return this.players.find((p) => p.id === player.id) || player
     },
 
     async updatePlayer(id: number, data: Partial<Player>) {
@@ -449,9 +614,13 @@ export const useEntitiesStore = defineStore('entities', {
       })
       const index = this.players.findIndex((p) => p.id === id)
       if (index !== -1) {
-        this.players[index] = player
+        // Preserve _counts from old Player and merge with new data
+        const oldPlayer = this.players[index]
+        this.players[index] = { ...oldPlayer, ...player }
+        // Reload counts after update
+        await this.loadPlayerCounts(id)
       }
-      return player
+      return this.players[index] || player
     },
 
     async deletePlayer(id: number) {
@@ -469,6 +638,49 @@ export const useEntitiesStore = defineStore('entities', {
         this.players[index] = { ...this.players[index], ...player }
       }
       return player
+    },
+
+    // Load counts for a single Player and update it in the store
+    async loadPlayerCounts(id: number) {
+      const index = this.players.findIndex((p) => p.id === id)
+      if (index === -1) return
+
+      try {
+        const counts = await $fetch<{
+          characters: number
+          items: number
+          locations: number
+          factions: number
+          lore: number
+          sessions: number
+          documents: number
+          images: number
+        }>(`/api/players/${id}/counts`)
+
+        const player = this.players[index]
+        if (player) {
+          this.players[index] = {
+            ...player,
+            _counts: counts,
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load counts for Player ${id}:`, error)
+      }
+    },
+
+    // Set counts directly (without fetching) - used when we already have the data
+    setPlayerCounts(id: number, counts: Player['_counts']) {
+      const index = this.players.findIndex((p) => p.id === id)
+      if (index === -1) return
+
+      const player = this.players[index]
+      if (player) {
+        this.players[index] = {
+          ...player,
+          _counts: counts,
+        }
+      }
     },
 
     // ==================== Utility ====================
