@@ -35,9 +35,15 @@ importers:
       better-sqlite3:
         specifier: ^12.4.6
         version: 12.5.0
+      bindings:
+        specifier: ^1.5.0
+        version: 1.5.0
       fastest-levenshtein:
         specifier: ^1.0.16
         version: 1.0.16
+      file-uri-to-path:
+        specifier: ^1.0.0
+        version: 1.0.0
       marked:
         specifier: ^17.0.0
         version: 17.0.1
