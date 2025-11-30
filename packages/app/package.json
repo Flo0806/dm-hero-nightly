@@ -70,6 +70,13 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "node_modules/better-sqlite3",
+        "to": ".output/server/node_modules/better-sqlite3",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "asar": true,
