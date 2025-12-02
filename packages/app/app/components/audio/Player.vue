@@ -48,6 +48,13 @@
 
         <!-- Current time indicator -->
         <div class="time-indicator">
+          <v-progress-circular
+            v-if="isBuffering"
+            indeterminate
+            size="14"
+            width="2"
+            class="mr-1"
+          />
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
@@ -170,8 +177,11 @@
       <audio
         ref="audioElement"
         :src="audioUrl"
-        preload="metadata"
+        preload="auto"
         @loadedmetadata="onLoadedMetadata"
+        @canplay="onCanPlay"
+        @waiting="onWaiting"
+        @playing="onPlaying"
         @timeupdate="onTimeUpdate"
         @ended="onEnded"
         @error="onError"
@@ -287,6 +297,8 @@ const duration = ref(0)
 const volume = ref(1)
 const previousVolume = ref(1)
 const playbackRate = ref(1)
+const isReady = ref(false)
+const isBuffering = ref(false)
 
 // Markers
 const markers = ref<AudioMarker[]>([...props.initialMarkers])
@@ -403,15 +415,33 @@ function setCurrentTimeAsTimestamp() {
   timestampError.value = ''
 }
 
-function togglePlay() {
+async function togglePlay() {
   if (!audioElement.value) return
 
   if (isPlaying.value) {
     audioElement.value.pause()
+    isPlaying.value = false
   } else {
+    // If not ready, load first
+    if (!isReady.value) {
+      isBuffering.value = true
+      audioElement.value.load()
+
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => resolve(), 3000)
+        const handler = () => {
+          clearTimeout(timeout)
+          audioElement.value?.removeEventListener('canplay', handler)
+          resolve()
+        }
+        audioElement.value?.addEventListener('canplay', handler)
+      })
+      isBuffering.value = false
+    }
+
     audioElement.value.play()
+    isPlaying.value = true
   }
-  isPlaying.value = !isPlaying.value
 }
 
 function stop() {
@@ -445,12 +475,33 @@ function toggleMute() {
   }
 }
 
-function seekTo(event: MouseEvent) {
+async function seekTo(event: MouseEvent) {
   if (!progressContainer.value || !audioElement.value) return
 
   const rect = progressContainer.value.getBoundingClientRect()
   const percent = (event.clientX - rect.left) / rect.width
-  audioElement.value.currentTime = percent * duration.value
+  const targetTime = percent * duration.value
+
+  // If audio isn't ready yet, we need to wait for it to load
+  if (!isReady.value) {
+    isBuffering.value = true
+    // Trigger load if not started
+    audioElement.value.load()
+
+    // Wait for canplay event with timeout
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), 3000)
+      const handler = () => {
+        clearTimeout(timeout)
+        audioElement.value?.removeEventListener('canplay', handler)
+        resolve()
+      }
+      audioElement.value?.addEventListener('canplay', handler)
+    })
+    isBuffering.value = false
+  }
+
+  audioElement.value.currentTime = targetTime
 }
 
 let isDragging = false
@@ -462,7 +513,7 @@ function startDrag() {
 }
 
 function onDrag(event: MouseEvent) {
-  if (!isDragging || !progressContainer.value || !audioElement.value) return
+  if (!isDragging || !progressContainer.value || !audioElement.value || !isReady.value) return
 
   const rect = progressContainer.value.getBoundingClientRect()
   const percent = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
@@ -475,8 +526,26 @@ function stopDrag() {
   document.removeEventListener('mouseup', stopDrag)
 }
 
-function jumpToMarker(marker: AudioMarker) {
+async function jumpToMarker(marker: AudioMarker) {
   if (!audioElement.value) return
+
+  // If audio isn't ready yet, we need to wait for it to load
+  if (!isReady.value) {
+    isBuffering.value = true
+    audioElement.value.load()
+
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => resolve(), 3000)
+      const handler = () => {
+        clearTimeout(timeout)
+        audioElement.value?.removeEventListener('canplay', handler)
+        resolve()
+      }
+      audioElement.value?.addEventListener('canplay', handler)
+    })
+    isBuffering.value = false
+  }
+
   audioElement.value.currentTime = marker.timestampSeconds
 }
 
@@ -533,6 +602,19 @@ function onLoadedMetadata() {
   }
 }
 
+function onCanPlay() {
+  isReady.value = true
+  isBuffering.value = false
+}
+
+function onWaiting() {
+  isBuffering.value = true
+}
+
+function onPlaying() {
+  isBuffering.value = false
+}
+
 function onTimeUpdate() {
   if (audioElement.value) {
     currentTime.value = audioElement.value.currentTime
@@ -547,6 +629,7 @@ function onEnded() {
 function onError() {
   console.error('Audio error')
   isPlaying.value = false
+  isReady.value = false
 }
 
 // Expose for parent

@@ -89,6 +89,16 @@
         :text="$t('audio.noAudioText')"
       />
     </v-card-text>
+
+    <!-- Delete Confirmation Dialog -->
+    <UiDeleteConfirmDialog
+      v-model="showDeleteDialog"
+      :title="$t('audio.deleteTitle')"
+      :message="$t('audio.deleteConfirmMessage', { title: deletingAudio?.title || $t('audio.untitled') })"
+      :loading="deletingAudioLoading"
+      @confirm="confirmDeleteAudio"
+      @cancel="showDeleteDialog = false"
+    />
   </v-card>
 </template>
 
@@ -133,6 +143,9 @@ const audioFiles = ref<SessionAudio[]>([])
 const loadingAudio = ref(false)
 const uploadingAudio = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const showDeleteDialog = ref(false)
+const deletingAudio = ref<SessionAudio | null>(null)
+const deletingAudioLoading = ref(false)
 
 // Load audio files on mount
 onMounted(() => {
@@ -219,18 +232,28 @@ async function updateAudioTitle(audioId: number, title: string) {
   }
 }
 
-async function deleteAudio(audio: SessionAudio) {
-  if (!confirm(t('audio.deleteConfirm'))) return
+function deleteAudio(audio: SessionAudio) {
+  deletingAudio.value = audio
+  showDeleteDialog.value = true
+}
 
+async function confirmDeleteAudio() {
+  if (!deletingAudio.value) return
+
+  deletingAudioLoading.value = true
   try {
-    await $fetch(`/api/session-audio/${audio.id}`, {
+    await $fetch(`/api/session-audio/${deletingAudio.value.id}`, {
       method: 'DELETE',
     })
 
-    audioFiles.value = audioFiles.value.filter((a) => a.id !== audio.id)
+    audioFiles.value = audioFiles.value.filter((a) => a.id !== deletingAudio.value?.id)
     emit('audio-updated')
+    showDeleteDialog.value = false
+    deletingAudio.value = null
   } catch (error) {
     console.error('Failed to delete audio:', error)
+  } finally {
+    deletingAudioLoading.value = false
   }
 }
 
