@@ -293,6 +293,7 @@
     "emptyText": "Erstelle deine erste Fraktion um loszulegen",
     "deleteTitle": "Fraktion löschen",
     "deleteConfirm": "Möchtest du '{name}' wirklich löschen? Die Fraktion wird archiviert und kann wiederhergestellt werden.",
+    "searchHint": "Suche nach Name, Typ oder Anführer...",
     "details": "Details",
     "members": "Mitglieder",
     "membersList": "Mitgliederliste",
@@ -372,7 +373,8 @@
       "trade": "Handel",
       "political": "Politisch",
       "pirates": "Piraten",
-      "magical": "Magisch"
+      "magical": "Magisch",
+      "academic": "Akademisch"
     },
     "sizes": {
       "tiny": "Winzig (1-5)",
@@ -437,6 +439,7 @@
     "emptyText": "Erstelle deinen ersten Wissenseintrag um loszulegen",
     "deleteTitle": "Wissen löschen",
     "deleteConfirm": "Möchtest du '{name}' wirklich löschen? Der Eintrag wird archiviert und kann wiederhergestellt werden.",
+    "searchHint": "Suche nach Name oder Typ...",
     "details": "Details",
     "types": {
       "object": "Gegenstand",
@@ -1037,6 +1040,7 @@
     "emptyText": "Erstelle deinen ersten Spieler um loszulegen",
     "deleteTitle": "Spieler löschen",
     "deleteConfirm": "Möchtest du '{name}' wirklich löschen? Der Spieler wird archiviert und kann wiederhergestellt werden.",
+    "searchHint": "Suche nach Name oder Charakter...",
     "details": "Details",
     "characters": "Charaktere",
     "charactersTab": "Charaktere",

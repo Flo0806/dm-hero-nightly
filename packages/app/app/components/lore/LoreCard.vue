@@ -339,9 +339,10 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { getCounts } = useLoreCounts()
 
-// Get counts from props (stored in the entities store)
-const counts = computed(() => props.lore._counts)
+// Get counts reactively from the composable (shared cache)
+const counts = computed(() => getCounts(props.lore.id) || props.lore._counts)
 
 // Image Preview State
 const showImagePreview = ref(false)

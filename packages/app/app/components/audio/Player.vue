@@ -87,8 +87,8 @@
 
         <!-- Playback Speed -->
         <v-menu>
-          <template #activator="{ props }">
-            <v-btn variant="tonal" size="small" v-bind="props">
+          <template #activator="{ props: menuProps }">
+            <v-btn variant="tonal" size="small" v-bind="menuProps">
               {{ playbackRate }}x
               <v-tooltip activator="parent" location="bottom">
                 {{ $t('audio.playbackSpeed') }}

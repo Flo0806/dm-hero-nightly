@@ -140,6 +140,7 @@ const router = useRouter()
 const campaignStore = useCampaignStore()
 const entitiesStore = useEntitiesStore()
 const { downloadImage } = useImageDownload()
+const { loadLoreCountsBatch } = useLoreCounts()
 
 // Refs for search
 const searchQuery = ref('')
@@ -253,14 +254,9 @@ watch(searchQuery, async (query) => {
       })
       searchResults.value = results
 
-      // Load counts for search results in background using store (non-blocking)
-      if (results.length > 0) {
-        results.forEach((l) => {
-          if (!l._counts) {
-            entitiesStore.loadLoreCounts(l.id)
-          }
-        })
-      }
+      // Load counts for search results using the shared composable
+      // This ensures LoreCard gets the counts via getCounts()
+      loadLoreCountsBatch(results)
     } finally {
       searching.value = false
     }

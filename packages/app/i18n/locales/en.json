@@ -288,6 +288,7 @@
     "emptyText": "Create your first faction to get started",
     "deleteTitle": "Delete Faction",
     "deleteConfirm": "Do you really want to delete '{name}'? The faction will be archived and can be restored.",
+    "searchHint": "Search by name, type or leader...",
     "details": "Details",
     "members": "Members",
     "membersList": "Members List",
@@ -367,7 +368,8 @@
       "trade": "Trade",
       "political": "Political",
       "pirates": "Pirates",
-      "magical": "Magical"
+      "magical": "Magical",
+      "academic": "Academic"
     },
     "sizes": {
       "tiny": "Tiny (1-5)",
@@ -438,6 +440,7 @@
     "emptyText": "Create your first lore entry to get started",
     "deleteTitle": "Delete Lore Entry",
     "deleteConfirm": "Do you really want to delete '{name}'? The entry will be archived and can be restored.",
+    "searchHint": "Search by name or type...",
     "details": "Details",
     "types": {
       "object": "Object",
@@ -1016,6 +1019,7 @@
     "emptyText": "Create your first player to get started",
     "deleteTitle": "Delete Player",
     "deleteConfirm": "Are you sure you want to delete '{name}'? The player will be archived and can be restored.",
+    "searchHint": "Search by name or character...",
     "details": "Details",
     "characters": "Characters",
     "charactersTab": "Characters",

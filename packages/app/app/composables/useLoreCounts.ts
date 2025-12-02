@@ -13,14 +13,15 @@ interface LoreCounts {
   images: number
 }
 
+// SHARED STATE - outside the function so all components share the same cache
+const loadingCounts = ref<Set<number>>(new Set())
+const countsMap = reactive<Record<number, LoreCounts | undefined>>({})
+
 /**
  * Composable to load Lore counts asynchronously
- * Updates the Lore object reactively with _counts property
+ * Uses shared state so all LoreCards share the same cache
  */
 export function useLoreCounts() {
-  const loadingCounts = ref<Set<number>>(new Set())
-  // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, LoreCounts | undefined>>({})
 
   async function loadLoreCounts(lore: Lore): Promise<void> {
     // Skip if already loading

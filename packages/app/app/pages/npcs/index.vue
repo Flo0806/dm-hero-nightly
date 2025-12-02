@@ -169,6 +169,7 @@ const previewImageTitle = ref('')
 // Auto-imported stores
 const entitiesStore = useEntitiesStore()
 const campaignStore = useCampaignStore()
+const { loadNpcCountsBatch } = useNpcCounts()
 
 // Get active campaign from campaign store
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
@@ -328,13 +329,9 @@ async function executeSearch(query: string) {
     })
     searchResults.value = results
 
-    // Load counts for search results - they should already be in store
-    // but load any missing ones
-    for (const npc of results) {
-      if (!npc._counts) {
-        entitiesStore.loadNpcCounts(npc.id)
-      }
-    }
+    // Load counts for search results using the shared composable
+    // This ensures NpcCard gets the counts via getCounts()
+    loadNpcCountsBatch(results)
   } catch (error: unknown) {
     // Ignore abort errors (expected when user types fast)
     if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {

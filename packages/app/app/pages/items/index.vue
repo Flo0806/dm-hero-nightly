@@ -149,6 +149,7 @@ const router = useRouter()
 const route = useRoute()
 const campaignStore = useCampaignStore()
 const entitiesStore = useEntitiesStore()
+const { loadItemCountsBatch } = useItemCounts()
 
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
 
@@ -177,10 +178,9 @@ async function executeSearch(query: string) {
     })
     searchResults.value = results
 
-    // Load counts for search results
-    if (results.length > 0) {
-      await Promise.all(results.map((item) => entitiesStore.loadItemCounts(item.id)))
-    }
+    // Load counts for search results using the shared composable
+    // This ensures ItemCard gets the counts via getCounts()
+    loadItemCountsBatch(results)
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') return
     console.error('Search failed:', error)

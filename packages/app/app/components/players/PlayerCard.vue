@@ -329,16 +329,9 @@ defineEmits<{
   chaos: [player: Player]
 }>()
 
-// Use store's _counts directly - updated by entitiesStore when relations change
-const entitiesStore = useEntitiesStore()
-const counts = computed(() => props.player._counts)
-
-// Load counts when card is mounted (if not already loaded)
-onMounted(() => {
-  if (!props.player._counts) {
-    entitiesStore.loadPlayerCounts(props.player.id)
-  }
-})
+// Get counts reactively from the composable (shared cache)
+const { getCounts } = usePlayerCounts()
+const counts = computed(() => getCounts(props.player.id) || props.player._counts)
 
 // Image Preview State
 const showImagePreview = ref(false)

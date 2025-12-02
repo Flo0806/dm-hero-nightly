@@ -16,6 +16,8 @@
       variant="outlined"
       clearable
       class="mb-4"
+      :hint="searchQuery && searchQuery.trim().length > 0 ? $t('players.searchHint') : ''"
+      persistent-hint
     />
 
     <!-- Loading Skeleton -->
@@ -109,6 +111,7 @@ const router = useRouter()
 const campaignStore = useCampaignStore()
 const entitiesStore = useEntitiesStore()
 const { downloadImage } = useImageDownload()
+const { loadPlayerCountsBatch } = usePlayerCounts()
 
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
 
@@ -160,6 +163,9 @@ watch(searchQuery, async (query) => {
         },
       })
       searchResults.value = results
+
+      // Load counts for search results using the shared composable
+      loadPlayerCountsBatch(results)
     } catch (error) {
       console.error('Player search failed:', error)
       searchResults.value = []
@@ -173,6 +179,10 @@ watch(searchQuery, async (query) => {
 onMounted(async () => {
   if (activeCampaignId.value) {
     await entitiesStore.fetchPlayers(activeCampaignId.value)
+    // Load counts for all players using the shared composable
+    if (players.value.length > 0) {
+      loadPlayerCountsBatch(players.value)
+    }
   }
 })
 

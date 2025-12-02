@@ -1,14 +1,14 @@
 import type { ItemCounts, Item } from '../../types/item.js'
 
+// SHARED STATE - outside the function so all components share the same cache
+const loadingCounts = ref<Set<number>>(new Set())
+const countsMap = reactive<Record<number, ItemCounts | undefined>>({})
 
 /**
  * Composable to load Item counts asynchronously
- * Updates the Item object reactively with _counts property
+ * Uses shared state so all ItemCards share the same cache
  */
 export function useItemCounts() {
-  const loadingCounts = ref<Set<number>>(new Set())
-  // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, ItemCounts | undefined>>({})
 
   async function loadItemCounts(item: Item): Promise<void> {
     // Skip if already loading

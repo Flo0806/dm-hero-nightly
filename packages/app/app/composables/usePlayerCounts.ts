@@ -1,13 +1,14 @@
 import type { PlayerCounts, Player } from '../../types/player.js'
 
+// SHARED STATE - outside the function so all components share the same cache
+const loadingCounts = ref<Set<number>>(new Set())
+const countsMap = reactive<Record<number, PlayerCounts | undefined>>({})
+
 /**
  * Composable to load Player counts asynchronously
- * Updates the Player object reactively with _counts property
+ * Uses shared state so all PlayerCards share the same cache
  */
 export function usePlayerCounts() {
-  const loadingCounts = ref<Set<number>>(new Set())
-  // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, PlayerCounts | undefined>>({})
 
   async function loadPlayerCounts(player: Player): Promise<void> {
     // Skip if already loading
