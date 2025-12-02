@@ -2,6 +2,20 @@
 
 ## 1.0.0-alpha.14
 
+### Features
+
+- Global search now shows linked entities (chips) for all entity types with bidirectional relation support
+- Audio player improvements: preloads audio fully, shows buffering indicator, smoother timeline seeking
+- Delete confirmation dialog for audio files (replaces browser alert)
+
+### Bug Fixes
+
+- Fix global search not finding linked entities for Items, Factions, Players, Lore
+- Fix audio player hanging on first timeline click (especially in Electron)
+- Fix entity-specific search (NPCs, Items, Lore, Players) count chips loading infinitely
+- Fix missing i18n keys for factions, lore, and players search hints
+- Add missing `factions.types.academic` translation
+
 ### Patch Changes
 
 - [`4d33153`](https://github.com/Flo0806/dm-hero/commit/4d33153e0967bcf74ad882a23f2f6c3737fa973c) Thanks [@Flo0806](https://github.com/Flo0806)! - Include bindings and file-uri-to-path dependencies for Electron build
