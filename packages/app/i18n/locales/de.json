@@ -1033,7 +1033,7 @@
     "phone": "Telefon",
     "phonePlaceholder": "+49 123 456789",
     "discord": "Discord",
-    "discordPlaceholder": "@spielername",
+    "discordPlaceholder": "{'@'}spielername",
     "notes": "Notizen",
     "notesPlaceholder": "Präferenzen, Allergien, Verfügbarkeit...",
     "nameRequired": "Name ist erforderlich",

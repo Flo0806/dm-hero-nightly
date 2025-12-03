@@ -1012,7 +1012,7 @@
     "phone": "Phone",
     "phonePlaceholder": "+1 234 567890",
     "discord": "Discord",
-    "discordPlaceholder": "@playername",
+    "discordPlaceholder": "{'@'}playername",
     "notes": "Notes",
     "notesPlaceholder": "Preferences, allergies, availability...",
     "nameRequired": "Name is required",
