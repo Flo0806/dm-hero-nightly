@@ -2,7 +2,7 @@
 
 > A personal D&D campaign management tool for Dungeon Masters
 
-[![Build](https://github.com/Flo0806/dm-hero/actions/workflows/docker-build.yml/badge.svg)](https://github.com/Flo0806/dm-hero/actions/workflows/docker-build.yml)
+[![Release](https://github.com/Flo0806/dm-hero/actions/workflows/release-app.yml/badge.svg)](https://github.com/Flo0806/dm-hero/actions/workflows/release-app.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
