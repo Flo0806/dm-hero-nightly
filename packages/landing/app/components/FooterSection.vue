@@ -83,27 +83,17 @@ const links = [
       <!-- Divider -->
       <v-divider class="my-8" color="primary" opacity="0.2" />
 
-      <!-- Tech Stack -->
+      <!-- Powered by Nuxt -->
       <div class="text-center">
-        <p class="text-caption text-disabled mb-3">Built with</p>
-        <div class="d-flex justify-center align-center ga-4 flex-wrap">
-          <v-chip size="small" variant="outlined" color="primary">
-            <v-icon start size="small">mdi-nuxt</v-icon>
-            Nuxt 4
-          </v-chip>
-          <v-chip size="small" variant="outlined" color="primary">
-            <v-icon start size="small">mdi-vuetify</v-icon>
-            Vuetify 3
-          </v-chip>
-          <v-chip size="small" variant="outlined" color="primary">
-            <v-icon start size="small">mdi-database</v-icon>
-            SQLite
-          </v-chip>
-          <v-chip size="small" variant="outlined" color="primary">
-            <v-icon start size="small">mdi-electron-framework</v-icon>
-            Electron
-          </v-chip>
-        </div>
+        <a
+          href="https://nuxt.com"
+          target="_blank"
+          class="powered-by-nuxt"
+        >
+          <span class="text-caption text-disabled">Powered by</span>
+          <img src="/nuxt-icon.svg" alt="Nuxt" class="nuxt-logo" />
+          <span class="nuxt-text">Nuxt</span>
+        </a>
       </div>
     </v-container>
   </footer>
@@ -113,5 +103,30 @@ const links = [
 .footer-section {
   background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.2) 100%);
   border-top: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.powered-by-nuxt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.powered-by-nuxt:hover {
+  background-color: rgba(0, 220, 130, 0.1);
+}
+
+.nuxt-logo {
+  width: 24px;
+  height: 24px;
+}
+
+.nuxt-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #00DC82;
 }
 </style>
