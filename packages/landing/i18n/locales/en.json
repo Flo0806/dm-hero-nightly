@@ -8,7 +8,8 @@
     "screenshots": "Screenshots",
     "download": "Download",
     "docs": "Docs",
-    "github": "GitHub"
+    "github": "GitHub",
+    "support": "Support"
   },
   "docs": {
     "title": "Documentation",
@@ -112,6 +113,13 @@
       "description": "For self-hosted deployment"
     },
     "allReleases": "View all releases on GitHub"
+  },
+  "support": {
+    "title": "Support DM Hero",
+    "description": "DM Hero is completely free and open source - and always will be. I develop it in my spare time because I'm passionate about D&D and helping fellow Dungeon Masters.",
+    "whatIs": "\"Buy Me a Coffee\" is a simple way to say thanks with a small donation. It helps cover hosting costs and motivates me to keep adding new features. No account needed, no subscription - just a one-time tip if you feel like it!",
+    "button": "Buy me a coffee",
+    "note": "Every coffee fuels another late-night coding session. Thank you for your support!"
   },
   "footer": {
     "tagline": "Empowering Dungeon Masters to tell epic stories.",

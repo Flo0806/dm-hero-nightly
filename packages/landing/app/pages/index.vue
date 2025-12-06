@@ -18,6 +18,7 @@ useSeoMeta({
     <FeaturesSection />
     <ScreenshotsSection />
     <DownloadSection />
+    <SupportSection />
     <FooterSection />
   </div>
 </template>

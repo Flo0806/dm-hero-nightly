@@ -3,6 +3,19 @@ const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
+// Floating particles for background effect
+const particles = ref<{ id: number; left: string; size: number; delay: number }[]>([])
+
+onMounted(() => {
+  // Generate random particles
+  particles.value = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    size: Math.random() * 3 + 1.5,
+    delay: Math.random() * 10,
+  }))
+})
+
 // Fetch all docs for sidebar using Nuxt Content v3 API
 const { data: allDocs } = await useAsyncData('docs-list', () =>
   queryCollection('docs').order('stem', 'ASC').all()
@@ -54,7 +67,29 @@ const { data: page } = await useAsyncData(
 
 <template>
   <div class="docs-page">
-    <v-container class="py-12">
+    <!-- Animated background -->
+    <div class="docs-bg">
+      <div class="docs-gradient" />
+      <!-- Floating particles -->
+      <div class="particles-container">
+        <div
+          v-for="particle in particles"
+          :key="particle.id"
+          class="particle"
+          :style="{
+            left: particle.left,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            animationDelay: `${particle.delay}s`,
+          }"
+        />
+      </div>
+      <!-- Glowing orbs -->
+      <div class="orb orb-1" />
+      <div class="orb orb-2" />
+    </div>
+
+    <v-container class="py-12 docs-container">
       <v-row>
         <!-- Sidebar Navigation -->
         <v-col cols="12" md="3">
@@ -108,18 +143,109 @@ const { data: page } = await useAsyncData(
 
 <style scoped>
 .docs-page {
+  position: relative;
   min-height: 100vh;
   padding-top: 64px;
+  overflow: hidden;
+}
+
+.docs-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.docs-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(212, 165, 116, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(212, 165, 116, 0.05) 0%, transparent 40%);
+}
+
+.particles-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  bottom: -10px;
+  background: var(--dm-gold);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particleFloat 14s ease-in-out infinite;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.15;
+  animation: float 10s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: var(--dm-gold);
+  top: 10%;
+  right: -100px;
+}
+
+.orb-2 {
+  width: 200px;
+  height: 200px;
+  background: rgba(139, 115, 85, 0.5);
+  bottom: 20%;
+  left: -50px;
+  animation-delay: 3s;
+}
+
+.docs-container {
+  position: relative;
+  z-index: 1;
 }
 
 .docs-nav {
   position: sticky;
   top: 80px;
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(var(--v-theme-surface), 0.8) !important;
 }
 
 .docs-content {
   border: 1px solid rgba(var(--v-theme-primary), 0.1);
+  backdrop-filter: blur(10px);
+  background: rgba(var(--v-theme-surface), 0.9) !important;
+}
+
+@keyframes particleFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg);
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100vh) rotate(720deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.05);
+  }
 }
 
 /* Prose styling for markdown content */

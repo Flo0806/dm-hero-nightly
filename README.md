@@ -5,6 +5,10 @@
 [![Release](https://github.com/Flo0806/dm-hero/actions/workflows/release-app.yml/badge.svg)](https://github.com/Flo0806/dm-hero/actions/workflows/release-app.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+<a href="https://www.buymeacoffee.com/flo0806" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40" ></a>
+
+**[Website & Docs](https://dm-hero.com)** | **[Download](https://dm-hero.com/#download)**
+
 ## Overview
 
 DM Hero helps Dungeon Masters organize their D&D campaigns by solving the problem of scattered information across multiple documents. Quickly find NPCs, locations, items, and track relationships between entities with powerful fuzzy search.
@@ -108,6 +112,16 @@ Run linter before committing:
 pnpm lint:fix
 pnpm format
 ```
+
+## Support the Project
+
+DM Hero is completely **free and open source** - and always will be. I develop it in my spare time because I love D&D and want to help fellow Dungeon Masters run better campaigns.
+
+If DM Hero helps you organize your adventures, consider supporting me with a small tip:
+
+<a href="https://www.buymeacoffee.com/flo0806" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50" ></a>
+
+**What is "Buy Me a Coffee"?** It's a simple way to say thanks with a small donation. No account needed, no subscription - just a one-time tip if you feel like it. Every coffee helps cover hosting costs and motivates me to keep adding new features!
 
 ## License
 

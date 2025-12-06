@@ -8,7 +8,8 @@
     "screenshots": "Screenshots",
     "download": "Download",
     "docs": "Docs",
-    "github": "GitHub"
+    "github": "GitHub",
+    "support": "Support"
   },
   "docs": {
     "title": "Dokumentation",
@@ -112,6 +113,13 @@
       "description": "Für Self-Hosted Deployment"
     },
     "allReleases": "Alle Releases auf GitHub ansehen"
+  },
+  "support": {
+    "title": "DM Hero unterstützen",
+    "description": "DM Hero ist komplett kostenlos und Open Source - und wird es auch immer bleiben. Ich entwickle es in meiner Freizeit, weil ich D&D liebe und anderen Spielleitern helfen möchte.",
+    "whatIs": "\"Buy Me a Coffee\" ist eine einfache Möglichkeit, Danke zu sagen - mit einer kleinen Spende. Es hilft mir, Hosting-Kosten zu decken und motiviert mich, neue Features zu entwickeln. Kein Account nötig, kein Abo - einfach ein einmaliges Trinkgeld, wenn du magst!",
+    "button": "Kaffee spendieren",
+    "note": "Jeder Kaffee sorgt für eine weitere Nachtschicht am Code. Danke für deine Unterstützung!"
   },
   "footer": {
     "tagline": "Wir unterstützen Spielleiter dabei, epische Geschichten zu erzählen.",

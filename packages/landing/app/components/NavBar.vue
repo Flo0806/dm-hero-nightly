@@ -9,6 +9,7 @@ const navItems = [
   { key: 'screenshots', href: '/#screenshots' },
   { key: 'download', href: '/#download' },
   { key: 'docs', href: '/docs' },
+  { key: 'support', href: 'https://buymeacoffee.com/flo0806', external: true, icon: 'mdi-coffee' },
 ]
 
 // Handle scroll effect
@@ -51,16 +52,30 @@ function toggleLanguage() {
 
       <!-- Desktop Navigation -->
       <nav class="d-none d-md-flex align-center ga-1">
-        <v-btn
-          v-for="item in navItems"
-          :key="item.key"
-          :href="item.href"
-          variant="text"
-          color="primary"
-          class="nav-link"
-        >
-          {{ t(`nav.${item.key}`) }}
-        </v-btn>
+        <template v-for="item in navItems" :key="item.key">
+          <a
+            v-if="item.external"
+            :href="item.href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="bmc-nav-link"
+          >
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+              alt="Buy Me A Coffee"
+              class="bmc-nav-button"
+            />
+          </a>
+          <v-btn
+            v-else
+            :href="item.href"
+            variant="text"
+            color="primary"
+            class="nav-link"
+          >
+            {{ t(`nav.${item.key}`) }}
+          </v-btn>
+        </template>
 
         <v-btn
           href="https://github.com/Flo0806/dm-hero"
@@ -116,15 +131,31 @@ function toggleLanguage() {
 
       <v-divider class="mb-2" />
 
-      <v-list-item
-        v-for="item in navItems"
-        :key="item.key"
-        :href="item.href"
-        color="primary"
-        @click="drawer = false"
-      >
-        <v-list-item-title>{{ t(`nav.${item.key}`) }}</v-list-item-title>
-      </v-list-item>
+      <template v-for="item in navItems" :key="item.key">
+        <v-list-item v-if="item.external" class="bmc-drawer-item">
+          <a
+            :href="item.href"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="bmc-drawer-link"
+            @click="drawer = false"
+          >
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+              alt="Buy Me A Coffee"
+              class="bmc-drawer-button"
+            />
+          </a>
+        </v-list-item>
+        <v-list-item
+          v-else
+          :href="item.href"
+          color="primary"
+          @click="drawer = false"
+        >
+          <v-list-item-title>{{ t(`nav.${item.key}`) }}</v-list-item-title>
+        </v-list-item>
+      </template>
 
       <v-list-item
         href="https://github.com/Flo0806/dm-hero"
@@ -193,5 +224,34 @@ function toggleLanguage() {
   width: 32px;
   height: 32px;
   border-radius: 6px;
+}
+
+.bmc-nav-link {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.bmc-nav-link:hover {
+  transform: scale(1.05);
+}
+
+.bmc-nav-button {
+  height: 36px;
+  width: auto;
+}
+
+.bmc-drawer-item {
+  padding: 8px 16px;
+}
+
+.bmc-drawer-link {
+  display: block;
+}
+
+.bmc-drawer-button {
+  height: 40px;
+  width: auto;
 }
 </style>
