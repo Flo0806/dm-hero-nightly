@@ -23,16 +23,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Check for changesets
+      - name: Check if release needed
         id: check
         run: |
-          # If there are still changeset files (excluding README), this is NOT a release
-          if ls .changeset/*.md 2>/dev/null | grep -v "README" | grep -q .; then
-            echo "Changesets still present - not a release merge"
+          VERSION=$(node -p "require('./packages/landing/package.json').version")
+          TAG="landing-v$VERSION"
+
+          # Check if this version tag already exists
+          if git tag -l "$TAG" | grep -q .; then
+            echo "Tag $TAG already exists - skipping release"
             echo "should_release=false" >> $GITHUB_OUTPUT
           else
-            echo "No changesets found - this is a release merge"
+            echo "Tag $TAG does not exist - will release"
             echo "should_release=true" >> $GITHUB_OUTPUT
           fi
 
