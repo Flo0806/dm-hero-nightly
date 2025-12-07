@@ -347,6 +347,7 @@ defineEmits<{
 }>()
 
 const { getCounts } = useItemCounts()
+const { getItemTypeIcon } = useEntityIcons()
 const { t } = useI18n()
 
 // Get counts reactively from the composable
@@ -405,24 +406,7 @@ function getRarityColor(rarity: string) {
   return colors[rarity] || 'grey'
 }
 
-// Icon helper for item types
-function getItemTypeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    weapon: 'mdi-sword',
-    armor: 'mdi-shield',
-    potion: 'mdi-bottle-tonic',
-    scroll: 'mdi-script-text',
-    wand: 'mdi-magic-staff',
-    ring: 'mdi-ring',
-    wondrous: 'mdi-star-circle',
-    tool: 'mdi-hammer-wrench',
-    consumable: 'mdi-fire',
-    treasure: 'mdi-treasure-chest',
-    quest: 'mdi-exclamation',
-    other: 'mdi-package-variant',
-  }
-  return icons[type] || 'mdi-sword'
-}
+// Icon helper now comes from useEntityIcons composable
 </script>
 
 <style scoped>

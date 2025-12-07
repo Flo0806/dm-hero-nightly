@@ -316,6 +316,7 @@ const router = useRouter()
 const route = useRoute()
 const entitiesStore = useEntitiesStore()
 const campaignStore = useCampaignStore()
+const { getLocationTypeIcon, getLocationTypeColor } = useEntityIcons()
 
 // Get active campaign from campaign store
 const activeCampaignId = computed(() => campaignStore.activeCampaignId)
@@ -633,46 +634,14 @@ watch(
   { immediate: true },
 )
 
-// Get icon based on location type
+// Get icon based on location type (uses composable)
 function getNodeIcon(item: TreeNode) {
-  const type = item.raw?.metadata?.type?.toLowerCase()
-  if (!type) return 'mdi-map-marker'
-
-  const iconMap: Record<string, string> = {
-    city: 'mdi-city',
-    stadt: 'mdi-city',
-    district: 'mdi-map-marker-radius',
-    viertel: 'mdi-map-marker-radius',
-    building: 'mdi-home',
-    gebäude: 'mdi-home',
-    tavern: 'mdi-beer',
-    taverne: 'mdi-beer',
-    shop: 'mdi-store',
-    laden: 'mdi-store',
-    temple: 'mdi-church',
-    tempel: 'mdi-church',
-    dungeon: 'mdi-gate',
-    verlies: 'mdi-gate',
-  }
-
-  return iconMap[type] || 'mdi-map-marker'
+  return getLocationTypeIcon(item.raw?.metadata?.type)
 }
 
-// Get color based on location type
+// Get color based on location type (uses composable)
 function getNodeColor(item: TreeNode) {
-  const type = item.raw?.metadata?.type?.toLowerCase()
-  if (!type) return 'primary'
-
-  const colorMap: Record<string, string> = {
-    city: 'purple',
-    stadt: 'purple',
-    district: 'blue',
-    viertel: 'blue',
-    building: 'grey',
-    gebäude: 'grey',
-  }
-
-  return colorMap[type] || 'primary'
+  return getLocationTypeColor(item.raw?.metadata?.type)
 }
 
 // Form state
