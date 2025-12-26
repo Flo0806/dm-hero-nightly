@@ -369,8 +369,7 @@ const migrations: Migration[] = [
         ADD CONSTRAINT fk_file_version
         FOREIGN KEY (version_id) REFERENCES adventure_versions(id) ON DELETE CASCADE`,
 
-      // Step 10: Drop old indexes from adventures that reference removed columns
-      'ALTER TABLE adventures DROP INDEX idx_status',
+      // Note: idx_status is auto-dropped by MySQL when status column is dropped
     ],
   },
 ]
