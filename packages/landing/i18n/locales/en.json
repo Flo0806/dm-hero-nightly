@@ -7,9 +7,11 @@
     "features": "Features",
     "screenshots": "Screenshots",
     "download": "Download",
+    "store": "Hero Basar",
     "docs": "Docs",
     "github": "GitHub",
-    "support": "Support"
+    "support": "Support",
+    "profile": "Profile"
   },
   "docs": {
     "title": "Documentation",
@@ -145,13 +147,309 @@
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong",
-    "retry": "Try again"
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
   },
   "privacyBanner": {
     "title": "Your data belongs to you.",
     "message": "This website uses no cookies and no tracking. We only store what's technically necessary. No consent required.",
     "learnMore": "Learn more",
     "ok": "Got it"
+  },
+  "store": {
+    "title": "Hero Basar",
+    "subtitle": "Discover ready-to-play adventures created by the community. Download, import, and start playing.",
+    "searchPlaceholder": "Search adventures...",
+    "sortBy": "Sort by",
+    "language": "Language",
+    "login": "Sign In",
+    "register": "Create Account",
+    "logout": "Sign Out",
+    "uploadAdventure": "Upload Adventure",
+    "sort": {
+      "newest": "Newest",
+      "popular": "Most Popular",
+      "rating": "Highest Rated"
+    },
+    "comingSoon": {
+      "title": "Coming Soon",
+      "description": "The Adventure Store is under construction. Soon you'll be able to discover, share, and download campaigns created by the community.",
+      "backHome": "Back to Home"
+    },
+    "empty": {
+      "title": "No Adventures Yet",
+      "description": "Be the first to share your adventure with the community!",
+      "createFirst": "Upload First Adventure"
+    },
+    "card": {
+      "free": "Free",
+      "by": "by"
+    },
+    "difficulty": {
+      "easy": "Easy",
+      "moderate": "Moderate",
+      "challenging": "Challenging",
+      "hard": "Hard",
+      "deadly": "Deadly"
+    },
+    "upload": {
+      "title": "Upload Adventure",
+      "titleEdit": "Edit Adventure",
+      "subtitle": "Share your one-shot or campaign with the community",
+      "subtitleEdit": "Update the details of your adventure",
+      "verifyRequired": "Please verify your email address before uploading adventures.",
+      "formLocked": "Form Locked",
+      "verifyFirst": "Please verify your email address first.",
+      "acceptTosFirst": "Please accept the Terms of Service first.",
+      "basicInfo": "Basic Information",
+      "description": "Description",
+      "highlights": "Highlights",
+      "gameDetails": "Game Details",
+      "authorInfo": "Author Information",
+      "adventureFile": "Adventure File",
+      "pricing": "Pricing",
+      "submit": "Upload Adventure",
+      "submitEdit": "Save Changes",
+      "addHighlight": "Add Highlight",
+      "hours": "Hours",
+      "multiSession": "Multi-Session Campaign",
+      "fields": {
+        "title": "Title",
+        "shortDescription": "Short Description",
+        "coverImage": "Cover Image",
+        "descriptionPlaceholder": "Describe your adventure in detail...",
+        "highlightPlaceholder": "e.g., Epic boss fight, Unique puzzles",
+        "system": "Game System",
+        "language": "Language",
+        "difficulty": "Difficulty",
+        "players": "Number of Players",
+        "characterLevel": "Character Level",
+        "duration": "Estimated Duration",
+        "tags": "Tags",
+        "authorName": "Author Name",
+        "discord": "Discord Username",
+        "file": "Adventure File (.dmhero)",
+        "fileReplace": "Replace Adventure File (optional)",
+        "freeAdventure": "Free Adventure",
+        "price": "Price",
+        "min": "Min",
+        "max": "Max"
+      },
+      "hints": {
+        "shortDescription": "Shown in the store listing. Max 500 characters.",
+        "coverImage": "Recommended: 1920x1200 (16:10). JPG or PNG.",
+        "authorName": "Optional. Shown instead of your username.",
+        "discord": "Optional. For community contact.",
+        "file": "Export your campaign from DM Hero as .dmhero file",
+        "fileExists": "A file is already uploaded. You can optionally upload a new version.",
+        "price": "Set to 0 for free. Payment integration coming soon.",
+        "freeOnly": "Currently, and until further notice, only free adventures are available."
+      },
+      "errors": {
+        "coverRequired": "Please select a cover image",
+        "fileRequired": "Please select an adventure file",
+        "notOwner": "You can only edit your own adventures",
+        "notFound": "Adventure not found"
+      },
+      "beta": {
+        "title": "BETA",
+        "message": "The Hero Basar is still in beta. Errors may occur.",
+        "feedback": "Feedback and bug reports are very welcome!",
+        "thanks": "Thank you for your understanding and support.",
+        "reportIssue": "Report Issue"
+      }
+    },
+    "detail": {
+      "backToStore": "Back to Hero Basar",
+      "highlights": "Highlights",
+      "description": "Description",
+      "gameDetails": "Game Details",
+      "download": "Download",
+      "downloads": "Downloads",
+      "otherSystem": "Other System",
+      "noImage": "No cover image available",
+      "publishedAt": "Published on"
+    },
+    "rating": {
+      "loginToRate": "Sign in to rate",
+      "verifyToRate": "Verify your email to rate",
+      "yourRating": "Your rating: {rating} stars",
+      "submitting": "Saving..."
+    },
+    "status": {
+      "draft": "Draft",
+      "pendingReview": "Pending Review",
+      "validating": "Validating...",
+      "published": "Published",
+      "rejected": "Rejected",
+      "archived": "Archived",
+      "unknown": "Unknown"
+    },
+    "validation": {
+      "errorsTitle": "Validation failed ({count} errors)",
+      "warningsTitle": "Warnings ({count})",
+      "showMore": "Show {count} more...",
+      "showDetails": "Show details",
+      "detailsTitle": "Validation Details",
+      "statusTitle": "Validation Status",
+      "fixHint": "Please fix the errors and upload a new version of your adventure file.",
+      "pendingHint": "Your adventure is being validated. This usually takes less than 10 minutes.",
+      "editAdventure": "Edit Adventure"
+    },
+    "timeline": {
+      "uploaded": "Uploaded",
+      "inReview": "In Review",
+      "reviewingNow": "Currently validating...",
+      "published": "Published",
+      "rejected": "Rejected",
+      "actionRequired": "Action required"
+    }
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "displayName": "Display Name",
+    "forgotPassword": {
+      "link": "Forgot password?",
+      "title": "Forgot Password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "button": "Send Reset Link",
+      "backToLogin": "Back to Login",
+      "successTitle": "Check Your Email",
+      "successMessage": "If an account exists with this email, you'll receive a password reset link shortly.",
+      "error": "Something went wrong. Please try again."
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "subtitle": "Enter your new password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "button": "Reset Password",
+      "successTitle": "Password Reset!",
+      "successMessage": "Your password has been successfully reset. You can now sign in with your new password.",
+      "goToLogin": "Go to Login",
+      "invalidLink": "Invalid Link",
+      "invalidLinkMessage": "This password reset link is invalid or has expired.",
+      "requestNew": "Request New Link",
+      "error": "Something went wrong. Please try again."
+    },
+    "or": "or",
+    "backToHome": "Back to Home",
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your DM Hero account",
+      "button": "Sign In",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Create one",
+      "emailNotVerified": "Please verify your email address before logging in."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join the DM Hero community",
+      "button": "Create Account",
+      "hasAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "terms": "By creating an account, you agree to our",
+      "termsLink": "Terms of Service",
+      "and": "and",
+      "privacyLink": "Privacy Policy"
+    },
+    "validation": {
+      "required": "This field is required",
+      "email": "Please enter a valid email",
+      "minLength": "Must be at least {min} characters",
+      "maxLength": "Must be at most {max} characters",
+      "passwordLength": "Must be at least 8 characters",
+      "passwordMatch": "Passwords do not match"
+    },
+    "verifyEmail": {
+      "title": "Verify Email",
+      "verifying": "Verifying your email address...",
+      "success": "Email Verified!",
+      "successMessage": "Your email has been successfully verified. You can now access all features of DM Hero.",
+      "goToStore": "Go to Hero Basar",
+      "error": "Verification Failed",
+      "noToken": "Missing Verification Token",
+      "noTokenMessage": "No verification token was found. Please click the link in your verification email or request a new one.",
+      "goToLogin": "Go to Login",
+      "resendPrompt": "Need a new verification link?",
+      "resendButton": "Resend Verification Email",
+      "resendSuccess": "A new verification email has been sent. Please check your inbox."
+    },
+    "registrationComplete": {
+      "title": "Check Your Email",
+      "message": "We've sent a verification link to {email}. Please check your inbox and click the link to verify your account.",
+      "spamHint": "If you don't see it, check your spam folder.",
+      "continueToStore": "Continue to Hero Basar"
+    }
+  },
+  "profile": {
+    "verified": "Verified",
+    "messages": {
+      "profileUpdated": "Profile saved successfully",
+      "updateFailed": "Failed to save profile",
+      "avatarUpdated": "Profile picture updated",
+      "uploadFailed": "Upload failed",
+      "fileTooLarge": "File too large. Maximum size: 2 MB",
+      "invalidFileType": "Invalid file type. Allowed: JPEG, PNG, GIF, WebP",
+      "adventureDeleted": "Adventure deleted",
+      "deleteFailed": "Failed to delete"
+    },
+    "stats": {
+      "title": "Statistics",
+      "adventures": "Adventures",
+      "downloads": "Downloads",
+      "avgRating": "Avg. Rating",
+      "ratings": "Ratings"
+    },
+    "info": {
+      "title": "Profile Settings",
+      "avatarHint": "Click to upload a new profile picture",
+      "emailReadonly": "Email cannot be changed. Contact support if needed."
+    },
+    "adventures": {
+      "title": "My Adventures",
+      "create": "New Adventure",
+      "empty": "You haven't uploaded any adventures yet.",
+      "createFirst": "Upload Your First Adventure",
+      "view": "View",
+      "notPublishedYet": "Not published yet",
+      "edit": "Edit",
+      "comingSoon": "Coming soon",
+      "status": {
+        "draft": "Draft",
+        "pending_review": "Pending Review",
+        "published": "Published",
+        "rejected": "Rejected",
+        "archived": "Archived"
+      },
+      "deleteConfirm": {
+        "title": "Delete Adventure?",
+        "message": "Are you sure you want to delete \"{title}\"? This action cannot be undone."
+      }
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "description": "Once you delete your account, there is no going back. Please be certain.",
+      "deleteButton": "Delete Account"
+    },
+    "deleteAccount": {
+      "title": "Delete Account",
+      "warning": "This action is irreversible!",
+      "consequence1": "All your adventures will be permanently deleted",
+      "consequence2": "All your ratings and reviews will be removed",
+      "consequence3": "Your email address will become available for new registrations",
+      "confirmText": "To confirm, please enter your email address:",
+      "confirmButton": "Delete My Account",
+      "emailMismatch": "Email does not match your account",
+      "success": "Your account has been deleted",
+      "error": "Failed to delete account"
+    }
   },
   "legal": {
     "backToHome": "Back to Home",
@@ -187,6 +485,33 @@
       "rights": "You have the right to request access to, correction or deletion of your personal data, to restrict processing, and to object to the processing of your personal data. You also have the right to lodge a complaint with a supervisory authority.",
       "noteTitle": "Note on Data Transmission",
       "note": "Please note that data transmission over the Internet may have security vulnerabilities. Complete protection of data from access by third parties is not possible."
+    },
+    "terms": {
+      "title": "Terms"
     }
+  },
+  "tos": {
+    "title": "Terms of Service",
+    "version": "Version",
+    "lastUpdated": "Last updated",
+    "lastUpdatedDate": "December 25, 2025",
+    "registerNow": "Register now",
+    "backToProfile": "Back to profile",
+    "acceptTitle": "Accept Terms of Service",
+    "acceptSubtitle": "Before you can upload content to Hero Basar, you must agree to our Terms of Service.",
+    "keyPointsTitle": "Key Points",
+    "keyPoint1": "You are solely responsible for all content you upload (texts, images, stories)",
+    "keyPoint2": "You warrant that your content does not infringe any third-party rights",
+    "keyPoint3": "The operator may delete content at any time without stating reasons",
+    "keyPoint4": "You indemnify the operator from all third-party claims",
+    "readFullText": "Please read the full Terms of Service:",
+    "fullTermsLink": "Read Terms of Service",
+    "checkboxLabel": "I have read and agree to the Terms of Service",
+    "decline": "Decline",
+    "accept": "Accept",
+    "acceptRequired": "You must accept the Terms of Service before you can upload content.",
+    "readAndAccept": "Read & Accept",
+    "acceptedSuccess": "Terms of Service accepted!",
+    "acceptError": "Error accepting. Please try again."
   }
 }

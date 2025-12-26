@@ -7,9 +7,11 @@
     "features": "Features",
     "screenshots": "Screenshots",
     "download": "Download",
+    "store": "Hero Basar",
     "docs": "Docs",
     "github": "GitHub",
-    "support": "Support"
+    "support": "Support",
+    "profile": "Profil"
   },
   "docs": {
     "title": "Dokumentation",
@@ -145,13 +147,309 @@
   "common": {
     "loading": "Laden...",
     "error": "Etwas ist schiefgelaufen",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen"
   },
   "privacyBanner": {
     "title": "Deine Daten gehören dir.",
     "message": "Diese Website verwendet keine Cookies und kein Tracking. Wir speichern nur das technisch Notwendige. Keine Zustimmung erforderlich.",
     "learnMore": "Mehr erfahren",
     "ok": "Alles klar"
+  },
+  "store": {
+    "title": "Hero Basar",
+    "subtitle": "Entdecke spielfertige Abenteuer, erstellt von der Community. Herunterladen, importieren und losspielen.",
+    "searchPlaceholder": "Abenteuer suchen...",
+    "sortBy": "Sortieren nach",
+    "language": "Sprache",
+    "login": "Anmelden",
+    "register": "Konto erstellen",
+    "logout": "Abmelden",
+    "uploadAdventure": "Abenteuer hochladen",
+    "sort": {
+      "newest": "Neueste",
+      "popular": "Beliebteste",
+      "rating": "Bestbewertet"
+    },
+    "comingSoon": {
+      "title": "Kommt bald",
+      "description": "Der Adventure Store ist noch im Aufbau. Bald kannst du Kampagnen entdecken, teilen und herunterladen, die von der Community erstellt wurden.",
+      "backHome": "Zurück zur Startseite"
+    },
+    "empty": {
+      "title": "Noch keine Abenteuer",
+      "description": "Sei der Erste, der sein Abenteuer mit der Community teilt!",
+      "createFirst": "Erstes Abenteuer hochladen"
+    },
+    "card": {
+      "free": "Kostenlos",
+      "by": "von"
+    },
+    "difficulty": {
+      "easy": "Einfach",
+      "moderate": "Moderat",
+      "challenging": "Herausfordernd",
+      "hard": "Schwer",
+      "deadly": "Tödlich"
+    },
+    "upload": {
+      "title": "Abenteuer hochladen",
+      "titleEdit": "Abenteuer bearbeiten",
+      "subtitle": "Teile deinen One-Shot oder deine Kampagne mit der Community",
+      "subtitleEdit": "Aktualisiere die Details deines Abenteuers",
+      "verifyRequired": "Bitte bestätige deine E-Mail-Adresse, bevor du Abenteuer hochlädst.",
+      "formLocked": "Formular gesperrt",
+      "verifyFirst": "Bitte bestätige zuerst deine E-Mail-Adresse.",
+      "acceptTosFirst": "Bitte akzeptiere zuerst die Nutzungsbedingungen.",
+      "basicInfo": "Grundlegende Informationen",
+      "description": "Beschreibung",
+      "highlights": "Highlights",
+      "gameDetails": "Spieldetails",
+      "authorInfo": "Autor-Informationen",
+      "adventureFile": "Abenteuer-Datei",
+      "pricing": "Preisgestaltung",
+      "submit": "Abenteuer hochladen",
+      "submitEdit": "Änderungen speichern",
+      "addHighlight": "Highlight hinzufügen",
+      "hours": "Stunden",
+      "multiSession": "Mehrteilige Kampagne",
+      "fields": {
+        "title": "Titel",
+        "shortDescription": "Kurzbeschreibung",
+        "coverImage": "Titelbild",
+        "descriptionPlaceholder": "Beschreibe dein Abenteuer ausführlich...",
+        "highlightPlaceholder": "z.B. Epischer Bosskampf, Einzigartige Rätsel",
+        "system": "Spielsystem",
+        "language": "Sprache",
+        "difficulty": "Schwierigkeit",
+        "players": "Spieleranzahl",
+        "characterLevel": "Charakterlevel",
+        "duration": "Geschätzte Dauer",
+        "tags": "Tags",
+        "authorName": "Autorenname",
+        "discord": "Discord-Benutzername",
+        "file": "Abenteuer-Datei (.dmhero)",
+        "fileReplace": "Abenteuer-Datei ersetzen (optional)",
+        "freeAdventure": "Kostenloses Abenteuer",
+        "price": "Preis",
+        "min": "Min",
+        "max": "Max"
+      },
+      "hints": {
+        "shortDescription": "Wird im Hero Basar angezeigt. Max. 500 Zeichen.",
+        "coverImage": "Empfohlen: 1920x1200 (16:10). JPG oder PNG.",
+        "authorName": "Optional. Wird statt deinem Benutzernamen angezeigt.",
+        "discord": "Optional. Für Community-Kontakt.",
+        "file": "Exportiere deine Kampagne aus DM Hero als .dmhero-Datei",
+        "fileExists": "Eine Datei ist bereits hochgeladen. Du kannst optional eine neue Version hochladen.",
+        "price": "0 für kostenlos. Bezahlung kommt bald.",
+        "freeOnly": "Aktuell und bis auf weiteres sind nur kostenlose Abenteuer möglich."
+      },
+      "errors": {
+        "coverRequired": "Bitte wähle ein Titelbild aus",
+        "fileRequired": "Bitte wähle eine Abenteuer-Datei aus",
+        "notOwner": "Du kannst nur eigene Abenteuer bearbeiten",
+        "notFound": "Abenteuer nicht gefunden"
+      },
+      "beta": {
+        "title": "BETA",
+        "message": "Der Hero Basar befindet sich noch in der Beta-Phase. Fehler können auftreten.",
+        "feedback": "Feedback und Fehlerberichte sind herzlich willkommen!",
+        "thanks": "Vielen Dank für dein Verständnis und deine Unterstützung.",
+        "reportIssue": "Problem melden"
+      }
+    },
+    "detail": {
+      "backToStore": "Zurück zum Hero Basar",
+      "highlights": "Highlights",
+      "description": "Beschreibung",
+      "gameDetails": "Spieldetails",
+      "download": "Herunterladen",
+      "downloads": "Downloads",
+      "otherSystem": "Anderes System",
+      "noImage": "Kein Titelbild vorhanden",
+      "publishedAt": "Veröffentlicht am"
+    },
+    "rating": {
+      "loginToRate": "Anmelden um zu bewerten",
+      "verifyToRate": "Bestätige deine E-Mail um zu bewerten",
+      "yourRating": "Deine Bewertung: {rating} Sterne",
+      "submitting": "Wird gespeichert..."
+    },
+    "status": {
+      "draft": "Entwurf",
+      "pendingReview": "Überprüfung ausstehend",
+      "validating": "Wird geprüft...",
+      "published": "Veröffentlicht",
+      "rejected": "Abgelehnt",
+      "archived": "Archiviert",
+      "unknown": "Unbekannt"
+    },
+    "validation": {
+      "errorsTitle": "Validierung fehlgeschlagen ({count} Fehler)",
+      "warningsTitle": "Warnungen ({count})",
+      "showMore": "{count} weitere anzeigen...",
+      "showDetails": "Details anzeigen",
+      "detailsTitle": "Validierungsdetails",
+      "statusTitle": "Validierungsstatus",
+      "fixHint": "Bitte behebe die Fehler und lade eine neue Version deiner Abenteuer-Datei hoch.",
+      "pendingHint": "Dein Abenteuer wird gerade überprüft. Das dauert normalerweise weniger als 10 Minuten.",
+      "editAdventure": "Abenteuer bearbeiten"
+    },
+    "timeline": {
+      "uploaded": "Hochgeladen",
+      "inReview": "In Prüfung",
+      "reviewingNow": "Wird gerade überprüft...",
+      "published": "Veröffentlicht",
+      "rejected": "Abgelehnt",
+      "actionRequired": "Nacharbeit erforderlich"
+    }
+  },
+  "auth": {
+    "email": "E-Mail",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "displayName": "Anzeigename",
+    "forgotPassword": {
+      "link": "Passwort vergessen?",
+      "title": "Passwort vergessen",
+      "subtitle": "Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen",
+      "button": "Link senden",
+      "backToLogin": "Zurück zur Anmeldung",
+      "successTitle": "Prüfe dein Postfach",
+      "successMessage": "Falls ein Konto mit dieser E-Mail existiert, erhältst du in Kürze einen Link zum Zurücksetzen.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    },
+    "resetPassword": {
+      "title": "Passwort zurücksetzen",
+      "subtitle": "Gib dein neues Passwort ein",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Passwort bestätigen",
+      "button": "Passwort zurücksetzen",
+      "successTitle": "Passwort zurückgesetzt!",
+      "successMessage": "Dein Passwort wurde erfolgreich zurückgesetzt. Du kannst dich jetzt mit deinem neuen Passwort anmelden.",
+      "goToLogin": "Zur Anmeldung",
+      "invalidLink": "Ungültiger Link",
+      "invalidLinkMessage": "Dieser Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.",
+      "requestNew": "Neuen Link anfordern",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+    },
+    "or": "oder",
+    "backToHome": "Zurück zur Startseite",
+    "login": {
+      "title": "Willkommen zurück",
+      "subtitle": "Melde dich bei deinem DM Hero Konto an",
+      "button": "Anmelden",
+      "noAccount": "Noch kein Konto?",
+      "registerLink": "Erstelle eins",
+      "emailNotVerified": "Bitte bestätige zuerst deine E-Mail-Adresse."
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Werde Teil der DM Hero Community",
+      "button": "Konto erstellen",
+      "hasAccount": "Schon ein Konto?",
+      "loginLink": "Anmelden",
+      "terms": "Mit der Erstellung eines Kontos stimmst du unseren",
+      "termsLink": "Nutzungsbedingungen",
+      "and": "und der",
+      "privacyLink": "Datenschutzerklärung zu"
+    },
+    "validation": {
+      "required": "Dieses Feld ist erforderlich",
+      "email": "Bitte gib eine gültige E-Mail ein",
+      "minLength": "Muss mindestens {min} Zeichen haben",
+      "maxLength": "Darf höchstens {max} Zeichen haben",
+      "passwordLength": "Muss mindestens 8 Zeichen haben",
+      "passwordMatch": "Passwörter stimmen nicht überein"
+    },
+    "verifyEmail": {
+      "title": "E-Mail bestätigen",
+      "verifying": "Deine E-Mail-Adresse wird überprüft...",
+      "success": "E-Mail bestätigt!",
+      "successMessage": "Deine E-Mail-Adresse wurde erfolgreich bestätigt. Du kannst jetzt alle Funktionen von DM Hero nutzen.",
+      "goToStore": "Zum Hero Basar",
+      "error": "Bestätigung fehlgeschlagen",
+      "noToken": "Bestätigungstoken fehlt",
+      "noTokenMessage": "Es wurde kein Bestätigungstoken gefunden. Bitte klicke auf den Link in deiner Bestätigungs-E-Mail oder fordere einen neuen an.",
+      "goToLogin": "Zur Anmeldung",
+      "resendPrompt": "Neuen Bestätigungslink benötigt?",
+      "resendButton": "Bestätigungs-E-Mail erneut senden",
+      "resendSuccess": "Eine neue Bestätigungs-E-Mail wurde gesendet. Bitte prüfe dein Postfach."
+    },
+    "registrationComplete": {
+      "title": "Prüfe dein Postfach",
+      "message": "Wir haben einen Bestätigungslink an {email} gesendet. Bitte prüfe dein Postfach und klicke auf den Link, um dein Konto zu bestätigen.",
+      "spamHint": "Falls du die E-Mail nicht siehst, prüfe deinen Spam-Ordner.",
+      "continueToStore": "Weiter zum Hero Basar"
+    }
+  },
+  "profile": {
+    "verified": "Verifiziert",
+    "messages": {
+      "profileUpdated": "Profil wurde gespeichert",
+      "updateFailed": "Profil konnte nicht gespeichert werden",
+      "avatarUpdated": "Profilbild wurde aktualisiert",
+      "uploadFailed": "Upload fehlgeschlagen",
+      "fileTooLarge": "Datei zu groß. Maximale Größe: 2 MB",
+      "invalidFileType": "Ungültiges Dateiformat. Erlaubt: JPEG, PNG, GIF, WebP",
+      "adventureDeleted": "Abenteuer wurde gelöscht",
+      "deleteFailed": "Löschen fehlgeschlagen"
+    },
+    "stats": {
+      "title": "Statistiken",
+      "adventures": "Abenteuer",
+      "downloads": "Downloads",
+      "avgRating": "Ø Bewertung",
+      "ratings": "Bewertungen"
+    },
+    "info": {
+      "title": "Profileinstellungen",
+      "avatarHint": "Klicke, um ein neues Profilbild hochzuladen",
+      "emailReadonly": "E-Mail kann nicht geändert werden. Bei Bedarf Support kontaktieren."
+    },
+    "adventures": {
+      "title": "Meine Abenteuer",
+      "create": "Neues Abenteuer",
+      "empty": "Du hast noch keine Abenteuer hochgeladen.",
+      "createFirst": "Erstes Abenteuer hochladen",
+      "view": "Ansehen",
+      "notPublishedYet": "Noch nicht veröffentlicht",
+      "edit": "Bearbeiten",
+      "comingSoon": "Kommt bald",
+      "status": {
+        "draft": "Entwurf",
+        "pending_review": "In Prüfung",
+        "published": "Veröffentlicht",
+        "rejected": "Abgelehnt",
+        "archived": "Archiviert"
+      },
+      "deleteConfirm": {
+        "title": "Abenteuer löschen?",
+        "message": "Bist du sicher, dass du \"{title}\" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden."
+      }
+    },
+    "dangerZone": {
+      "title": "Gefahrenzone",
+      "description": "Wenn du deinen Account löschst, gibt es kein Zurück. Bitte sei dir sicher.",
+      "deleteButton": "Account löschen"
+    },
+    "deleteAccount": {
+      "title": "Account löschen",
+      "warning": "Diese Aktion ist unwiderruflich!",
+      "consequence1": "Alle deine Abenteuer werden dauerhaft gelöscht",
+      "consequence2": "Alle deine Bewertungen werden entfernt",
+      "consequence3": "Deine E-Mail-Adresse wird für neue Registrierungen verfügbar",
+      "confirmText": "Zur Bestätigung gib bitte deine E-Mail-Adresse ein:",
+      "confirmButton": "Meinen Account löschen",
+      "emailMismatch": "E-Mail stimmt nicht mit deinem Account überein",
+      "success": "Dein Account wurde gelöscht",
+      "error": "Account konnte nicht gelöscht werden"
+    }
   },
   "legal": {
     "backToHome": "Zurück zur Startseite",
@@ -187,6 +485,33 @@
       "rights": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Widerspruch gegen die Verarbeitung Ihrer personenbezogenen Daten. Zudem besteht ein Beschwerderecht bei der zuständigen Aufsichtsbehörde.",
       "noteTitle": "Hinweis zur Datenübertragung",
       "note": "Wir weisen darauf hin, dass die Datenübertragung im Internet Sicherheitslücken aufweisen kann. Ein vollständiger Schutz der Daten vor dem Zugriff durch Dritte ist nicht möglich."
+    },
+    "terms": {
+      "title": "AGB"
     }
+  },
+  "tos": {
+    "title": "Allgemeine Geschäftsbedingungen",
+    "version": "Version",
+    "lastUpdated": "Letzte Aktualisierung",
+    "lastUpdatedDate": "25. Dezember 2025",
+    "registerNow": "Jetzt registrieren",
+    "backToProfile": "Zurück zum Profil",
+    "acceptTitle": "Nutzungsbedingungen akzeptieren",
+    "acceptSubtitle": "Bevor du Inhalte im Hero Basar hochladen kannst, musst du unseren Nutzungsbedingungen zustimmen.",
+    "keyPointsTitle": "Wichtige Punkte",
+    "keyPoint1": "Du bist allein verantwortlich für alle von dir hochgeladenen Inhalte (Texte, Bilder, Geschichten)",
+    "keyPoint2": "Du garantierst, dass deine Inhalte keine Rechte Dritter verletzen",
+    "keyPoint3": "Der Betreiber kann Inhalte jederzeit ohne Angabe von Gründen löschen",
+    "keyPoint4": "Du stellst den Betreiber von allen Ansprüchen Dritter frei",
+    "readFullText": "Bitte lies die vollständigen Nutzungsbedingungen:",
+    "fullTermsLink": "Nutzungsbedingungen lesen",
+    "checkboxLabel": "Ich habe die Nutzungsbedingungen gelesen und stimme ihnen zu",
+    "decline": "Ablehnen",
+    "accept": "Akzeptieren",
+    "acceptRequired": "Du musst den Nutzungsbedingungen zustimmen, bevor du Inhalte hochladen kannst.",
+    "readAndAccept": "Jetzt lesen & akzeptieren",
+    "acceptedSuccess": "Nutzungsbedingungen akzeptiert!",
+    "acceptError": "Fehler beim Akzeptieren. Bitte versuche es erneut."
   }
 }

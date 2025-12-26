@@ -122,6 +122,48 @@
         </v-col>
       </v-row>
 
+      <!-- Export/Import Actions -->
+      <v-row class="mb-4 mt-6">
+        <v-col cols="12">
+          <div class="text-h6 font-weight-medium">
+            {{ $t('dashboard.dataManagement') }}
+          </div>
+        </v-col>
+      </v-row>
+
+      <v-row class="mb-4">
+        <v-col cols="12" sm="6">
+          <v-card hover class="h-100" @click="showExportDialog = true">
+            <v-card-text class="pa-4">
+              <div class="d-flex align-center">
+                <v-icon icon="mdi-export" size="28" color="primary" class="mr-3" />
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">{{ $t('campaigns.export.title') }}</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ $t('dashboard.exportHint') }}
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" sm="6">
+          <v-card hover class="h-100" @click="showImportDialog = true">
+            <v-card-text class="pa-4">
+              <div class="d-flex align-center">
+                <v-icon icon="mdi-import" size="28" color="secondary" class="mr-3" />
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">{{ $t('campaigns.import.title') }}</div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    {{ $t('dashboard.importHint') }}
+                  </div>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <!-- Quick Start (collapsed) -->
       <v-row class="mt-6">
         <v-col cols="12">
@@ -156,6 +198,18 @@
       :entity-id="previewEntityId"
       :entity-type="previewEntityType"
     />
+
+    <!-- Export Dialog -->
+    <CampaignExportDialog
+      v-model="showExportDialog"
+      :campaign-id="campaignStore.activeCampaignIdNumber!"
+    />
+
+    <!-- Import Dialog -->
+    <CampaignImportDialog
+      v-model="showImportDialog"
+      @imported="onCampaignImported"
+    />
   </v-container>
 </template>
 
@@ -163,6 +217,8 @@
 import type { CampaignMap } from '~~/types/map'
 import type { PinboardItem } from '~~/types/pinboard'
 import type { EntityPreviewType } from '../components/shared/EntityPreviewDialog.vue'
+import CampaignExportDialog from '~/components/campaigns/CampaignExportDialog.vue'
+import CampaignImportDialog from '~/components/campaigns/CampaignImportDialog.vue'
 
 interface Session {
   id: number
@@ -201,6 +257,15 @@ const currentWeather = ref<{ weatherType: string; temperature?: number } | null>
 const showEntityPreview = ref(false)
 const previewEntityId = ref<number | null>(null)
 const previewEntityType = ref<EntityPreviewType>('npc')
+
+// Export/Import dialogs
+const showExportDialog = ref(false)
+const showImportDialog = ref(false)
+
+function onCampaignImported(_campaignId: number) {
+  // Refresh the page after import
+  router.push('/')
+}
 
 // Computed: total playtime
 const totalPlaytimeMinutes = computed(() => {
