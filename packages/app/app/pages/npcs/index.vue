@@ -390,13 +390,13 @@ watch(locale, () => {
 
 // Show search results OR cached NPCs
 const filteredNpcs = computed(() => {
-  // If user is actively searching, show search results
+  // If user is actively searching, show search results (keep relevance order from FTS5)
   if (searchQuery.value && searchQuery.value.trim().length > 0) {
     return searchResults.value
   }
 
-  // Otherwise show all cached NPCs
-  return npcs.value || []
+  // Otherwise show all cached NPCs sorted alphabetically
+  return [...(npcs.value || [])].sort((a, b) => a.name.localeCompare(b.name))
 })
 
 // ============================================================================
@@ -433,11 +433,25 @@ async function handleNpcSaved(_npc: NPC) {
 }
 
 // Handle created NPC (create mode) - Store already loaded counts
-async function handleNpcCreated(_npc: NPC) {
+async function handleNpcCreated(npc: NPC) {
   // If user is searching, re-execute search
   if (searchQuery.value && searchQuery.value.trim().length > 0) {
     await executeSearch(searchQuery.value)
   }
+
+  // Highlight and scroll to the newly created NPC
+  highlightedId.value = npc.id
+  await nextTick()
+  setTimeout(() => {
+    const element = document.getElementById(`npc-${npc.id}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    // Clear highlight after a few seconds
+    setTimeout(() => {
+      highlightedId.value = null
+    }, 3000)
+  }, 100)
 }
 
 // ============================================================================
