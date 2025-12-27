@@ -1,5 +1,12 @@
 # @dm-hero/app
 
+## 1.0.0-rc.2
+
+### Features
+
+- Linux Electron build (AppImage) now available alongside Windows
+- Platform-specific window configuration (custom titlebar on Windows, native on Linux)
+
 ## 1.0.0-beta.20
 
 ### Minor Changes
