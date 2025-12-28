@@ -1,6 +1,6 @@
 {
   "name": "dm-hero-monorepo",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "private": true,
   "description": "DM Hero Monorepo - Campaign management tool for Dungeon Masters",
   "scripts": {
