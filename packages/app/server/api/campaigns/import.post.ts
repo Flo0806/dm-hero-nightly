@@ -661,13 +661,14 @@ export default defineEventHandler(async (event) => {
       let targetDir: string
       let returnPath: string
 
-      if (targetFolder === 'entities' || targetFolder === 'sessions') {
-        // Entity and session images are stored directly in uploads/ folder
-        // DB stores just the filename (e.g., 'abc123.png')
+      if (targetFolder === 'entities' || targetFolder === 'sessions' || targetFolder === 'documents') {
+        // Entity images, session images, and documents are all stored directly in uploads/
+        // DB stores just the filename (e.g., 'abc123.png', 'abc123.pdf')
+        // Frontend adds the appropriate route prefix when accessing (/uploads/ or /documents/)
         targetDir = uploadPath
         returnPath = fileName
       } else {
-        // Maps, documents, audio are stored in subfolders
+        // Maps, audio are stored in subfolders
         // DB stores 'folder/filename' (e.g., 'maps/abc123.png')
         targetDir = join(uploadPath, targetFolder)
         returnPath = `${targetFolder}/${fileName}`
