@@ -25,6 +25,7 @@ export interface ElectronAPI {
   openUploadsFolder: () => Promise<{ success: boolean; error?: string }>
   getDataPaths: () => Promise<{ databasePath: string; uploadPath: string }>
   saveFileDialog: (options: SaveFileOptions) => Promise<SaveFileResult>
+  openExternalUrl: (url: string) => Promise<{ success: boolean; error?: string }>
 }
 
 // Extend Window interface with electronAPI
@@ -123,6 +124,19 @@ export function useElectron() {
     async getDataPaths(): Promise<{ databasePath: string; uploadPath: string } | null> {
       if (!electronAPI) return null
       return electronAPI.getDataPaths()
+    },
+
+    /**
+     * Open external URL in system browser
+     * Falls back to window.open if not in Electron
+     */
+    async openExternalUrl(url: string): Promise<{ success: boolean; error?: string }> {
+      if (electronAPI) {
+        return electronAPI.openExternalUrl(url)
+      } else {
+        window.open(url, '_blank')
+        return { success: true }
+      }
     },
   }
 }

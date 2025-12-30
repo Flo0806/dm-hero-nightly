@@ -293,6 +293,16 @@ ipcMain.handle('open-uploads-folder', async () => {
   }
 })
 
+// Open external URL in system browser
+ipcMain.handle('open-external-url', async (event, url) => {
+  try {
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+})
+
 // Save file with dialog (for campaign exports)
 ipcMain.handle('save-file-dialog', async (event, options) => {
   const { defaultFileName, fileData, filters } = options

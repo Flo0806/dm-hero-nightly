@@ -22,9 +22,8 @@
             size="small"
             color="primary"
             variant="flat"
-            :href="updateInfo?.releaseUrl"
-            target="_blank"
             block
+            @click="openDownloadPage"
           >
             <v-icon start icon="mdi-download" />
             {{ $t('update.download') }}
@@ -51,8 +50,7 @@
           variant="text"
           color="primary"
           class="ma-2"
-          :href="updateInfo?.releaseUrl"
-          target="_blank"
+          @click="openDownloadPage"
         >
           <v-badge color="error" dot>
             <v-icon icon="mdi-download" />
@@ -66,12 +64,21 @@
 
 <script setup lang="ts">
 import { useUpdateChecker } from '~/composables/useUpdateChecker'
+import { useElectron } from '~/composables/useElectron'
 
 defineProps<{
   rail: boolean
 }>()
 
 const { updateInfo, showBanner, checkForUpdates, dismissUpdate } = useUpdateChecker()
+const { openExternalUrl } = useElectron()
+
+// Open download page in system browser (works in both Electron and browser)
+function openDownloadPage() {
+  if (updateInfo.value?.releaseUrl) {
+    openExternalUrl(updateInfo.value.releaseUrl)
+  }
+}
 
 // Check for updates on mount
 onMounted(() => {
