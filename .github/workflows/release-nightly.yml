@@ -10,13 +10,31 @@ on:
         description: 'Version to release (e.g., 0.0.1)'
         required: true
         default: '0.0.1'
-  # Dummy trigger so GitHub shows the workflow (never matches)
+  # Push trigger to register workflow (skips actual build)
   push:
-    tags:
-      - 'trigger-nightly-*'
+    paths:
+      - '.github/workflows/release-nightly.yml'
 
 jobs:
+  # Skip job if triggered by push (only run on manual trigger)
+  check-trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "Skipping - triggered by push, not manual dispatch"
+          fi
+
+
   build-windows:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
     runs-on: windows-latest
 
     steps:
@@ -60,6 +78,8 @@ jobs:
         working-directory: packages/app
 
   build-linux:
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_run == 'true'
     runs-on: ubuntu-latest
 
     steps:
