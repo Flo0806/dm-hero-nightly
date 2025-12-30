@@ -3,12 +3,17 @@
 name: Release Nightly
 
 on:
+  # Manual trigger
   workflow_dispatch:
     inputs:
       version:
         description: 'Version to release (e.g., 0.0.1)'
         required: true
         default: '0.0.1'
+  # Dummy trigger so GitHub shows the workflow (never matches)
+  push:
+    tags:
+      - 'trigger-nightly-*'
 
 jobs:
   build-windows:
