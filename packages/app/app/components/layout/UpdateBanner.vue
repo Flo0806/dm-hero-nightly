@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showBanner" class="update-banner">
+  <div v-if="showBanner || isDownloading || isReadyToInstall" class="update-banner">
     <!-- Expanded view (when drawer is not in rail mode) -->
     <v-card
       v-if="!rail"
@@ -8,28 +8,106 @@
       class="ma-2 update-card"
     >
       <v-card-text class="pa-3">
+        <!-- Header -->
         <div class="d-flex align-center mb-2">
-          <v-icon icon="mdi-party-popper" class="mr-2" />
+          <v-icon :icon="headerIcon" class="mr-2" />
           <span class="text-body-2 font-weight-medium">
-            {{ $t('update.newVersionAvailable') }}
+            {{ headerText }}
           </span>
         </div>
-        <div class="text-caption mb-2">
-          {{ updateInfo?.latestVersion }}
-        </div>
-        <div class="d-flex gap-2">
-          <v-btn
-            size="small"
-            color="primary"
-            variant="flat"
-            block
-            @click="openDownloadPage"
+
+        <!-- Version info -->
+        <div v-if="updateInfo" class="text-caption mb-2">
+          {{ updateInfo.latestVersion }}
+          <v-chip
+            v-if="updateInfo.isDevMode"
+            size="x-small"
+            color="warning"
+            class="ml-1"
           >
-            <v-icon start icon="mdi-download" />
-            {{ $t('update.download') }}
-          </v-btn>
+            DEV
+          </v-chip>
         </div>
+
+        <!-- Progress bar (downloading) -->
+        <div v-if="isDownloading && downloadProgress" class="mb-2">
+          <v-progress-linear
+            :model-value="downloadProgress.percent"
+            color="primary"
+            height="8"
+            rounded
+          />
+          <div class="text-caption mt-1 d-flex justify-space-between">
+            <span>{{ Math.round(downloadProgress.percent) }}%</span>
+            <span>{{ formatSpeed(downloadProgress.bytesPerSecond) }}</span>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-2">
+          <!-- State: Update available - show download button (Electron) or external link (Browser) -->
+          <template v-if="!isDownloading && !isReadyToInstall">
+            <v-btn
+              v-if="canAutoUpdate"
+              size="small"
+              color="primary"
+              variant="flat"
+              block
+              @click="startDownload"
+            >
+              <v-icon start icon="mdi-download" />
+              {{ $t('update.downloadNow') }}
+            </v-btn>
+            <v-btn
+              v-else
+              size="small"
+              color="primary"
+              variant="flat"
+              block
+              @click="openDownloadPage"
+            >
+              <v-icon start icon="mdi-open-in-new" />
+              {{ $t('update.download') }}
+            </v-btn>
+          </template>
+
+          <!-- State: Downloading - show cancel (disabled for now) -->
+          <template v-else-if="isDownloading">
+            <v-btn
+              size="small"
+              color="primary"
+              variant="flat"
+              block
+              disabled
+            >
+              <v-progress-circular
+                indeterminate
+                size="16"
+                width="2"
+                class="mr-2"
+              />
+              {{ $t('update.downloading') }}
+            </v-btn>
+          </template>
+
+          <!-- State: Ready to install -->
+          <template v-else-if="isReadyToInstall">
+            <v-btn
+              size="small"
+              color="success"
+              variant="flat"
+              block
+              @click="restartAndInstall"
+            >
+              <v-icon start icon="mdi-restart" />
+              {{ $t('update.restartNow') }}
+            </v-btn>
+          </template>
+        </div>
+
+        <!-- Dismiss button (only when not downloading/ready) -->
         <v-btn
+          v-if="!isDownloading && !isReadyToInstall"
           size="x-small"
           variant="text"
           class="mt-2"
@@ -48,16 +126,23 @@
           v-bind="props"
           icon
           variant="text"
-          color="primary"
+          :color="railButtonColor"
           class="ma-2"
-          @click="openDownloadPage"
+          @click="handleRailClick"
         >
-          <v-badge color="error" dot>
-            <v-icon icon="mdi-download" />
+          <v-badge v-if="!isDownloading" color="error" dot>
+            <v-icon :icon="railIcon" />
           </v-badge>
+          <v-progress-circular
+            v-else
+            :model-value="downloadProgress?.percent || 0"
+            size="24"
+            width="3"
+            color="primary"
+          />
         </v-btn>
       </template>
-      <span>{{ $t('update.newVersionAvailable') }}: {{ updateInfo?.latestVersion }}</span>
+      <span>{{ railTooltip }}</span>
     </v-tooltip>
   </div>
 </template>
@@ -70,14 +155,86 @@ defineProps<{
   rail: boolean
 }>()
 
-const { updateInfo, showBanner, checkForUpdates, dismissUpdate } = useUpdateChecker()
+const { t } = useI18n()
+
+const {
+  updateInfo,
+  showBanner,
+  downloadProgress,
+  isDownloading,
+  isReadyToInstall,
+  canAutoUpdate,
+  checkForUpdates,
+  downloadUpdate,
+  installUpdate,
+  dismissUpdate,
+} = useUpdateChecker()
+
 const { openExternalUrl } = useElectron()
 
-// Open download page in system browser (works in both Electron and browser)
+// Computed
+const headerIcon = computed(() => {
+  if (isReadyToInstall.value) return 'mdi-check-circle'
+  if (isDownloading.value) return 'mdi-download'
+  return 'mdi-party-popper'
+})
+
+const headerText = computed(() => {
+  if (isReadyToInstall.value) return t('update.readyToInstall')
+  if (isDownloading.value) return t('update.downloading')
+  return t('update.newVersionAvailable')
+})
+
+const railIcon = computed(() => {
+  if (isReadyToInstall.value) return 'mdi-restart'
+  return 'mdi-download'
+})
+
+const railButtonColor = computed(() => {
+  if (isReadyToInstall.value) return 'success'
+  return 'primary'
+})
+
+const railTooltip = computed(() => {
+  if (isReadyToInstall.value) return t('update.clickToRestart')
+  if (isDownloading.value) return `${t('update.downloading')} ${Math.round(downloadProgress.value?.percent || 0)}%`
+  return `${t('update.newVersionAvailable')}: ${updateInfo.value?.latestVersion}`
+})
+
+// Actions
 function openDownloadPage() {
   if (updateInfo.value?.releaseUrl) {
     openExternalUrl(updateInfo.value.releaseUrl)
   }
+}
+
+async function startDownload() {
+  await downloadUpdate()
+}
+
+async function restartAndInstall() {
+  await installUpdate()
+}
+
+function handleRailClick() {
+  if (isReadyToInstall.value) {
+    restartAndInstall()
+  } else if (!isDownloading.value && canAutoUpdate.value) {
+    startDownload()
+  } else if (!canAutoUpdate.value) {
+    openDownloadPage()
+  }
+}
+
+// Format bytes per second to human readable
+function formatSpeed(bytesPerSecond: number): string {
+  if (bytesPerSecond >= 1024 * 1024) {
+    return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
+  }
+  if (bytesPerSecond >= 1024) {
+    return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`
+  }
+  return `${bytesPerSecond} B/s`
 }
 
 // Check for updates on mount

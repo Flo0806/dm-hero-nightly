@@ -1918,6 +1918,11 @@
   "update": {
     "newVersionAvailable": "New version available",
     "download": "Download",
+    "downloadNow": "Download now",
+    "downloading": "Downloading...",
+    "readyToInstall": "Update ready",
+    "restartNow": "Restart now",
+    "clickToRestart": "Click to restart",
     "dismiss": "Later"
   },
   "notes": {

@@ -111,7 +111,12 @@
         "dmg"
       ]
     },
-    "npmRebuild": true
+    "npmRebuild": true,
+    "publish": {
+      "provider": "github",
+      "owner": "Flo0806",
+      "repo": "dm-hero-nightly"
+    }
   },
   "dependencies": {
     "@3d-dice/dice-box": "^1.1.4",
@@ -123,6 +128,7 @@
     "archiver": "^7.0.1",
     "better-sqlite3": "^12.4.6",
     "bindings": "^1.5.0",
+    "electron-updater": "^6.6.2",
     "fastest-levenshtein": "^1.0.16",
     "file-uri-to-path": "^1.0.0",
     "jszip": "^3.10.1",

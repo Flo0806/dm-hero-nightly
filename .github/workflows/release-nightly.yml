@@ -1,0 +1,96 @@
+# Nightly/Test releases for auto-update testing
+# This workflow publishes to dm-hero-nightly repo
+name: Release Nightly
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.0.1)'
+        required: true
+        default: '0.0.1'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: packages/app
+
+      - name: Set version
+        run: |
+          $pkg = Get-Content packages/app/package.json | ConvertFrom-Json
+          $pkg.version = "${{ github.event.inputs.version }}"
+          $pkg | ConvertTo-Json -Depth 100 | Set-Content packages/app/package.json
+        shell: pwsh
+
+      - name: Build Nuxt
+        run: pnpm build
+        working-directory: packages/app
+
+      - name: Rebuild native modules for Electron
+        run: pnpm electron:rebuild
+        working-directory: packages/app
+
+      - name: Build Electron & Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx electron-builder --win --publish always
+        working-directory: packages/app
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: packages/app
+
+      - name: Set version
+        run: |
+          cd packages/app
+          node -e "const p=require('./package.json'); p.version='${{ github.event.inputs.version }}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2))"
+
+      - name: Build Nuxt
+        run: pnpm build
+        working-directory: packages/app
+
+      - name: Rebuild native modules for Electron
+        run: pnpm electron:rebuild:linux
+        working-directory: packages/app
+
+      - name: Build Electron & Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx electron-builder --linux --publish always
+        working-directory: packages/app

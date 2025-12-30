@@ -1894,6 +1894,11 @@
   "update": {
     "newVersionAvailable": "Neue Version verfügbar",
     "download": "Herunterladen",
+    "downloadNow": "Jetzt herunterladen",
+    "downloading": "Wird heruntergeladen...",
+    "readyToInstall": "Update bereit",
+    "restartNow": "Jetzt neu starten",
+    "clickToRestart": "Klicken zum Neustarten",
     "dismiss": "Später"
   },
   "notes": {

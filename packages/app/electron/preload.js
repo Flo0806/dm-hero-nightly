@@ -19,4 +19,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Open external URL in system browser
   openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
+
+  // ========================================
+  // AUTO-UPDATER APIs
+  // ========================================
+
+  // Check for updates (returns { updateAvailable, version, releaseNotes, isDevMode })
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+
+  // Start downloading the update
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+
+  // Install update and restart app
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+
+  // Event listeners for update progress
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('update-available', (_, data) => callback(data))
+  },
+  onUpdateNotAvailable: (callback) => {
+    ipcRenderer.on('update-not-available', () => callback())
+  },
+  onUpdateDownloadProgress: (callback) => {
+    ipcRenderer.on('update-download-progress', (_, progress) => callback(progress))
+  },
+  onUpdateDownloaded: (callback) => {
+    ipcRenderer.on('update-downloaded', (_, data) => callback(data))
+  },
+  onUpdateError: (callback) => {
+    ipcRenderer.on('update-error', (_, error) => callback(error))
+  },
+
+  // Remove all update listeners (cleanup)
+  removeUpdateListeners: () => {
+    ipcRenderer.removeAllListeners('update-available')
+    ipcRenderer.removeAllListeners('update-not-available')
+    ipcRenderer.removeAllListeners('update-download-progress')
+    ipcRenderer.removeAllListeners('update-downloaded')
+    ipcRenderer.removeAllListeners('update-error')
+  },
 })

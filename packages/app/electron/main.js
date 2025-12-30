@@ -1,4 +1,6 @@
 import { app, BrowserWindow, utilityProcess, ipcMain, dialog, shell } from 'electron'
+import pkg from 'electron-updater'
+const { autoUpdater } = pkg
 import path from 'path'
 import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs'
 import { fileURLToPath } from 'url'
@@ -8,6 +10,19 @@ const __dirname = path.dirname(__filename)
 
 const isDev = process.env.NODE_ENV === 'development'
 const PROD_SERVER_PORT = 3456
+
+// ============================================================================
+// AUTO-UPDATER CONFIGURATION
+// ============================================================================
+
+// DEV MODE: Set to true to test auto-update UI (simulates update available)
+// Set to false for real auto-update testing with nightly releases
+const FORCE_DEV_UPDATE = false
+
+// Configure auto-updater
+autoUpdater.autoDownload = false // We control when to download
+autoUpdater.autoInstallOnAppQuit = false // We control when to install
+autoUpdater.logger = console
 
 // Theme colors matching DM Hero
 const THEME = {
@@ -302,6 +317,145 @@ ipcMain.handle('open-external-url', async (event, url) => {
     return { success: false, error: error.message }
   }
 })
+
+// ============================================================================
+// AUTO-UPDATER IPC HANDLERS
+// ============================================================================
+
+// Check for updates
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev && FORCE_DEV_UPDATE) {
+    // DEV MODE: Simulate update available
+    console.log('[AutoUpdater] DEV MODE: Simulating update available')
+    return {
+      updateAvailable: true,
+      version: '99.0.0-test',
+      releaseNotes: 'This is a test update for development',
+      isDevMode: true,
+    }
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    if (result?.updateInfo) {
+      return {
+        updateAvailable: true,
+        version: result.updateInfo.version,
+        releaseNotes: result.updateInfo.releaseNotes,
+        isDevMode: false,
+      }
+    }
+    return { updateAvailable: false }
+  } catch (error) {
+    console.error('[AutoUpdater] Check failed:', error.message)
+    return { updateAvailable: false, error: error.message }
+  }
+})
+
+// Start downloading the update
+ipcMain.handle('download-update', async () => {
+  if (isDev && FORCE_DEV_UPDATE) {
+    // DEV MODE: Simulate download progress
+    console.log('[AutoUpdater] DEV MODE: Simulating download...')
+
+    // Simulate progress events
+    const simulateProgress = async () => {
+      for (let percent = 0; percent <= 100; percent += 10) {
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        if (mainWindow) {
+          mainWindow.webContents.send('update-download-progress', {
+            percent,
+            bytesPerSecond: 1024 * 1024 * 2, // 2 MB/s
+            transferred: percent * 10000,
+            total: 1000000,
+          })
+        }
+      }
+      // Simulate download complete
+      if (mainWindow) {
+        mainWindow.webContents.send('update-downloaded')
+      }
+    }
+
+    simulateProgress()
+    return { started: true, isDevMode: true }
+  }
+
+  try {
+    await autoUpdater.downloadUpdate()
+    return { started: true }
+  } catch (error) {
+    console.error('[AutoUpdater] Download failed:', error.message)
+    return { started: false, error: error.message }
+  }
+})
+
+// Install update and restart
+ipcMain.handle('install-update', async () => {
+  if (isDev && FORCE_DEV_UPDATE) {
+    // DEV MODE: Just show a message, don't actually restart
+    console.log('[AutoUpdater] DEV MODE: Would install and restart here')
+    if (mainWindow) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Dev Mode',
+        message: 'In production, the app would now restart and install the update.',
+        buttons: ['OK'],
+      })
+    }
+    return { installed: false, isDevMode: true }
+  }
+
+  autoUpdater.quitAndInstall(false, true)
+  return { installed: true }
+})
+
+// Auto-updater events -> send to renderer
+autoUpdater.on('update-available', (info) => {
+  console.log('[AutoUpdater] Update available:', info.version)
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', {
+      version: info.version,
+      releaseNotes: info.releaseNotes,
+    })
+  }
+})
+
+autoUpdater.on('update-not-available', () => {
+  console.log('[AutoUpdater] No update available')
+  if (mainWindow) {
+    mainWindow.webContents.send('update-not-available')
+  }
+})
+
+autoUpdater.on('download-progress', (progress) => {
+  console.log(`[AutoUpdater] Download progress: ${progress.percent.toFixed(1)}%`)
+  if (mainWindow) {
+    mainWindow.webContents.send('update-download-progress', progress)
+  }
+})
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('[AutoUpdater] Update downloaded:', info.version)
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', {
+      version: info.version,
+    })
+  }
+})
+
+autoUpdater.on('error', (error) => {
+  console.error('[AutoUpdater] Error:', error.message)
+  if (mainWindow) {
+    mainWindow.webContents.send('update-error', {
+      message: error.message,
+    })
+  }
+})
+
+// ============================================================================
+// FILE DIALOG IPC HANDLERS
+// ============================================================================
 
 // Save file with dialog (for campaign exports)
 ipcMain.handle('save-file-dialog', async (event, options) => {
