@@ -32,39 +32,246 @@ async function getUnzipper() {
   return unzipper
 }
 
-export default defineEventHandler(async (event) => {
-  const formData = await readMultipartFormData(event)
+// =============================================================================
+// STREAMING MULTIPART PARSER
+// =============================================================================
+// Campaign exports can be 500MB-1GB+. The default h3 readMultipartFormData()
+// loads the entire file into RAM, causing "JavaScript heap out of memory" errors.
+//
+// This streaming implementation:
+// 1. Streams the raw HTTP body directly to disk (no RAM buffering)
+// 2. Parses the multipart boundaries from disk in chunks
+// 3. Extracts the ZIP file without loading it entirely into memory
+//
+// Note: \r\n (CRLF) is the HTTP multipart standard (RFC 2046), OS-independent.
+//
+// TODO: Remove console.log debug statements before official 1.0.0 release
+// =============================================================================
 
-  if (!formData || formData.length === 0) {
-    throw createError({ statusCode: 400, message: 'No file uploaded' })
+// Stream request body directly to file to avoid memory issues with large files
+async function streamBodyToFile(event: Parameters<typeof defineEventHandler>[0] extends (e: infer E) => unknown ? E : never, filePath: string): Promise<void> {
+  const stream = getRequestWebStream(event)
+  if (!stream) {
+    throw new Error('No request stream available')
   }
 
-  // Find the file and options
-  let fileBuffer: Buffer | null = null
-  let options: ImportOptions = { mode: 'new' }
+  const reader = stream.getReader()
+  const writeStream = createWriteStream(filePath)
 
-  for (const part of formData) {
-    if (part.name === 'file' && part.data) {
-      fileBuffer = part.data
-    } else if (part.name === 'options' && part.data) {
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      writeStream.write(value)
+    }
+  } finally {
+    writeStream.end()
+    await new Promise<void>((resolve, reject) => {
+      writeStream.on('finish', resolve)
+      writeStream.on('error', reject)
+    })
+  }
+}
+
+// Parse multipart boundary from content-type header
+function getMultipartBoundary(contentType: string): string | null {
+  const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)
+  return match ? (match[1] || match[2]) : null
+}
+
+// Extract file data from raw multipart body using streaming to handle large files
+async function extractFileFromMultipart(rawFilePath: string, boundary: string, tempDir: string): Promise<{ zipPath: string; options: ImportOptions }> {
+  const { stat } = await import('fs/promises')
+  const { open } = await import('fs/promises')
+
+  let options: ImportOptions = { mode: 'new' }
+  const zipPath = join(tempDir, 'upload.dmhero')
+  const boundaryMarker = `--${boundary}`
+
+  const fileHandle = await open(rawFilePath, 'r')
+  const fileStats = await stat(rawFilePath)
+  const fileSize = fileStats.size
+
+  console.log('[Import] Parsing multipart data, total size:', fileSize, 'bytes')
+
+  // Read in chunks to find boundaries and extract parts
+  const CHUNK_SIZE = 64 * 1024 // 64KB chunks
+  let position = 0
+  let foundFilePart = false
+
+  // Read the first chunk to find headers
+  const initialChunk = Buffer.alloc(Math.min(CHUNK_SIZE * 4, fileSize)) // Read more initially for headers
+  await fileHandle.read(initialChunk, 0, initialChunk.length, 0)
+  position = initialChunk.length
+
+  // Find all parts in the initial chunk
+  const initialStr = initialChunk.toString('binary')
+  const parts = initialStr.split(boundaryMarker)
+
+  for (let i = 1; i < parts.length; i++) {
+    const part = parts[i]
+    if (part.startsWith('--')) continue // End marker
+
+    const headerEndIdx = part.indexOf('\r\n\r\n')
+    if (headerEndIdx === -1) continue
+
+    const headers = part.substring(0, headerEndIdx)
+
+    if (headers.includes('name="file"')) {
+      // Found file part - calculate where file content starts
+      foundFilePart = true
+
+      // Find the byte position of this part's body in the original file
+      const partStartInChunk = initialStr.indexOf(part)
+      const bodyStartInPart = headerEndIdx + 4
+      const fileContentStart = partStartInChunk + bodyStartInPart
+
+      console.log('[Import] File content starts at byte:', fileContentStart)
+
+      // Find where the file content ends (next boundary or end)
+      // We need to search for the boundary in the file
+      const endBoundary = Buffer.from(`\r\n${boundaryMarker}`)
+
+      // Stream the file content to the ZIP file
+      const zipWriteStream = createWriteStream(zipPath)
+      let bytesWritten = 0
+
+      // Write the part of the file content we already have
+      const initialFileContent = initialChunk.subarray(fileContentStart)
+
+      // Check if end boundary is in the initial content
+      const endIdx = initialFileContent.indexOf(endBoundary)
+      if (endIdx !== -1) {
+        // Entire file is in the initial chunk
+        zipWriteStream.write(initialFileContent.subarray(0, endIdx))
+        bytesWritten = endIdx
+      } else {
+        // Need to stream the rest
+        zipWriteStream.write(initialFileContent)
+        bytesWritten = initialFileContent.length
+
+        // Read remaining chunks
+        const readBuffer = Buffer.alloc(CHUNK_SIZE)
+        let pendingBuffer = Buffer.alloc(0)
+
+        while (position < fileSize) {
+          const bytesToRead = Math.min(CHUNK_SIZE, fileSize - position)
+          const { bytesRead } = await fileHandle.read(readBuffer, 0, bytesToRead, position)
+          position += bytesRead
+
+          // Combine with any pending data from last chunk (for boundary spanning)
+          const searchBuffer = Buffer.concat([pendingBuffer, readBuffer.subarray(0, bytesRead)])
+          const endBoundaryIdx = searchBuffer.indexOf(endBoundary)
+
+          if (endBoundaryIdx !== -1) {
+            // Found the end - write up to the boundary
+            zipWriteStream.write(searchBuffer.subarray(0, endBoundaryIdx))
+            bytesWritten += endBoundaryIdx
+            break
+          } else {
+            // Write all but the last few bytes (boundary might span chunks)
+            const safeWriteLength = searchBuffer.length - endBoundary.length
+            if (safeWriteLength > 0) {
+              zipWriteStream.write(searchBuffer.subarray(0, safeWriteLength))
+              bytesWritten += safeWriteLength
+              pendingBuffer = searchBuffer.subarray(safeWriteLength)
+            } else {
+              pendingBuffer = searchBuffer
+            }
+          }
+        }
+      }
+
+      zipWriteStream.end()
+      await new Promise<void>((resolve, reject) => {
+        zipWriteStream.on('finish', resolve)
+        zipWriteStream.on('error', reject)
+      })
+
+      console.log('[Import] Extracted ZIP file:', bytesWritten, 'bytes')
+    }
+  }
+
+  // Read the last 10KB to find the options part (comes after the file)
+  const tailSize = Math.min(10 * 1024, fileSize)
+  const tailBuffer = Buffer.alloc(tailSize)
+  await fileHandle.read(tailBuffer, 0, tailSize, fileSize - tailSize)
+  const tailStr = tailBuffer.toString('utf-8')
+
+  // Find options part in the tail
+  const optionsMarker = 'name="options"'
+  const optionsIdx = tailStr.indexOf(optionsMarker)
+  if (optionsIdx !== -1) {
+    const afterOptions = tailStr.substring(optionsIdx)
+    const bodyStartIdx = afterOptions.indexOf('\r\n\r\n')
+    if (bodyStartIdx !== -1) {
+      const bodyStart = bodyStartIdx + 4
+      let bodyEnd = afterOptions.indexOf('\r\n--', bodyStart)
+      if (bodyEnd === -1) bodyEnd = afterOptions.length
+      const optionsBody = afterOptions.substring(bodyStart, bodyEnd).trim()
       try {
-        options = JSON.parse(part.data.toString())
-      } catch {
-        // Use defaults
+        options = JSON.parse(optionsBody)
+        console.log('[Import] Parsed options from tail:', options.mode, 'raceResolutions:', Object.keys(options.raceResolutions || {}))
+      } catch (e) {
+        console.log('[Import] Failed to parse options:', e)
       }
     }
   }
 
-  if (!fileBuffer) {
-    throw createError({ statusCode: 400, message: 'No .dmhero file provided' })
+  await fileHandle.close()
+
+  if (!foundFilePart) {
+    throw new Error('No .dmhero file found in upload')
   }
+
+  return { zipPath, options }
+}
+
+export default defineEventHandler(async (event) => {
+  console.log('[Import] Starting import request...')
 
   const db = getDb()
   const uploadPath = getUploadPath()
 
-  // Create temp directory for extraction
+  // Create temp directory for streaming large files
   const tempDir = join(tmpdir(), `dmhero-import-${randomUUID()}`)
   mkdirSync(tempDir, { recursive: true })
+
+  let options: ImportOptions = { mode: 'new' }
+  let zipPath: string
+
+  try {
+    // Get content type and boundary
+    const contentType = getHeader(event, 'content-type') || ''
+    const boundary = getMultipartBoundary(contentType)
+
+    if (!boundary) {
+      throw createError({ statusCode: 400, message: 'Invalid content-type: missing boundary' })
+    }
+
+    console.log('[Import] Streaming request body to disk...')
+
+    // Stream the raw body to a temp file to avoid memory issues
+    const rawFilePath = join(tempDir, 'raw-upload')
+    await streamBodyToFile(event, rawFilePath)
+    console.log('[Import] Body streamed to disk')
+
+    // Extract the ZIP file from the multipart data
+    const extracted = await extractFileFromMultipart(rawFilePath, boundary, tempDir)
+    zipPath = extracted.zipPath
+    options = extracted.options
+
+    // Remove raw upload file to free disk space
+    await rm(rawFilePath, { force: true })
+  } catch (streamError) {
+    // Clean up on streaming error
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+    console.error('[Import] Streaming error:', streamError)
+    throw createError({
+      statusCode: 400,
+      message: `Failed to process upload: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`,
+    })
+  }
 
   const stats: ImportResult['stats'] = {
     entitiesImported: 0,
@@ -93,19 +300,28 @@ export default defineEventHandler(async (event) => {
   let manifest: CampaignExportManifest
 
   try {
-    // Extract ZIP
+    // Extract ZIP from file (not buffer, to save memory)
+    console.log('[Import] Loading unzipper...')
     const uz = await getUnzipper()
-    const directory = await uz.Open.buffer(fileBuffer)
+    console.log('[Import] Opening ZIP file:', zipPath)
+    const directory = await uz.Open.file(zipPath)
+    console.log('[Import] ZIP opened, files:', directory.files.length)
 
     // Extract all files to temp dir
+    let extractedCount = 0
     for (const file of directory.files) {
       if (file.type === 'File') {
         const targetPath = join(tempDir, file.path)
         mkdirSync(dirname(targetPath), { recursive: true })
         const writeStream = createWriteStream(targetPath)
         await pipeline(file.stream(), writeStream)
+        extractedCount++
+        if (extractedCount % 50 === 0) {
+          console.log(`[Import] Extracted ${extractedCount} files...`)
+        }
       }
     }
+    console.log(`[Import] Extraction complete: ${extractedCount} files`)
 
     // Read manifest
     const manifestPath = join(tempDir, 'manifest.json')
@@ -1040,7 +1256,7 @@ export default defineEventHandler(async (event) => {
 
     if (manifest.currencies && manifest.currencies.length > 0) {
       const insertCurrency = db.prepare(`
-        INSERT INTO currencies (campaign_id, code, name, symbol, exchange_rate, sort_order, is_default)
+        INSERT OR IGNORE INTO currencies (campaign_id, code, name, symbol, exchange_rate, sort_order, is_default)
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
 
@@ -1247,6 +1463,11 @@ export default defineEventHandler(async (event) => {
       stats,
     } as ImportResult
   } catch (error) {
+    console.error('[Import] Error during import:', error)
+    if (error instanceof Error) {
+      console.error('[Import] Stack:', error.stack)
+    }
+
     // Clean up temp directory on error
     try {
       await rm(tempDir, { recursive: true, force: true })
