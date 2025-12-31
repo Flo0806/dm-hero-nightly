@@ -97,6 +97,7 @@
     "asar": true,
     "win": {
       "target": [
+        "nsis",
         "zip"
       ]
     },
