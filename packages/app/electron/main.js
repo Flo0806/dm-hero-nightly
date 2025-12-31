@@ -338,9 +338,14 @@ ipcMain.handle('check-for-updates', async () => {
   try {
     const result = await autoUpdater.checkForUpdates()
     if (result?.updateInfo) {
+      const currentVersion = app.getVersion()
+      const latestVersion = result.updateInfo.version
+      // Only show update if latest version is actually newer
+      const isNewer = latestVersion !== currentVersion
+      console.log(`[AutoUpdater] Current: ${currentVersion}, Latest: ${latestVersion}, isNewer: ${isNewer}`)
       return {
-        updateAvailable: true,
-        version: result.updateInfo.version,
+        updateAvailable: isNewer,
+        version: latestVersion,
         releaseNotes: result.updateInfo.releaseNotes,
         isDevMode: false,
       }
